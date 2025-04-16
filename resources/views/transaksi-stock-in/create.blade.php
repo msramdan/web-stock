@@ -30,6 +30,24 @@
             <div class="row">
                 <div class="col-md-12">
                     <div class="card">
+                        {{-- Untuk error dari validator --}}
+                        @if ($errors->any())
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
+                        {{-- Untuk error dari try-catch --}}
+                        @if (session('error'))
+                            <div class="alert alert-danger">
+                                {{ session('error') }}
+                            </div>
+                        @endif
+
                         <div class="card-body">
                             <form id="transactionForm" method="POST" action="{{ route('transaksi-stock-in.store') }}"
                                 enctype="multipart/form-data">

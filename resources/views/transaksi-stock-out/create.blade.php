@@ -28,20 +28,46 @@
         </div>
 
         <section class="section">
-
             <div class="row">
                 <div class="col-md-12">
                     <div class="card">
+                        {{-- Untuk error dari validator --}}
+                        @if ($errors->any())
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
+                        {{-- Untuk error dari try-catch --}}
+                        @if (session('error'))
+                            <div class="alert alert-danger">
+                                {{ session('error') }}
+                            </div>
+                        @endif
+
                         <div class="card-body">
-                            <form action="{{ route('transaksi-stock-out.store') }}" method="POST" enctype="multipart/form-data">
+                            <form id="transactionForm" method="POST" action="{{ route('transaksi-stock-out.store') }}"
+                                enctype="multipart/form-data">
+
                                 @csrf
                                 @method('POST')
 
                                 @include('transaksi-stock-out.include.form')
-
-                                <a href="{{ route('transaksi-stock-out.index') }}" class="btn btn-secondary">{{ __('Back') }}</a>
-
-                                <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
+                                <div class="row mt-3">
+                                    <div class="col-md-12">
+                                        <div class="card">
+                                            <div class="card-body text-right">
+                                                <button type="submit" id="submitBtn" class="btn btn-success">
+                                                    <i class="fas fa-save"></i> Simpan
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </form>
                         </div>
                     </div>

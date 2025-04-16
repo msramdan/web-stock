@@ -80,7 +80,7 @@ class TransaksiStockInController extends Controller implements HasMiddleware
             'no_surat' => 'required|string|max:255|unique:transaksi,no_surat',
             'tanggal' => 'required|date',
             'keterangan' => 'nullable|string',
-            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:2048',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10048',
             'cart_items' => 'required|json',
         ]);
 
@@ -185,26 +185,62 @@ class TransaksiStockInController extends Controller implements HasMiddleware
         return view('transaksi-stock-in.edit', compact('transaksi'));
     }
 
-    public function update(UpdateTransaksiRequest $request, Transaksi $transaksi): RedirectResponse
-    {
+    // public function update(UpdateTransaksiRequest $request, Transaksi $transaksi): RedirectResponse
+    // {
 
-    }
+    // }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Transaksi $transaksi): RedirectResponse
+    public function destroy($id): RedirectResponse
     {
+        DB::beginTransaction();
+
         try {
-            $attachment = $transaksi->attachment;
+            // 1. Dapatkan data transaksi
+            $transaksi = DB::table('transaksi')->where('id', $id)->first();
 
-            $transaksi->delete();
+            if (!$transaksi) {
+                throw new \Exception('Transaksi tidak ditemukan');
+            }
 
-            $this->imageService->delete(image: $this->attachmentPath . $attachment);
+            // 2. Dapatkan semua detail transaksi
+            $details = DB::table('transaksi_detail')
+                       ->where('transaksi_id', $id)
+                       ->get();
 
-            return to_route('transaksi-stock-in.index')->with('success', __('The transaksi was deleted successfully.'));
+            // 3. Kurangi stok barang (karena ini transaksi IN)
+            foreach ($details as $detail) {
+                DB::table('barang')
+                    ->where('id', $detail->barang_id)
+                    ->update([
+                        'stock_barang' => DB::raw('stock_barang - ' . $detail->qty),
+                        'updated_at' => now()
+                    ]);
+            }
+
+            // 4. Hapus detail transaksi
+            DB::table('transaksi_detail')
+                ->where('transaksi_id', $id)
+                ->delete();
+
+            // 5. Hapus file attachment jika ada
+            if ($transaksi->attachment) {
+                Storage::disk('public')->delete($transaksi->attachment);
+            }
+
+            // 6. Hapus transaksi utama
+            DB::table('transaksi')
+                ->where('id', $id)
+                ->delete();
+
+            DB::commit();
+
+            return redirect()->route('transaksi-stock-in.index')
+                ->with('success', 'Transaksi berhasil dihapus dan stok dikurangi.');
+
         } catch (\Exception $e) {
-            return to_route('transaksi-stock-in.index')->with('error', __("The transaksi can't be deleted because it's related to another table."));
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'Gagal menghapus transaksi: ' . $e->getMessage());
         }
     }
 }
