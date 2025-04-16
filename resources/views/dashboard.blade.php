@@ -10,18 +10,10 @@
     <div class="page-content">
         <section class="row">
 
-            {{-- 1. Area Selamat Datang (Paling Atas) --}}
-            <div class="col-12 mb-4"> {{-- Tambahkan margin bawah --}}
-                @if (session('status'))
-                    <div class="alert alert-success alert-dismissible show fade">
-                        {{ session('status') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                @endif
-
+            {{-- 1. Area Selamat Datang --}}
+            <div class="col-12 mb-4">
                 <div class="card">
                     <div class="card-body">
-                        {{-- Gunakan nama user yang sedang login --}}
                         <h4>Hi 👋, {{ auth()->user()->name }}</h4>
                         <p>{{ __('You are logged in!') }}</p>
                     </div>
@@ -50,7 +42,6 @@
                             </div>
                         </div>
                     </div>
-
                     {{-- Card Total Jenis Material --}}
                     <div class="col-6 col-lg-3 col-md-6">
                         <div class="card">
@@ -70,7 +61,6 @@
                             </div>
                         </div>
                     </div>
-
                     {{-- Card Total Unit Satuan --}}
                     <div class="col-6 col-lg-3 col-md-6">
                         <div class="card">
@@ -90,7 +80,6 @@
                             </div>
                         </div>
                     </div>
-
                     {{-- Card Total User --}}
                     <div class="col-6 col-lg-3 col-md-6">
                         <div class="card">
@@ -113,7 +102,20 @@
                 </div>
             </div>
 
-            {{-- 3. Tabel Transaksi Terakhir --}}
+            {{-- 3. Grafik Transaksi Bulanan --}}
+            <div class="col-12"> {{-- Grafik bisa dibuat full width --}}
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Tren Transaksi Bulanan (12 Bulan Terakhir)</h4>
+                    </div>
+                    <div class="card-body">
+                        {{-- Wadah untuk grafik --}}
+                        <div id="chart-transaksi-bulanan"></div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- 4. Tabel Transaksi Terakhir --}}
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
@@ -121,7 +123,6 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            {{-- Gunakan table-striped untuk gaya zebra, table-hover untuk efek hover --}}
                             <table class="table table-striped table-hover table-lg">
                                 <thead>
                                     <tr>
@@ -133,14 +134,12 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {{-- Loop data transaksi terakhir --}}
                                     @forelse($latestTransactions ?? [] as $transaksi)
                                         <tr>
                                             <td class="text-bold-500">{{ $transaksi->no_surat ?? '-' }}</td>
                                             <td>{{ $transaksi->tanggal ? \Carbon\Carbon::parse($transaksi->tanggal)->format('d/m/Y H:i') : '-' }}
                                             </td>
                                             <td>
-                                                {{-- Badge Sesuai Tipe --}}
                                                 @if ($transaksi->type == 'In')
                                                     <span class="badge bg-light-success">Masuk</span>
                                                 @elseif($transaksi->type == 'Out')
@@ -151,25 +150,21 @@
                                             </td>
                                             <td class="text-bold-500">{{ $transaksi->user_name ?? '-' }}</td>
                                             <td>
-                                                {{-- Link ke Detail Sesuai Tipe --}}
                                                 @php
-                                                    // Tentukan nama route berdasarkan tipe transaksi
                                                     $routeName =
                                                         $transaksi->type == 'In'
                                                             ? 'transaksi-stock-in.show'
                                                             : 'transaksi-stock-out.show';
                                                 @endphp
-                                                {{-- Pastikan route ada sebelum membuat link --}}
                                                 @if (Route::has($routeName))
                                                     <a href="{{ route($routeName, $transaksi->id) }}"
                                                         class="btn btn-sm btn-outline-primary icon icon-left">
-                                                        <i class="fas fa-eye"></i> Detail {{-- Gunakan ikon FontAwesome --}}
+                                                        <i class="fas fa-eye"></i> Detail
                                                     </a>
                                                 @endif
                                             </td>
                                         </tr>
                                     @empty
-                                        {{-- Pesan jika tidak ada transaksi --}}
                                         <tr>
                                             <td colspan="5" class="text-center text-muted p-4">Belum ada transaksi.</td>
                                         </tr>
@@ -186,12 +181,107 @@
 @endsection
 
 @push('css')
-    {{-- Jika menggunakan FontAwesome untuk ikon Detail --}}
+    {{-- Pastikan Iconly (untuk card) dan FontAwesome (untuk tabel) dimuat jika belum global --}}
+    <link rel="stylesheet" href="{{ asset('mazer/compiled/css/iconly.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"
         integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
-    {{-- Jika ikon Mazer (iconly) belum ada global, tambahkan di sini --}}
-    {{-- <link rel="stylesheet" href="{{ asset('mazer/compiled/css/iconly.css') }}"> --}}
+    {{-- CSS Tambahan untuk ApexCharts jika perlu --}}
+    {{-- <link rel="stylesheet" href="{{ asset('mazer/extensions/apexcharts/apexcharts.css') }}"> --}}
 @endpush
 
-{{-- Tidak perlu JS tambahan khusus untuk fitur ini --}}
+@push('js')
+    {{-- Pastikan library ApexCharts dimuat sebelum script ini --}}
+    {{-- Contoh: <script src="{{ asset('mazer/extensions/apexcharts/apexcharts.min.js') }}"></script> di layout footer --}}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ambil data chart dari PHP (pastikan aman dari XSS jika data dari user input)
+            const chartMonths = @json($chartMonths ?? []);
+            const chartStockIn = @json($chartStockIn ?? []);
+            const chartStockOut = @json($chartStockOut ?? []);
+
+            // Opsi untuk ApexCharts Bar Chart
+            var optionsTransaksiBulanan = {
+                series: [{
+                        name: 'Transaksi Masuk',
+                        data: chartStockIn
+                    },
+                    {
+                        name: 'Transaksi Keluar',
+                        data: chartStockOut
+                    }
+                ],
+                chart: {
+                    type: 'bar',
+                    height: 350, // Tinggi chart
+                    toolbar: {
+                        show: true // Tampilkan tombol download dll.
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false, // Batang vertikal
+                        columnWidth: '55%', // Lebar batang
+                        endingShape: 'rounded' // Ujung batang melengkung
+                    },
+                },
+                dataLabels: {
+                    enabled: false // Tidak menampilkan label di atas batang
+                },
+                stroke: {
+                    show: true,
+                    width: 2,
+                    colors: ['transparent']
+                },
+                xaxis: {
+                    categories: chartMonths, // Label sumbu X (bulan)
+                    title: {
+                        text: 'Bulan (12 Bulan Terakhir)'
+                    }
+                },
+                yaxis: {
+                    title: {
+                        text: 'Jumlah Transaksi'
+                    },
+                    // Pastikan hanya integer ditampilkan di sumbu Y
+                    labels: {
+                        formatter: function(val) {
+                            return Math.floor(val); // Atau parseInt(val)
+                        }
+                    },
+                    // Jika ingin sumbu Y mulai dari 0
+                    // min: 0
+                },
+                fill: {
+                    opacity: 1
+                },
+                tooltip: {
+                    y: {
+                        formatter: function(val) {
+                            return val + " transaksi" // Tooltip saat hover
+                        }
+                    }
+                },
+                // Warna bisa disesuaikan
+                colors: ['#435ebe', '#dc3545'], // Biru Mazer untuk Masuk, Merah untuk Keluar
+                legend: {
+                    position: 'top',
+                    horizontalAlign: 'center',
+                    offsetY: 10
+                }
+            };
+
+            // Render chart jika elemennya ada
+            var chartElement = document.querySelector("#chart-transaksi-bulanan");
+            if (chartElement && typeof ApexCharts !== 'undefined') { // Cek ApexCharts tersedia
+                var chart = new ApexCharts(chartElement, optionsTransaksiBulanan);
+                chart.render();
+            } else if (!chartElement) {
+                console.error('Elemen #chart-transaksi-bulanan tidak ditemukan.');
+            } else {
+                console.error('ApexCharts library tidak dimuat.');
+            }
+        });
+    </script>
+@endpush

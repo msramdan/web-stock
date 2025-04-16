@@ -8,7 +8,8 @@ use App\Models\Barang;
 use App\Models\JenisMaterial;
 use App\Models\UnitSatuan;
 use App\Models\User;
-use Illuminate\Support\Facades\DB; // <-- Import DB Facade
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -25,13 +26,61 @@ class DashboardController extends Controller
         $totalUnitSatuan = UnitSatuan::count();
         $totalUser = User::count();
 
-        // Ambil 5 transaksi terakhir (gabungan In & Out)
+        // Ambil 5 transaksi terakhir
         $latestTransactions = DB::table('transaksi')
             ->select('transaksi.id', 'transaksi.no_surat', 'transaksi.tanggal', 'transaksi.type', 'users.name as user_name')
             ->join('users', 'users.id', '=', 'transaksi.user_id')
-            ->orderByDesc('transaksi.tanggal') // Urutkan berdasarkan tanggal terbaru
-            ->limit(5) // Ambil 5 teratas
+            ->orderByDesc('transaksi.tanggal')
+            ->limit(5)
             ->get();
+
+        // --- Data untuk Chart Transaksi Bulanan (12 Bulan Terakhir) ---
+        $endDate = Carbon::now(); // Tanggal hari ini
+        $startDate = Carbon::now()->subMonths(11)->startOfMonth(); // Mulai dari 11 bulan lalu, awal bulan
+
+        // Query data transaksi
+        $monthlyTransactions = DB::table('transaksi')
+            ->select(
+                DB::raw("DATE_FORMAT(tanggal, '%Y-%m') as month"), // Format YYYY-MM
+                DB::raw("DATE_FORMAT(tanggal, '%b %Y') as month_name"), // Format 'Jan 2025'
+                'type',
+                DB::raw('COUNT(*) as count')
+            )
+            ->whereBetween('tanggal', [$startDate, $endDate])
+            ->groupBy('month', 'month_name', 'type')
+            ->orderBy('month')
+            ->get()
+            ->keyBy(function ($item) {
+                // Buat kunci unik per bulan dan tipe (misal: '2025-04-In')
+                return $item->month . '-' . $item->type;
+            });
+
+        // Siapkan array untuk chart
+        $chartMonths = [];
+        $chartStockIn = [];
+        $chartStockOut = [];
+
+        // Loop 12 bulan terakhir untuk memastikan semua bulan ada
+        $currentMonth = $startDate->copy();
+        for ($i = 0; $i < 12; $i++) {
+            $monthKey = $currentMonth->format('Y-m'); // YYYY-MM
+            $monthName = $currentMonth->translatedFormat('M Y'); // Format 'Apr 2025' (Gunakan locale Indonesia jika Carbon diset)
+            // Atau format manual jika locale tidak diset: $currentMonth->format('M Y');
+
+            $chartMonths[] = $monthName;
+
+            // Cari data In untuk bulan ini
+            $keyIn = $monthKey . '-In';
+            $chartStockIn[] = $monthlyTransactions->has($keyIn) ? $monthlyTransactions[$keyIn]->count : 0;
+
+            // Cari data Out untuk bulan ini
+            $keyOut = $monthKey . '-Out';
+            $chartStockOut[] = $monthlyTransactions->has($keyOut) ? $monthlyTransactions[$keyOut]->count : 0;
+
+            $currentMonth->addMonth(); // Pindah ke bulan berikutnya
+        }
+        // --- Akhir Data Chart ---
+
 
         // Kirim semua data ke view
         return view('dashboard', compact(
@@ -39,7 +88,10 @@ class DashboardController extends Controller
             'totalJenisMaterial',
             'totalUnitSatuan',
             'totalUser',
-            'latestTransactions' // <-- Kirim data transaksi terakhir
+            'latestTransactions',
+            'chartMonths',
+            'chartStockIn',
+            'chartStockOut'
         ));
     }
 }
