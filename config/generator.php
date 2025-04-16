@@ -109,118 +109,152 @@ return [
      *
      * This code below always changes when you use a generator, and maybe you must format the code.
      */
-    "sidebars" => [    [
-        'header' => 'Barang',
-        'permissions' => [
-            'barang view'
-        ],
-        'menus' => [
-            [
-                'title' => 'Daftar Barang',
-                'icon' => '<i class="bi bi-box"></i>',
-                'route' => '/barang',
-                'permission' => 'barang view',
-                'permissions' => [],
-                'submenus' => []
-            ]
-        ]
+    "sidebars" => [
+        [
+            'header' => 'Barang',
+            'permissions' => [
+                'barang view'
             ],
-    [
-        'header' => 'Jenis Material',
-        'permissions' => [
-            'jenis material view'
-        ],
-        'menus' => [
-            [
-                'title' => 'Jenis Material',
-                'icon' => '<i class="bi bi-list"></i>',
-                'route' => '/jenis-material',
-                'permission' => 'jenis material view',
-                'permissions' => [],
-                'submenus' => []
+            'menus' => [
+                [
+                    'title' => 'Daftar Barang',
+                    'icon' => '<i class="bi bi-box"></i>',
+                    'route' => '/barang',
+                    'permission' => 'barang view',
+                    'permissions' => [],
+                    'submenus' => []
+                ]
             ]
-        ]
-    ],
-    [
-        'header' => 'Unit Satuan',
-        'permissions' => [
-            'unit satuan view'
         ],
-        'menus' => [
-            [
-                'title' => 'Unit Satuan',
-                'icon' => '<i class="bi bi-list"></i>',
-                'route' => '/unit-satuan',
-                'permission' => 'unit satuan view',
-                'permissions' => [],
-                'submenus' => []
-            ]
-        ]
-    ],
-    [
-        'header' => 'Setting Aplikasi',
-        'permissions' => [
-            'setting aplikasi view'
-        ],
-        'menus' => [
-            [
-                'title' => 'Setting Aplikasi',
-                'icon' => '<i class="bi bi-gear-fill"></i>',
-                'route' => '/setting-aplikasi',
-                'permission' => 'setting aplikasi view',
-                'permissions' => [],
-                'submenus' => []
-            ]
-        ]
-    ],
-    [
-        'header' => 'Utilities',
-        'permissions' => [
-            'user view',
-            'role & permission view'
-        ],
-        'menus' => [
-            [
-                'title' => 'Utilities',
-                'icon' => '<i class="bi bi-gear-fill"></i>',
-                'route' => [
-                    'users*',
-                    'roles*'
-                ],
-                'permissions' => [
-                    'user view',
-                    'role & permission view'
-                ],
-                'submenus' => [
-                    [
-                        'title' => 'User',
-                        'route' => '/users',
-                        'permission' => 'user view'
+        [
+            'header' => 'Transaksi',
+            'permissions' => [
+                'transaksi stock in view',
+                'transaksi stock out view'
+            ],
+            'menus' => [
+                [
+                    'title' => 'Transaksi',
+                    'icon' => '<i class="bi bi-gear-fill"></i>',
+                    'route' => [
+                        'transaksi-stock-in*',
+                        'transaksi-stock-out*'
                     ],
-                    [
-                        'title' => 'Roles & permissions',
-                        'route' => '/roles',
-                        'permission' => 'role & permission view'
+                    'permissions' => [
+                        'transaksi stock in view',
+                        'transaksi stock out view'
+                    ],
+                    'submenus' => [
+                        [
+                            'title' => 'Stock In',
+                            'route' => '/transaksi-stock-in',
+                            'permission' => 'transaksi stock in view'
+                        ],
+                        [
+                            'title' => 'Stock Out',
+                            'route' => '/transaksi-stock-out',
+                            'permission' => 'transaksi stock out view'
+                        ]
                     ]
                 ]
             ]
-        ]
-    ],
-    [
-        'header' => 'Backup Database',
-        'permissions' => [
-            'backup database view'
         ],
-        'menus' => [
-            [
-                'title' => 'Backup Database',
-                'icon' => '<i class="bi bi-database"></i>',
-                'route' => '/backup-database',
-                'permission' => 'backup database view',
-                'permissions' => [],
-                'submenus' => []
+        [
+            'header' => 'Jenis Material',
+            'permissions' => [
+                'jenis material view'
+            ],
+            'menus' => [
+                [
+                    'title' => 'Jenis Material',
+                    'icon' => '<i class="bi bi-list"></i>',
+                    'route' => '/jenis-material',
+                    'permission' => 'jenis material view',
+                    'permissions' => [],
+                    'submenus' => []
+                ]
+            ]
+        ],
+        [
+            'header' => 'Unit Satuan',
+            'permissions' => [
+                'unit satuan view'
+            ],
+            'menus' => [
+                [
+                    'title' => 'Unit Satuan',
+                    'icon' => '<i class="bi bi-list"></i>',
+                    'route' => '/unit-satuan',
+                    'permission' => 'unit satuan view',
+                    'permissions' => [],
+                    'submenus' => []
+                ]
+            ]
+        ],
+        [
+            'header' => 'Setting Aplikasi',
+            'permissions' => [
+                'setting aplikasi view'
+            ],
+            'menus' => [
+                [
+                    'title' => 'Setting Aplikasi',
+                    'icon' => '<i class="bi bi-gear-fill"></i>',
+                    'route' => '/setting-aplikasi',
+                    'permission' => 'setting aplikasi view',
+                    'permissions' => [],
+                    'submenus' => []
+                ]
+            ]
+        ],
+        [
+            'header' => 'Utilities',
+            'permissions' => [
+                'user view',
+                'role & permission view'
+            ],
+            'menus' => [
+                [
+                    'title' => 'Utilities',
+                    'icon' => '<i class="bi bi-gear-fill"></i>',
+                    'route' => [
+                        'users*',
+                        'roles*'
+                    ],
+                    'permissions' => [
+                        'user view',
+                        'role & permission view'
+                    ],
+                    'submenus' => [
+                        [
+                            'title' => 'User',
+                            'route' => '/users',
+                            'permission' => 'user view'
+                        ],
+                        [
+                            'title' => 'Roles & permissions',
+                            'route' => '/roles',
+                            'permission' => 'role & permission view'
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        [
+            'header' => 'Backup Database',
+            'permissions' => [
+                'backup database view'
+            ],
+            'menus' => [
+                [
+                    'title' => 'Backup Database',
+                    'icon' => '<i class="bi bi-database"></i>',
+                    'route' => '/backup-database',
+                    'permission' => 'backup database view',
+                    'permissions' => [],
+                    'submenus' => []
+                ]
             ]
         ]
     ]
-]
 ];

@@ -20,3 +20,6 @@ Route::resource('setting-aplikasi', App\Http\Controllers\SettingAplikasiControll
 Route::resource('backup-database', App\Http\Controllers\BackupDatabaseController::class)->middleware('auth');
 Route::get('/backup/download', [App\Http\Controllers\BackupDatabaseController::class, 'downloadBackup'])->name('backup.download');
 Route::resource('barang', App\Http\Controllers\BarangController::class)->middleware('auth');
+Route::resource('transaksi-stock-in', App\Http\Controllers\TransaksiStockInController::class)->middleware('auth');
+Route::resource('transaksi-stock-out', App\Http\Controllers\TransaksiStockOutController::class)->middleware('auth');
+Route::get('/listDataBarang', [App\Http\Controllers\BarangController::class, 'listDataBarang'])->name('listDataBarang');

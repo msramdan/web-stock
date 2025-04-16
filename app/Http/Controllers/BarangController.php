@@ -144,4 +144,20 @@ class BarangController extends Controller implements HasMiddleware
             return to_route('barang.index')->with('error', __("The barang can't be deleted because it's related to another table."));
         }
     }
+
+    public function listDataBarang()
+    {
+        $barang = DB::table('barang')
+            ->join('jenis_material', 'barang.jenis_material_id', '=', 'jenis_material.id')
+            ->join('unit_satuan', 'barang.unit_satuan_id', '=', 'unit_satuan.id')
+            ->select(
+                'barang.id',
+                'barang.kode_barang',
+                'barang.stock_barang as stock',
+                'jenis_material.nama_jenis_material as jenis_material',
+                'unit_satuan.nama_unit_satuan as unit_satuan'
+            )
+            ->get();
+        return response()->json($barang);
+    }
 }

@@ -42,5 +42,14 @@ class ViewComposerServiceProvider extends ServiceProvider
                 \App\Models\UnitSatuan::select('id', 'nama_unit_satuan')->get()
             );
         });
-    }
+
+
+				View::composer(['transaksi.create', 'transaksi.edit'], function ($view) {
+            return $view->with(
+                'users',
+                \App\Models\User::select('id', 'name')->get()
+            );
+        });
+
+	}
 }

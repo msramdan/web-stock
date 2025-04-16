@@ -211,5 +211,7 @@ return [
         ['group' => 'setting aplikasi', 'access' => ['setting aplikasi view', 'setting aplikasi edit']],
         ['group' => 'backup databases', 'access' => ['backup database view']],
         ['group' => 'barang', 'access' => ['barang view', 'barang create', 'barang edit', 'barang delete']],
+        ['group' => 'transaksis stock in', 'access' => ['transaksi stock in view', 'transaksi stock in create', 'transaksi stock in edit', 'transaksi stock in delete']],
+        ['group' => 'transaksis stock out', 'access' => ['transaksi stock out view', 'transaksi stock out create', 'transaksi stock out edit', 'transaksi stock out delete']],
     ],
 ];
