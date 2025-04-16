@@ -35,16 +35,8 @@
                             <div class="table-responsive">
                                 <table class="table table-hover table-striped">
                                     <tr>
-                    <td class="fw-bold">{{ __('Nama Unit Satuan') }}</td>
-                    <td>{{ $unitSatuan->nama_unit_satuan }}</td>
-                </tr>
-                                    <tr>
-                                        <td class="fw-bold">{{ __('Created at') }}</td>
-                                        <td>{{ $unitSatuan->created_at->format('Y-m-d H:i:s') }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold">{{ __('Updated at') }}</td>
-                                        <td>{{ $unitSatuan->updated_at->format('Y-m-d H:i:s') }}</td>
+                                        <td class="fw-bold">{{ __('Nama Unit Satuan') }}</td>
+                                        <td>{{ $unitSatuan->nama_unit_satuan }}</td>
                                     </tr>
                                 </table>
                             </div>
