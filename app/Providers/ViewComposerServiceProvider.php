@@ -27,5 +27,20 @@ class ViewComposerServiceProvider extends ServiceProvider
                 Role::select('id', 'name')->get()
             );
         });
+
+
+        View::composer(['barang.create', 'barang.edit'], function ($view) {
+            return $view->with(
+                'jenisMaterials',
+                \App\Models\JenisMaterial::select('id', 'nama_jenis_material')->get()
+            );
+        });
+
+        View::composer(['barang.create', 'barang.edit'], function ($view) {
+            return $view->with(
+                'unitSatuans',
+                \App\Models\UnitSatuan::select('id', 'nama_unit_satuan')->get()
+            );
+        });
     }
 }

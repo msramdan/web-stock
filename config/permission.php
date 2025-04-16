@@ -210,5 +210,6 @@ return [
         ['group' => 'unit satuan', 'access' => ['unit satuan view', 'unit satuan create', 'unit satuan edit', 'unit satuan delete']],
         ['group' => 'setting aplikasi', 'access' => ['setting aplikasi view', 'setting aplikasi edit']],
         ['group' => 'backup databases', 'access' => ['backup database view']],
+        ['group' => 'barang', 'access' => ['barang view', 'barang create', 'barang edit', 'barang delete']],
     ],
 ];

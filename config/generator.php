@@ -109,7 +109,22 @@ return [
      *
      * This code below always changes when you use a generator, and maybe you must format the code.
      */
-    "sidebars" => [
+    "sidebars" => [    [
+        'header' => 'Barang',
+        'permissions' => [
+            'barang view'
+        ],
+        'menus' => [
+            [
+                'title' => 'Daftar Barang',
+                'icon' => '<i class="bi bi-box"></i>',
+                'route' => '/barang',
+                'permission' => 'barang view',
+                'permissions' => [],
+                'submenus' => []
+            ]
+        ]
+            ],
     [
         'header' => 'Jenis Material',
         'permissions' => [

@@ -19,3 +19,4 @@ Route::resource('unit-satuan', App\Http\Controllers\UnitSatuanController::class)
 Route::resource('setting-aplikasi', App\Http\Controllers\SettingAplikasiController::class)->middleware('auth');
 Route::resource('backup-database', App\Http\Controllers\BackupDatabaseController::class)->middleware('auth');
 Route::get('/backup/download', [App\Http\Controllers\BackupDatabaseController::class, 'downloadBackup'])->name('backup.download');
+Route::resource('barang', App\Http\Controllers\BarangController::class)->middleware('auth');
