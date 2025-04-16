@@ -12,6 +12,7 @@
         type="image/png" />
     <link rel="stylesheet" href="{{ asset('mazer') }}/compiled/css/app.css" />
     <link rel="stylesheet" href="{{ asset('mazer') }}/compiled/css/app-dark.css" />
+    <link rel="stylesheet" href="{{ asset('mazer/compiled/css/iconly.css') }}">
     @stack('css')
     @php
         $settingApp = get_setting();

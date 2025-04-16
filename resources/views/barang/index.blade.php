@@ -22,14 +22,20 @@
         <section class="section">
             <x-alert></x-alert>
 
-            @can('barang create')
-                <div class="d-flex justify-content-end">
+            <div class="d-flex justify-content-end">
+                @can('barang export pdf')
+                    <a href="{{ route('barang.exportPdf') }}" class="btn btn-success mb-3 me-2" target="_blank">
+                        <i class="fas fa-file-pdf"></i>
+                        {{ __('Export PDF') }}
+                    </a>
+                @endcan
+                @can('barang create')
                     <a href="{{ route('barang.create') }}" class="btn btn-primary mb-3">
                         <i class="fas fa-plus"></i>
                         {{ __('Create a new barang') }}
                     </a>
-                </div>
-            @endcan
+                @endcan
+            </div>
 
             <div class="row">
                 <div class="col-md-12">
