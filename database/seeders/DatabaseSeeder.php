@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Http\Controllers\SettingAplikasiController;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -15,5 +16,6 @@ class DatabaseSeeder extends Seeder
         $this->call(RoleAndPermissionSeeder::class);
         $this->call(JenisMaterialSeeder::class);
         $this->call(UnitSatuanSeeder::class);
+        $this->call(SettingAplikasiSeeder::class);
     }
 }

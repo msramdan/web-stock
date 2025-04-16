@@ -1,5 +1,5 @@
 <?php
-
+use Illuminate\Support\Facades\DB;
 
 if (!function_exists('is_active_menu')) {
     function is_active_menu(string|array $route): string
@@ -95,4 +95,9 @@ function is_active_submenu(string|array $route): string
     }
 
     return '';
+}
+
+function get_setting()
+{
+    return DB::table('setting_aplikasi')->first();
 }

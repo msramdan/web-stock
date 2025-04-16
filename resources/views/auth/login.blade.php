@@ -67,22 +67,6 @@
 
                     <button class="btn btn-primary btn-block btn-lg shadow-lg mt-3">{{ __('Log in') }}</button>
                 </form>
-
-                <div class="text-center mt-4 text-lg fs-4">
-                    <p class="text-gray-600">{{ __("Don't have an account") }}?
-                        <a href="/register" class="font-bold">
-                            {{ __('Sign up.') }}
-                        </a>
-                    </p>
-
-                    @if (Route::has('password.request'))
-                        <p>
-                            <a class="font-bold" href="{{ route('password.request') }}">
-                                {{ __('Forgot password') }}?
-                            </a>
-                        </p>
-                    @endif
-                </div>
             </div>
         </div>
 

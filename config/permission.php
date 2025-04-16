@@ -208,5 +208,7 @@ return [
         ],
         ['group' => 'jenis material', 'access' => ['jenis material view', 'jenis material create', 'jenis material edit', 'jenis material delete']],
         ['group' => 'unit satuan', 'access' => ['unit satuan view', 'unit satuan create', 'unit satuan edit', 'unit satuan delete']],
+        ['group' => 'setting aplikasi', 'access' => ['setting aplikasi view', 'setting aplikasi edit']],
+        ['group' => 'backup databases', 'access' => ['backup database view']],
     ],
 ];
