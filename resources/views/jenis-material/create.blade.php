@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', __('Create Jenis Materials'))
+@section('title', __('Create Jenis Material'))
 
 @section('content')
     <div class="page-heading">
         <div class="page-title">
             <div class="row">
                 <div class="col-12 col-md-8 order-md-1 order-last">
-                    <h3>{{ __('Jenis Materials') }}</h3>
+                    <h3>{{ __('Jenis Material') }}</h3>
                     <p class="text-subtitle text-muted">
                         {{ __('Create a new jenis material.') }}
                     </p>
@@ -18,7 +18,7 @@
                         <a href="/">{{ __('Dashboard') }}</a>
                     </li>
                     <li class="breadcrumb-item">
-                        <a href="{{ route('jenis-material.index') }}">{{ __('Jenis Materials') }}</a>
+                        <a href="{{ route('jenis-material.index') }}">{{ __('Jenis Material') }}</a>
                     </li>
                     <li class="breadcrumb-item active" aria-current="page">
                         {{ __('Create') }}

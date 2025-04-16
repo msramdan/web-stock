@@ -15,3 +15,4 @@ Route::middleware(['auth', 'web'])->group(function () {
 });
 
 Route::resource('jenis-material', App\Http\Controllers\JenisMaterialController::class)->middleware('auth');
+Route::resource('unit-satuan', App\Http\Controllers\UnitSatuanController::class)->middleware('auth');

@@ -1,20 +1,20 @@
 @extends('layouts.app')
 
-@section('title', __('Jenis Material'))
+@section('title', __('Unit Satuan'))
 
 @section('content')
     <div class="page-heading">
         <div class="page-title">
             <div class="row">
                 <div class="col-12 col-md-8 order-md-1 order-last">
-                    <h3>{{ __('Jenis Material') }}</h3>
+                    <h3>{{ __('Unit Satuan') }}</h3>
                     <p class="text-subtitle text-muted">
-                        {{ __('Below is a list of all jenis Material.') }}
+                        {{ __('Below is a list of all unit satuan.') }}
                     </p>
                 </div>
                 <x-breadcrumb>
                     <li class="breadcrumb-item"><a href="/">{{ __('Dashboard') }}</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ __('Jenis Material') }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('Unit Satuan') }}</li>
                 </x-breadcrumb>
             </div>
         </div>
@@ -22,11 +22,11 @@
         <section class="section">
             <x-alert></x-alert>
 
-                @can('jenis material create')
+                @can('unit satuan create')
                     <div class="d-flex justify-content-end">
-                        <a href="{{ route('jenis-material.create') }}" class="btn btn-primary mb-3">
+                        <a href="{{ route('unit-satuan.create') }}" class="btn btn-primary mb-3">
                             <i class="fas fa-plus"></i>
-                            {{ __('Create a new jenis material') }}
+                            {{ __('Create a new unit satuan') }}
                         </a>
                     </div>
                 @endcan
@@ -39,7 +39,7 @@
                                 <table class="table table-striped" id="data-table" width="100%">
                                     <thead>
                                         <tr>
-                                            <th>{{ __('Nama Jenis Material') }}</th>
+                                            <th>{{ __('Nama Unit Satuan') }}</th>
                                             <th>{{ __('Action') }}</th>
                                         </tr>
                                     </thead>
@@ -65,11 +65,11 @@
         $('#data-table').DataTable({
             processing: true,
             serverSide: true,
-            ajax: "{{ route('jenis-material.index') }}",
+            ajax: "{{ route('unit-satuan.index') }}",
             columns: [
                 {
-                    data: 'nama_jenis_material',
-                    name: 'nama_jenis_material',
+                    data: 'nama_unit_satuan',
+                    name: 'nama_unit_satuan',
                 },
                 {
                     data: 'action',

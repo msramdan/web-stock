@@ -118,7 +118,7 @@ return [
             'menus' => [
                 [
                     'title' => 'Jenis Material',
-                    'icon' => '<i class="bi bi-people"></i>',
+                    'icon' => '<i class="bi bi-list"></i>',
                     'route' => '/jenis-material',
                     'permission' => 'jenis material view',
                     'permissions' => [],
@@ -126,6 +126,22 @@ return [
                 ]
             ]
         ],
+        [
+            'header' => 'Unit Satuan',
+            'permissions' => [
+                'unit satuan view'
+            ],
+            'menus' => [
+                [
+                    'title' => 'Unit Satuan',
+                    'icon' => '<i class="bi bi-list"></i>',
+                    'route' => '/unit-satuan',
+                    'permission' => 'unit satuan view',
+                    'permissions' => [],
+                    'submenus' => []
+                ]
+            ]
+                ],
         [
             'header' => 'Utilities',
             'permissions' => [
@@ -158,6 +174,6 @@ return [
                     ]
                 ]
             ]
-        ]
+        ],
     ]
 ];

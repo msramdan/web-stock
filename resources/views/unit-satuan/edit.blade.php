@@ -1,15 +1,15 @@
 @extends('layouts.app')
 
-@section('title', __('Edit Jenis Material'))
+@section('title', __('Edit Unit Satuan'))
 
 @section('content')
     <div class="page-heading">
         <div class="page-title">
             <div class="row">
                 <div class="col-12 col-md-8 order-md-1 order-last">
-                    <h3>{{ __('Jenis Material') }}</h3>
+                    <h3>{{ __('Unit Satuan') }}</h3>
                     <p class="text-subtitle text-muted">
-                        {{ __('Edit a jenis material.') }}
+                        {{ __('Edit a unit satuan.') }}
                     </p>
                 </div>
 
@@ -18,7 +18,7 @@
                         <a href="/">{{ __('Dashboard') }}</a>
                     </li>
                     <li class="breadcrumb-item">
-                        <a href="{{ route('jenis-material.index') }}">{{ __('Jenis Material') }}</a>
+                        <a href="{{ route('unit-satuan.index') }}">{{ __('Unit Satuan') }}</a>
                     </li>
                     <li class="breadcrumb-item active" aria-current="page">
                         {{ __('Edit') }}
@@ -32,13 +32,13 @@
                 <div class="col-md-12">
                     <div class="card">
                         <div class="card-body">
-                            <form action="{{ route('jenis-material.update', $jenisMaterial->id) }}" method="POST">
+                            <form action="{{ route('unit-satuan.update', $unitSatuan->id) }}" method="POST">
                                 @csrf
                                 @method('PUT')
 
-                                @include('jenis-material.include.form')
+                                @include('unit-satuan.include.form')
 
-                                <a href="{{ route('jenis-material.index') }}" class="btn btn-secondary">{{ __('Back') }}</a>
+                                <a href="{{ route('unit-satuan.index') }}" class="btn btn-secondary">{{ __('Back') }}</a>
 
                                 <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>
                             </form>

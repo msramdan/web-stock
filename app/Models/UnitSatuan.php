@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class JenisMaterial extends Model
+class UnitSatuan extends Model
 {
     use HasFactory;
 
@@ -14,14 +14,14 @@ class JenisMaterial extends Model
      *
      * @var string
      */
-    protected $table = 'jenis_material';
+    protected $table = 'unit_satuan';
 
     /**
      * The attributes that are mass assignable.
      *
      * @var string[]
      */
-    protected $fillable = ['nama_jenis_material'];
+    protected $fillable = ['nama_unit_satuan'];
 
     /**
      * Get the attributes that should be cast.
@@ -30,7 +30,7 @@ class JenisMaterial extends Model
      */
     protected function casts(): array
     {
-        return ['nama_jenis_material' => 'string', 'created_at' => 'datetime:Y-m-d H:i:s', 'updated_at' => 'datetime:Y-m-d H:i:s'];
+        return ['nama_unit_satuan' => 'string', 'created_at' => 'datetime:Y-m-d H:i:s', 'updated_at' => 'datetime:Y-m-d H:i:s'];
     }
 
 

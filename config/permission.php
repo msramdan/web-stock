@@ -206,6 +206,7 @@ return [
                 'role & permission delete',
             ]
         ],
-        ['group' => 'jenis materials', 'access' => ['jenis material view', 'jenis material create', 'jenis material edit', 'jenis material delete']],
+        ['group' => 'jenis material', 'access' => ['jenis material view', 'jenis material create', 'jenis material edit', 'jenis material delete']],
+        ['group' => 'unit satuan', 'access' => ['unit satuan view', 'unit satuan create', 'unit satuan edit', 'unit satuan delete']],
     ],
 ];

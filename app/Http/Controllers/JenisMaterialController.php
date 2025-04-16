@@ -17,13 +17,11 @@ class JenisMaterialController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            // 'auth',
-
-            // TODO: uncomment this code if you are using spatie permission
-            // new Middleware('permission:jenis material view', only: ['index', 'show']),
-            // new Middleware('permission:jenis material create', only: ['create', 'store']),
-            // new Middleware('permission:jenis material edit', only: ['edit', 'update']),
-            // new Middleware('permission:jenis material delete', only: ['destroy']),
+            'auth',
+            new Middleware('permission:jenis material view', only: ['index', 'show']),
+            new Middleware('permission:jenis material create', only: ['create', 'store']),
+            new Middleware('permission:jenis material edit', only: ['edit', 'update']),
+            new Middleware('permission:jenis material delete', only: ['destroy']),
         ];
     }
 
