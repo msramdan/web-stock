@@ -22,14 +22,24 @@
         <section class="section">
             <x-alert></x-alert>
 
-            @can('transaksi stock in create')
-                <div class="d-flex justify-content-end">
+            <div class="d-flex justify-content-end">
+                {{-- Tombol Export PDF Ditambahkan --}}
+                @can('transaksi stock in export pdf')
+                    {{-- Opsional: Permission Check --}}
+                    <a href="{{ route('transaksi-stock-in.exportPdf') }}" class="btn btn-success mb-3 me-2" target="_blank">
+                        <i class="fas fa-file-pdf"></i>
+                        {{ __('Export PDF') }}
+                    </a>
+                @endcan
+
+                @can('transaksi stock in create')
                     <a href="{{ route('transaksi-stock-in.create') }}" class="btn btn-primary mb-3">
                         <i class="fas fa-plus"></i>
                         {{ __('Create Stock In') }}
                     </a>
-                </div>
-            @endcan
+                @endcan
+            </div>
+
 
             <div class="row">
                 <div class="col-md-12">
@@ -82,6 +92,21 @@
                 {
                     data: 'tanggal',
                     name: 'tanggal',
+                    render: function(data, type, row) {
+                        // Format tanggal jika perlu (misal: dari YYYY-MM-DD HH:MM:SS ke DD/MM/YYYY HH:MM)
+                        if (data) {
+                            // Anda mungkin perlu library seperti moment.js atau format manual
+                            let date = new Date(data);
+                            // Contoh format manual sederhana:
+                            let day = ('0' + date.getDate()).slice(-2);
+                            let month = ('0' + (date.getMonth() + 1)).slice(-2);
+                            let year = date.getFullYear();
+                            let hours = ('0' + date.getHours()).slice(-2);
+                            let minutes = ('0' + date.getMinutes()).slice(-2);
+                            return `${day}/${month}/${year} ${hours}:${minutes}`;
+                        }
+                        return '-';
+                    }
                 },
                 {
                     data: 'type',
@@ -98,8 +123,8 @@
                     searchable: false,
                 },
                 {
-                    data: 'user_name',
-                    name: 'user_name'
+                    data: 'user_name', // Menggunakan alias dari join di controller
+                    name: 'users.name' // Merujuk ke kolom asli untuk search/sort
                 },
                 {
                     data: 'action',
@@ -108,6 +133,9 @@
                     searchable: false
                 }
             ],
+            order: [
+                [1, 'desc']
+            ] // Urutkan berdasarkan kolom tanggal (indeks 1) secara descending
         });
     </script>
 @endpush

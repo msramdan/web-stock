@@ -14,6 +14,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Models\SettingAplikasi;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class TransaksiStockInController extends Controller implements HasMiddleware
 {
@@ -30,6 +34,7 @@ class TransaksiStockInController extends Controller implements HasMiddleware
             new Middleware('permission:transaksi stock in create', only: ['create', 'store']),
             new Middleware('permission:transaksi stock in edit', only: ['edit', 'update']),
             new Middleware('permission:transaksi stock in delete', only: ['destroy']),
+            new Middleware('permission:transaksi stock in export pdf', only: ['exportPdf']),
         ];
     }
 
@@ -265,6 +270,169 @@ class TransaksiStockInController extends Controller implements HasMiddleware
             DB::rollBack();
             return redirect()->back()
                 ->with('error', 'Gagal menghapus transaksi: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export data transaksi stock in to PDF.
+     */
+    public function exportPdf() // Nama method tetap sama
+    {
+        Log::info('Memanggil metode exportPdf di TransaksiStockInController');
+        try {
+            // 1. Ambil data Transaksi Stock In (Hapus kolom user_name)
+            $transaksis = DB::table('transaksi')
+                ->select('transaksi.no_surat', 'transaksi.tanggal', 'transaksi.type', 'transaksi.keterangan') // Hapus users.name
+                // ->join('users', 'users.id', '=', 'transaksi.user_id') // Join tidak perlu lagi jika kolom user dihapus
+                ->where('transaksi.type', 'In')
+                ->orderByDesc('transaksi.tanggal')
+                ->get();
+
+            // 2. Ambil Setting Aplikasi (Tetap sama)
+            $setting = SettingAplikasi::first();
+            $logoPath = null;
+            $logoUrl = null;
+
+            if ($setting && $setting->logo_perusahaan) {
+                $dbLogoPath = storage_path('app/public/uploads/logo-perusahaans/' . $setting->logo_perusahaan);
+                if (file_exists($dbLogoPath)) {
+                    $logoPath = $dbLogoPath;
+                } else {
+                    Log::warning('File logo perusahaan tidak ditemukan di path: ' . $dbLogoPath);
+                }
+            } else {
+                Log::warning('Setting aplikasi atau logo perusahaan tidak ditemukan.');
+            }
+
+            // Encode logo ke base64 (Tetap sama)
+            if ($logoPath) {
+                try {
+                    $logoMimeType = mime_content_type($logoPath);
+                    if (str_starts_with($logoMimeType, 'image/')) {
+                        $logoUrl = 'data:' . $logoMimeType . ';base64,' . base64_encode(file_get_contents($logoPath));
+                    } else {
+                        Log::warning('File logo bukan gambar: ' . $logoPath);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Gagal membaca atau encode file logo: ' . $logoPath . ' - Error: ' . $e->getMessage());
+                    $logoUrl = null;
+                }
+            }
+
+            // 3. Data tambahan (namaPembuat masih diperlukan untuk TTD)
+            $tanggalCetak = Carbon::now()->translatedFormat('d F Y H:i');
+            $namaPembuat = auth()->user()->name ?? 'N/A'; // Tetap ambil nama pembuat untuk TTD
+
+            // 4. Siapkan data untuk view (namaPembuat tetap dikirim)
+            $data = [
+                'transaksis' => $transaksis,
+                'setting' => $setting,
+                'logoUrl' => $logoUrl,
+                'tanggalCetak' => $tanggalCetak,
+                'namaPembuat' => $namaPembuat,
+            ];
+
+            // 5. Generate PDF (Ubah ke portrait)
+            $pdf = Pdf::loadView('transaksi-stock-in.export-pdf', $data);
+            $pdf->setPaper('a4', 'portrait');
+            $filename = 'Laporan-Transaksi-Masuk-' . date('YmdHis') . '.pdf';
+            return $pdf->stream($filename);
+        } catch (\Exception $e) {
+            Log::error('Error generating Transaksi Stock In PDF: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return redirect()->route('transaksi-stock-in.index')->with('error', 'Gagal membuat PDF Laporan Transaksi Masuk. Silakan coba lagi atau hubungi administrator.');
+        }
+    }
+
+    /**
+     * Export detail data transaksi stock in to PDF.
+     *
+     * @param int $id The transaction ID.
+     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
+     */
+    public function exportItemPdf($id)
+    {
+        Log::info("Memanggil exportItemPdf untuk Transaksi ID: {$id}");
+        try {
+            // 1. Ambil data Transaksi Header
+            $transaksi = DB::table('transaksi')
+                ->select('transaksi.*', 'users.name as user_name')
+                ->leftJoin('users', 'transaksi.user_id', '=', 'users.id')
+                ->where('transaksi.id', $id)
+                ->where('transaksi.type', 'In') // Pastikan tipenya benar
+                ->first();
+
+            if (!$transaksi) {
+                Log::error("Transaksi Stock In tidak ditemukan untuk ID: {$id}");
+                return redirect()->route('transaksi-stock-in.index')->with('error', 'Transaksi tidak ditemukan.');
+            }
+
+            // 2. Ambil data Transaksi Detail
+            $details = DB::table('transaksi_detail')
+                ->select(
+                    'transaksi_detail.qty', // Ambil qty
+                    'barang.kode_barang',
+                    'jenis_material.nama_jenis_material',
+                    'unit_satuan.nama_unit_satuan'
+                )
+                ->join('barang', 'transaksi_detail.barang_id', '=', 'barang.id')
+                ->leftJoin('jenis_material', 'barang.jenis_material_id', '=', 'jenis_material.id')
+                ->leftJoin('unit_satuan', 'barang.unit_satuan_id', '=', 'unit_satuan.id')
+                ->where('transaksi_detail.transaksi_id', $id)
+                ->get();
+
+            // 3. Ambil Setting Aplikasi (Sama seperti exportPdf)
+            $setting = SettingAplikasi::first();
+            $logoPath = null;
+            $logoUrl = null;
+
+            if ($setting && $setting->logo_perusahaan) {
+                $dbLogoPath = storage_path('app/public/uploads/logo-perusahaans/' . $setting->logo_perusahaan);
+                if (file_exists($dbLogoPath)) {
+                    $logoPath = $dbLogoPath;
+                } else {
+                    Log::warning('File logo perusahaan tidak ditemukan di path: ' . $dbLogoPath);
+                }
+            } else {
+                Log::warning('Setting aplikasi atau logo perusahaan tidak ditemukan.');
+            }
+
+            // Encode logo ke base64 (Sama seperti exportPdf)
+            if ($logoPath) {
+                try {
+                    $logoMimeType = mime_content_type($logoPath);
+                    if (str_starts_with($logoMimeType, 'image/')) {
+                        $logoUrl = 'data:' . $logoMimeType . ';base64,' . base64_encode(file_get_contents($logoPath));
+                    } else {
+                        Log::warning('File logo bukan gambar: ' . $logoPath);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Gagal membaca atau encode file logo: ' . $logoPath . ' - Error: ' . $e->getMessage());
+                    $logoUrl = null;
+                }
+            }
+
+            // 4. Data tambahan
+            $tanggalCetak = Carbon::now()->translatedFormat('d F Y H:i');
+            $namaPembuat = auth()->user()->name ?? 'N/A';
+
+            // 5. Siapkan data untuk view
+            $data = [
+                'transaksi' => $transaksi, // Data header transaksi
+                'details' => $details,     // Data detail transaksi
+                'setting' => $setting,
+                'logoUrl' => $logoUrl,
+                'tanggalCetak' => $tanggalCetak,
+                'namaPembuat' => $namaPembuat,
+            ];
+
+            // 6. Generate PDF
+            $pdf = Pdf::loadView('transaksi-stock-in.export-item-pdf', $data); // View PDF baru untuk detail item
+            $pdf->setPaper('a4', 'portrait'); // Gunakan portrait
+            $filename = 'Detail-Transaksi-Masuk-' . ($transaksi->no_surat ?? $id) . '.pdf';
+            return $pdf->stream($filename);
+        } catch (\Exception $e) {
+            Log::error("Error generating Detail Transaksi Stock In PDF for ID {$id}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return redirect()->route('transaksi-stock-in.index')->with('error', 'Gagal membuat PDF Detail Transaksi Masuk.');
         }
     }
 }

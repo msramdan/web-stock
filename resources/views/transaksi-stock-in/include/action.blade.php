@@ -3,6 +3,10 @@
         <a href="{{ route('transaksi-stock-in.show', $model->id) }}" class="btn btn-outline-success btn-sm">
             <i class="fa fa-eye"></i>
         </a>
+        <a href="{{ route('transaksi-stock-in.exportItemPdf', $model->id) }}" class="btn btn-outline-danger btn-sm"
+            target="_blank" title="Export PDF">
+            <i class="fa fa-file-pdf"></i>
+        </a>
     @endcan
 
     {{-- @can('transaksi stock in edit')

@@ -3,6 +3,11 @@
         <a href="{{ route('transaksi-stock-out.show', $model->id) }}" class="btn btn-outline-success btn-sm">
             <i class="fa fa-eye"></i>
         </a>
+        {{-- Tombol Export PDF per Item (Baru) --}}
+        <a href="{{ route('transaksi-stock-out.exportItemPdf', $model->id) }}" class="btn btn-outline-danger btn-sm"
+            target="_blank" title="Export PDF">
+            <i class="fa fa-file-pdf"></i>
+        </a>
     @endcan
 
     {{-- @can('transaksi stock out edit')

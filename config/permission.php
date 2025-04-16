@@ -210,8 +210,8 @@ return [
         ['group' => 'unit satuan', 'access' => ['unit satuan view', 'unit satuan create', 'unit satuan edit', 'unit satuan delete']],
         ['group' => 'setting aplikasi', 'access' => ['setting aplikasi view', 'setting aplikasi edit']],
         ['group' => 'backup databases', 'access' => ['backup database view']],
-        ['group' => 'barang', 'access' => ['barang view', 'barang create', 'barang edit', 'barang delete']],
-        ['group' => 'transaksis stock in', 'access' => ['transaksi stock in view', 'transaksi stock in create', 'transaksi stock in edit', 'transaksi stock in delete']],
-        ['group' => 'transaksis stock out', 'access' => ['transaksi stock out view', 'transaksi stock out create', 'transaksi stock out edit', 'transaksi stock out delete']],
+        ['group' => 'barang', 'access' => ['barang view', 'barang create', 'barang edit', 'barang delete', 'barang export pdf']],
+        ['group' => 'transaksis stock in', 'access' => ['transaksi stock in view', 'transaksi stock in create', 'transaksi stock in edit', 'transaksi stock in delete', 'transaksi stock in export pdf']],
+        ['group' => 'transaksis stock out', 'access' => ['transaksi stock out view', 'transaksi stock out create', 'transaksi stock out edit', 'transaksi stock out delete', 'transaksi stock out export pdf']],
     ],
 ];

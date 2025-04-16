@@ -7,6 +7,11 @@ use App\Http\Requests\Barangs\{StoreBarangRequest, UpdateBarangRequest};
 use Illuminate\Contracts\View\View;
 use Yajra\DataTables\Facades\DataTables;
 use App\Generators\Services\ImageService;
+use App\Models\SettingAplikasi;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Http\{JsonResponse, RedirectResponse};
 use Illuminate\Routing\Controllers\{HasMiddleware, Middleware};
 use Illuminate\Support\Facades\DB;
@@ -29,6 +34,7 @@ class BarangController extends Controller implements HasMiddleware
             new Middleware('permission:barang create', only: ['create', 'store']),
             new Middleware('permission:barang edit', only: ['edit', 'update']),
             new Middleware('permission:barang delete', only: ['destroy']),
+            new Middleware('permission:barang export pdf', only: ['exportPdf']),
         ];
     }
 
@@ -159,5 +165,83 @@ class BarangController extends Controller implements HasMiddleware
             )
             ->get();
         return response()->json($barang);
+    }
+
+    /**
+     * Export data barang to PDF.
+     */
+    public function exportPdf()
+    {
+        \Log::info('Memanggil metode exportPdf di BarangController');
+        try {
+            // 1. Ambil data Barang
+            $barangs = DB::table('barang')
+                ->leftJoin('jenis_material', 'barang.jenis_material_id', '=', 'jenis_material.id')
+                ->leftJoin('unit_satuan', 'barang.unit_satuan_id', '=', 'unit_satuan.id')
+                ->select(
+                    'barang.kode_barang',
+                    'barang.deskripsi_barang',
+                    'barang.stock_barang',
+                    'jenis_material.nama_jenis_material',
+                    'unit_satuan.nama_unit_satuan'
+                )
+                ->orderBy('barang.kode_barang') // Urutkan berdasarkan kode barang
+                ->get();
+
+            // 2. Ambil Setting Aplikasi untuk Header
+            $setting = SettingAplikasi::first(); // Ambil setting pertama
+            $logoPath = null;
+            $logoUrl = null;
+
+            if ($setting && $setting->logo_perusahaan) {
+                // Gunakan path dari SettingAplikasiController
+                $dbLogoPath = storage_path('app/public/uploads/logo-perusahaans/' . $setting->logo_perusahaan);
+                if (file_exists($dbLogoPath)) {
+                    $logoPath = $dbLogoPath;
+                } else {
+                    Log::warning('File logo perusahaan tidak ditemukan di path: ' . $dbLogoPath);
+                }
+            } else {
+                Log::warning('Setting aplikasi atau logo perusahaan tidak ditemukan.');
+            }
+
+            // Encode logo ke base64 jika path valid
+            if ($logoPath) {
+                try {
+                    $logoMimeType = mime_content_type($logoPath); // Dapatkan tipe mime
+                    if (str_starts_with($logoMimeType, 'image/')) { // Pastikan itu gambar
+                        $logoUrl = 'data:' . $logoMimeType . ';base64,' . base64_encode(file_get_contents($logoPath));
+                    } else {
+                        Log::warning('File logo bukan gambar: ' . $logoPath);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Gagal membaca atau encode file logo: ' . $logoPath . ' - Error: ' . $e->getMessage());
+                    $logoUrl = null; // Set null jika gagal baca file
+                }
+            }
+
+            // 3. Data tambahan untuk view PDF
+            $tanggalCetak = Carbon::now()->translatedFormat('d F Y H:i'); // Format tanggal Indonesia
+            $namaPembuat = auth()->user()->name ?? 'N/A'; // Nama pengguna yang mencetak
+
+            // 4. Siapkan data untuk view
+            $data = [
+                'barangs' => $barangs,
+                'setting' => $setting,
+                'logoUrl' => $logoUrl,
+                'tanggalCetak' => $tanggalCetak,
+                'namaPembuat' => $namaPembuat,
+            ];
+
+            // 5. Generate PDF
+            $pdf = Pdf::loadView('barang.export-pdf', $data); // Nama view PDF baru
+            $pdf->setPaper('a4', 'portrait'); // Atur ukuran kertas (portrait atau landscape)
+            $filename = 'Data-Barang-' . date('YmdHis') . '.pdf';
+            return $pdf->stream($filename); // Tampilkan di browser
+
+        } catch (\Exception $e) {
+            \Log::error('Error generating Barang PDF: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return redirect()->route('barang.index')->with('error', 'Gagal membuat PDF data barang. Silakan coba lagi atau hubungi administrator.');
+        }
     }
 }
