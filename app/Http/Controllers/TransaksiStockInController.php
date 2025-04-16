@@ -170,13 +170,38 @@ class TransaksiStockInController extends Controller implements HasMiddleware
         }
     }
 
-    public function show(Transaksi $transaksi): View
+    public function show($id): View
     {
-        $transaksi->load(['user:id,name',]);
+        // Get transaction data
+        $transaksi = DB::table('transaksi')
+            ->select('transaksi.*', 'users.name as user_name')
+            ->leftJoin('users', 'transaksi.user_id', '=', 'users.id')
+            ->where('transaksi.id', $id)
+            ->first();
 
-        return view('transaksi-stock-in.show', compact('transaksi'));
+        if (!$transaksi) {
+            abort(404);
+        }
+
+        // Get transaction details with item information
+        $details = DB::table('transaksi_detail')
+            ->select(
+                'transaksi_detail.*',
+                'barang.kode_barang',
+                'jenis_material.nama_jenis_material',
+                'unit_satuan.nama_unit_satuan'
+            )
+            ->join('barang', 'transaksi_detail.barang_id', '=', 'barang.id')
+            ->leftJoin('jenis_material', 'barang.jenis_material_id', '=', 'jenis_material.id')
+            ->leftJoin('unit_satuan', 'barang.unit_satuan_id', '=', 'unit_satuan.id')
+            ->where('transaksi_detail.transaksi_id', $id)
+            ->get();
+
+        return view('transaksi-stock-in.show', [
+            'transaksi' => $transaksi,
+            'details' => $details
+        ]);
     }
-
 
     public function edit(Transaksi $transaksi): View
     {
@@ -204,8 +229,8 @@ class TransaksiStockInController extends Controller implements HasMiddleware
 
             // 2. Dapatkan semua detail transaksi
             $details = DB::table('transaksi_detail')
-                       ->where('transaksi_id', $id)
-                       ->get();
+                ->where('transaksi_id', $id)
+                ->get();
 
             // 3. Kurangi stok barang (karena ini transaksi IN)
             foreach ($details as $detail) {
@@ -236,7 +261,6 @@ class TransaksiStockInController extends Controller implements HasMiddleware
 
             return redirect()->route('transaksi-stock-in.index')
                 ->with('success', 'Transaksi berhasil dihapus dan stok dikurangi.');
-
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()
