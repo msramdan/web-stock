@@ -10,8 +10,15 @@
     <div class="page-content">
         <section class="row">
 
-            {{-- 1. Area Selamat Datang --}}
+            {{-- 1. Area Selamat Datang (Paling Atas) --}}
             <div class="col-12 mb-4">
+                @if (session('status'))
+                    <div class="alert alert-success alert-dismissible show fade">
+                        {{ session('status') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+
                 <div class="card">
                     <div class="card-body">
                         <h4>Hi 👋, {{ auth()->user()->name }}</h4>
@@ -36,7 +43,8 @@
                                     <div class="col-md-8 col-lg-12 col-xl-12 col-xxl-7">
                                         <h6 class="text-muted font-semibold">Total Barang</h6>
                                         <h6 class="font-extrabold mb-0">{{ number_format($totalBarang ?? 0) }}</h6>
-                                        <a href="{{ route('barang.index') }}" class="stretched-link"></a>
+                                        <a href="{{ route('barang.index') }}" class="stretched-link"
+                                            title="Lihat Detail Barang"></a>
                                     </div>
                                 </div>
                             </div>
@@ -55,7 +63,8 @@
                                     <div class="col-md-8 col-lg-12 col-xl-12 col-xxl-7">
                                         <h6 class="text-muted font-semibold">Jenis Material</h6>
                                         <h6 class="font-extrabold mb-0">{{ number_format($totalJenisMaterial ?? 0) }}</h6>
-                                        <a href="{{ route('jenis-material.index') }}" class="stretched-link"></a>
+                                        <a href="{{ route('jenis-material.index') }}" class="stretched-link"
+                                            title="Lihat Detail Jenis Material"></a>
                                     </div>
                                 </div>
                             </div>
@@ -74,7 +83,8 @@
                                     <div class="col-md-8 col-lg-12 col-xl-12 col-xxl-7">
                                         <h6 class="text-muted font-semibold">Unit Satuan</h6>
                                         <h6 class="font-extrabold mb-0">{{ number_format($totalUnitSatuan ?? 0) }}</h6>
-                                        <a href="{{ route('unit-satuan.index') }}" class="stretched-link"></a>
+                                        <a href="{{ route('unit-satuan.index') }}" class="stretched-link"
+                                            title="Lihat Detail Unit Satuan"></a>
                                     </div>
                                 </div>
                             </div>
@@ -93,7 +103,8 @@
                                     <div class="col-md-8 col-lg-12 col-xl-12 col-xxl-7">
                                         <h6 class="text-muted font-semibold">Total User</h6>
                                         <h6 class="font-extrabold mb-0">{{ number_format($totalUser ?? 0) }}</h6>
-                                        <a href="{{ route('users.index') }}" class="stretched-link"></a>
+                                        <a href="{{ route('users.index') }}" class="stretched-link"
+                                            title="Lihat Detail User"></a>
                                     </div>
                                 </div>
                             </div>
@@ -103,13 +114,12 @@
             </div>
 
             {{-- 3. Grafik Transaksi Bulanan --}}
-            <div class="col-12"> {{-- Grafik bisa dibuat full width --}}
+            <div class="col-12">
                 <div class="card">
                     <div class="card-header">
                         <h4>Tren Transaksi Bulanan (12 Bulan Terakhir)</h4>
                     </div>
                     <div class="card-body">
-                        {{-- Wadah untuk grafik --}}
                         <div id="chart-transaksi-bulanan"></div>
                     </div>
                 </div>
@@ -155,12 +165,16 @@
                                                         $transaksi->type == 'In'
                                                             ? 'transaksi-stock-in.show'
                                                             : 'transaksi-stock-out.show';
+                                                    $routeExists = Route::has($routeName);
                                                 @endphp
-                                                @if (Route::has($routeName))
+                                                @if ($routeExists)
                                                     <a href="{{ route($routeName, $transaksi->id) }}"
-                                                        class="btn btn-sm btn-outline-primary icon icon-left">
+                                                        class="btn btn-sm btn-outline-primary icon icon-left"
+                                                        title="Lihat Detail Transaksi">
                                                         <i class="fas fa-eye"></i> Detail
                                                     </a>
+                                                @else
+                                                    <span class="text-muted">-</span>
                                                 @endif
                                             </td>
                                         </tr>
@@ -181,27 +195,24 @@
 @endsection
 
 @push('css')
-    {{-- Pastikan Iconly (untuk card) dan FontAwesome (untuk tabel) dimuat jika belum global --}}
+    {{-- Pastikan Iconly dan FontAwesome dimuat (jika digunakan) --}}
     <link rel="stylesheet" href="{{ asset('mazer/compiled/css/iconly.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"
         integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
-    {{-- CSS Tambahan untuk ApexCharts jika perlu --}}
-    {{-- <link rel="stylesheet" href="{{ asset('mazer/extensions/apexcharts/apexcharts.css') }}"> --}}
+    <link rel="stylesheet" href="{{ asset('mazer/extensions/apexcharts/apexcharts.css') }}">
 @endpush
 
 @push('js')
-    {{-- Pastikan library ApexCharts dimuat sebelum script ini --}}
-    {{-- Contoh: <script src="{{ asset('mazer/extensions/apexcharts/apexcharts.min.js') }}"></script> di layout footer --}}
+    {{-- Pastikan library ApexCharts dimuat sebelum script ini (misal di footer layout) --}}
+    <script src="{{ asset('mazer/extensions/apexcharts/apexcharts.min.js') }}"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Ambil data chart dari PHP (pastikan aman dari XSS jika data dari user input)
             const chartMonths = @json($chartMonths ?? []);
             const chartStockIn = @json($chartStockIn ?? []);
             const chartStockOut = @json($chartStockOut ?? []);
 
-            // Opsi untuk ApexCharts Bar Chart
             var optionsTransaksiBulanan = {
                 series: [{
                         name: 'Transaksi Masuk',
@@ -214,20 +225,20 @@
                 ],
                 chart: {
                     type: 'bar',
-                    height: 350, // Tinggi chart
+                    height: 350,
                     toolbar: {
-                        show: true // Tampilkan tombol download dll.
+                        show: true
                     }
                 },
                 plotOptions: {
                     bar: {
-                        horizontal: false, // Batang vertikal
-                        columnWidth: '55%', // Lebar batang
-                        endingShape: 'rounded' // Ujung batang melengkung
-                    },
+                        horizontal: false,
+                        columnWidth: '55%',
+                        endingShape: 'rounded'
+                    }
                 },
                 dataLabels: {
-                    enabled: false // Tidak menampilkan label di atas batang
+                    enabled: false
                 },
                 stroke: {
                     show: true,
@@ -235,7 +246,7 @@
                     colors: ['transparent']
                 },
                 xaxis: {
-                    categories: chartMonths, // Label sumbu X (bulan)
+                    categories: chartMonths,
                     title: {
                         text: 'Bulan (12 Bulan Terakhir)'
                     }
@@ -244,14 +255,11 @@
                     title: {
                         text: 'Jumlah Transaksi'
                     },
-                    // Pastikan hanya integer ditampilkan di sumbu Y
                     labels: {
                         formatter: function(val) {
-                            return Math.floor(val); // Atau parseInt(val)
+                            return Math.floor(val);
                         }
-                    },
-                    // Jika ingin sumbu Y mulai dari 0
-                    // min: 0
+                    }
                 },
                 fill: {
                     opacity: 1
@@ -259,12 +267,11 @@
                 tooltip: {
                     y: {
                         formatter: function(val) {
-                            return val + " transaksi" // Tooltip saat hover
+                            return val + " transaksi"
                         }
                     }
                 },
-                // Warna bisa disesuaikan
-                colors: ['#435ebe', '#dc3545'], // Biru Mazer untuk Masuk, Merah untuk Keluar
+                colors: ['#435ebe', '#dc3545'], // Warna Masuk (Biru Mazer), Keluar (Merah Bootstrap)
                 legend: {
                     position: 'top',
                     horizontalAlign: 'center',
@@ -272,9 +279,8 @@
                 }
             };
 
-            // Render chart jika elemennya ada
             var chartElement = document.querySelector("#chart-transaksi-bulanan");
-            if (chartElement && typeof ApexCharts !== 'undefined') { // Cek ApexCharts tersedia
+            if (chartElement && typeof ApexCharts !== 'undefined') {
                 var chart = new ApexCharts(chartElement, optionsTransaksiBulanan);
                 chart.render();
             } else if (!chartElement) {

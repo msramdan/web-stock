@@ -10,11 +10,12 @@ use App\Models\UnitSatuan;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
     /**
-     * Menampilkan halaman dashboard dengan data ringkasan.
+     * Menampilkan halaman dashboard dengan data ringkasan dan chart.
      *
      * @return \Illuminate\Contracts\View\View
      */
@@ -26,17 +27,23 @@ class DashboardController extends Controller
         $totalUnitSatuan = UnitSatuan::count();
         $totalUser = User::count();
 
-        // Ambil 5 transaksi terakhir
+        // Ambil 5 transaksi terakhir (gabungan In & Out)
         $latestTransactions = DB::table('transaksi')
             ->select('transaksi.id', 'transaksi.no_surat', 'transaksi.tanggal', 'transaksi.type', 'users.name as user_name')
             ->join('users', 'users.id', '=', 'transaksi.user_id')
-            ->orderByDesc('transaksi.tanggal')
-            ->limit(5)
+            ->orderByDesc('transaksi.tanggal') // Urutkan berdasarkan tanggal terbaru
+            ->limit(5) // Ambil 5 teratas
             ->get();
 
         // --- Data untuk Chart Transaksi Bulanan (12 Bulan Terakhir) ---
-        $endDate = Carbon::now(); // Tanggal hari ini
+        $endDate = Carbon::now()->endOfDay(); // Sampai akhir hari ini
         $startDate = Carbon::now()->subMonths(11)->startOfMonth(); // Mulai dari 11 bulan lalu, awal bulan
+
+        // Log untuk debugging
+        Log::info('Rentang waktu untuk transaksi bulanan', [
+            'startDate' => $startDate->toDateTimeString(),
+            'endDate' => $endDate->toDateTimeString()
+        ]);
 
         // Query data transaksi
         $monthlyTransactions = DB::table('transaksi')
@@ -55,6 +62,11 @@ class DashboardController extends Controller
                 return $item->month . '-' . $item->type;
             });
 
+        // Log hasil query untuk debugging
+        Log::info('Data transaksi bulanan', [
+            'transactions' => $monthlyTransactions->toArray()
+        ]);
+
         // Siapkan array untuk chart
         $chartMonths = [];
         $chartStockIn = [];
@@ -64,8 +76,12 @@ class DashboardController extends Controller
         $currentMonth = $startDate->copy();
         for ($i = 0; $i < 12; $i++) {
             $monthKey = $currentMonth->format('Y-m'); // YYYY-MM
-            $monthName = $currentMonth->translatedFormat('M Y'); // Format 'Apr 2025' (Gunakan locale Indonesia jika Carbon diset)
-            // Atau format manual jika locale tidak diset: $currentMonth->format('M Y');
+            // Format nama bulan sesuai locale aplikasi
+            try {
+                $monthName = $currentMonth->translatedFormat('M Y'); // Misal: Apr 2025
+            } catch (\Exception $e) {
+                $monthName = $currentMonth->format('M Y'); // Fallback: Apr 2025
+            }
 
             $chartMonths[] = $monthName;
 
@@ -80,7 +96,6 @@ class DashboardController extends Controller
             $currentMonth->addMonth(); // Pindah ke bulan berikutnya
         }
         // --- Akhir Data Chart ---
-
 
         // Kirim semua data ke view
         return view('dashboard', compact(
