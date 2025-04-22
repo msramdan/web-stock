@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 
 class Transaksi extends Model
 {
@@ -34,9 +37,13 @@ class Transaksi extends Model
     }
 
 
-	public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
-	{
-		return $this->belongsTo(\App\Models\User::class);
-	}
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class);
+    }
 
+    public function details(): HasMany
+    {
+        return $this->hasMany(TransaksiDetail::class, 'transaksi_id');
+    }
 }
