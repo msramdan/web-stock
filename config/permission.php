@@ -213,5 +213,6 @@ return [
         ['group' => 'barang', 'access' => ['barang view', 'barang create', 'barang edit', 'barang delete', 'barang export pdf']],
         ['group' => 'transaksis stock in', 'access' => ['transaksi stock in view', 'transaksi stock in create', 'transaksi stock in edit', 'transaksi stock in delete', 'transaksi stock in export pdf']],
         ['group' => 'transaksis stock out', 'access' => ['transaksi stock out view', 'transaksi stock out create', 'transaksi stock out edit', 'transaksi stock out delete', 'transaksi stock out export pdf']],
+        ['group' => 'laporan', 'access' => ['laporan view', 'laporan export excel']],
     ],
 ];

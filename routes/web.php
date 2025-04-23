@@ -1,40 +1,81 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\{
+    DashboardController,
+    ProfileController,
+    UserController,
+    RoleAndPermissionController,
+    JenisMaterialController,
+    UnitSatuanController,
+    SettingAplikasiController,
+    BackupDatabaseController,
+    BarangController,
+    TransaksiStockInController,
+    TransaksiStockOutController,
+    LaporanController
+};
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
 
 Route::get('/', function () {
     return view('welcome');
 });
 
 Route::middleware(['auth', 'web'])->group(function () {
-    // Ubah route ini untuk menggunakan DashboardController
-    Route::get('/', [DashboardController::class, 'index']);
+    // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // Fallback ke dashboard jika hanya akses root setelah login
+    Route::get('/', [DashboardController::class, 'index']);
 
-    Route::get('/profile', App\Http\Controllers\ProfileController::class)->name('profile');
-    Route::resource('users', App\Http\Controllers\UserController::class);
-    Route::resource('roles', App\Http\Controllers\RoleAndPermissionController::class);
-});
+    // Profile
+    Route::get('/profile', ProfileController::class)->name('profile');
 
-Route::resource('jenis-material', App\Http\Controllers\JenisMaterialController::class)->middleware('auth');
-Route::resource('unit-satuan', App\Http\Controllers\UnitSatuanController::class)->middleware('auth');
-Route::resource('setting-aplikasi', App\Http\Controllers\SettingAplikasiController::class)->middleware('auth');
-Route::resource('backup-database', App\Http\Controllers\BackupDatabaseController::class)->middleware('auth');
-Route::get('/backup/download', [App\Http\Controllers\BackupDatabaseController::class, 'downloadBackup'])->name('backup.download');
+    // Users & Roles
+    Route::resource('users', UserController::class);
+    Route::resource('roles', RoleAndPermissionController::class);
 
-// Barang Routes
-Route::get('/barang/export-pdf', [App\Http\Controllers\BarangController::class, 'exportPdf'])->name('barang.exportPdf')->middleware('auth'); // Letakkan sebelum resource
-Route::resource('barang', App\Http\Controllers\BarangController::class)->middleware('auth');
+    // Master Data & Settings (kecuali Barang)
+    Route::resource('jenis-material', JenisMaterialController::class);
+    Route::resource('unit-satuan', UnitSatuanController::class);
+    Route::resource('setting-aplikasi', SettingAplikasiController::class)->except(['show', 'destroy']); // Biasanya hanya ada 1 setting
+    Route::resource('backup-database', BackupDatabaseController::class)->only(['index', 'create']); // Sesuaikan jika perlu action lain
+    Route::get('/backup/download', [BackupDatabaseController::class, 'downloadBackup'])->name('backup.download');
 
-// Transaksi Stock In Routes
-Route::get('/transaksi-stock-in/export-pdf', [App\Http\Controllers\TransaksiStockInController::class, 'exportPdf'])->name('transaksi-stock-in.exportPdf')->middleware('auth');
-Route::get('/transaksi-stock-in/{id}/export-pdf', [App\Http\Controllers\TransaksiStockInController::class, 'exportItemPdf'])->name('transaksi-stock-in.exportItemPdf')->middleware('auth');
-Route::resource('transaksi-stock-in', App\Http\Controllers\TransaksiStockInController::class)->middleware('auth');
+    // Barang Routes
+    Route::get('/barang/export-pdf', [BarangController::class, 'exportPdf'])->name('barang.exportPdf');
+    Route::resource('barang', BarangController::class);
+    Route::get('/listDataBarang', [BarangController::class, 'listDataBarang'])->name('listDataBarang'); // Helper untuk transaksi
 
-// Transaksi Stock Out Routes (akan ditambahkan nanti)
-Route::get('/transaksi-stock-out/export-pdf', [App\Http\Controllers\TransaksiStockOutController::class, 'exportPdf'])->name('transaksi-stock-out.exportPdf')->middleware('auth');
-Route::get('/transaksi-stock-out/{id}/export-pdf', [App\Http\Controllers\TransaksiStockOutController::class, 'exportItemPdf'])->name('transaksi-stock-out.exportItemPdf')->middleware('auth');
-Route::resource('transaksi-stock-out', App\Http\Controllers\TransaksiStockOutController::class)->middleware('auth');
+    // Transaksi Stock In Routes
+    Route::get('/transaksi-stock-in/export-pdf', [TransaksiStockInController::class, 'exportPdf'])->name('transaksi-stock-in.exportPdf');
+    Route::get('/transaksi-stock-in/{transaksiStockIn}/export-item-pdf', [TransaksiStockInController::class, 'exportItemPdf'])->name('transaksi-stock-in.exportItemPdf'); // Ubah {id} -> {transaksiStockIn}
+    Route::resource('transaksi-stock-in', TransaksiStockInController::class);
 
-Route::get('/listDataBarang', [App\Http\Controllers\BarangController::class, 'listDataBarang'])->name('listDataBarang');
+    // Transaksi Stock Out Routes
+    Route::get('/transaksi-stock-out/export-pdf', [TransaksiStockOutController::class, 'exportPdf'])->name('transaksi-stock-out.exportPdf');
+    Route::get('/transaksi-stock-out/{transaksiStockOut}/export-item-pdf', [TransaksiStockOutController::class, 'exportItemPdf'])->name('transaksi-stock-out.exportItemPdf'); // Ubah {id} -> {transaksiStockOut}
+    Route::resource('transaksi-stock-out', TransaksiStockOutController::class);
+
+    // Laporan Routes
+    Route::prefix('laporan')->name('laporan.')->group(function () {
+        Route::get('/', [LaporanController::class, 'index'])
+            ->name('index')
+            ->middleware('permission:laporan view');
+
+        Route::post('/export', [LaporanController::class, 'exportExcel'])
+            ->name('exportExcel')
+            ->middleware('permission:laporan export excel');
+    });
+}); // Akhir dari Route::middleware(['auth', 'web'])
+
+// Jika ada route lain yang tidak memerlukan auth, letakkan di luar group middleware

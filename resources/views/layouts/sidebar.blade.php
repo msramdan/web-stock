@@ -5,7 +5,8 @@
                 <div class="logo">
                     <a href="/">
                         @if ($settingApp?->logo_perusahaan)
-                            <img src="{{ asset('storage/uploads/logo-perusahaans/' . $settingApp->logo_perusahaan) }}" alt="{{$settingApp->nama_aplikasi}}" style="height: 35px">
+                            <img src="{{ asset('storage/uploads/logo-perusahaans/' . $settingApp->logo_perusahaan) }}"
+                                alt="{{ $settingApp->nama_aplikasi }}" style="height: 35px">
                         @endif
                     </a>
                 </div>

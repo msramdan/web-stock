@@ -160,6 +160,20 @@ return [
             ]
         ],
         [
+            'header' => 'Laporan',
+            'permissions' => ['laporan view'],
+            'menus' => [
+                [
+                    'title' => 'Laporan Transaksi',
+                    'icon' => '<i class="bi bi-file-earmark-bar-graph-fill"></i>',
+                    'route' => '/laporan',
+                    'permission' => 'laporan view',
+                    'permissions' => [],
+                    'submenus' => []
+                ]
+            ]
+        ],
+        [
             'header' => 'Jenis Material',
             'permissions' => [
                 'jenis material view'
