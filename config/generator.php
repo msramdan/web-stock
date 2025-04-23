@@ -219,22 +219,6 @@ return [
             ]
         ],
         [
-            'header' => 'Setting Aplikasi',
-            'permissions' => [
-                'setting aplikasi view'
-            ],
-            'menus' => [
-                [
-                    'title' => 'Setting Aplikasi',
-                    'icon' => '<i class="bi bi-gear-fill"></i>',
-                    'route' => '/setting-aplikasi',
-                    'permission' => 'setting aplikasi view',
-                    'permissions' => [],
-                    'submenus' => []
-                ]
-            ]
-        ],
-        [
             'header' => 'Company',
             'permissions' => [
                 'company view'
