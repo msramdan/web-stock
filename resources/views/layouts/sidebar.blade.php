@@ -43,22 +43,20 @@
         </div>
         <div class="sidebar-menu">
             <ul class="menu">
+                @php
+                    $companies = DB::table('company')->get();
+                @endphp
+
                 <div class="mb-3">
                     <select class="form-select" id="changeCompany" name="changeCompany">
-                        <option value="" selected="" disabled="">-- Select Company --</option>
-                        <option value="1">
-                            GoFiber</option>
-                        <option value="2">
-                            GitapindoNet</option>
-                        <option value="6">
-                            Koneksi TEKNO GLOBAL CYBERINDO</option>
-                        <option value="11" selected="">
-                            Demo</option>
-                        <option value="12">
-                            Ramdan</option>
+                        <option value="" selected disabled>-- Pilih Company --</option>
+                        @foreach ($companies as $company)
+                            <option value="{{ $company->id }}">
+                                {{ $company->nama_perusahaan }}
+                            </option>
+                        @endforeach
                     </select>
                 </div>
-
                 @auth
                     <li class="sidebar-item{{ request()->is('/') || request()->is('dashboard') ? ' active' : '' }}">
                         <a class="sidebar-link" href="/">
