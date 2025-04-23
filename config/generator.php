@@ -240,22 +240,41 @@ return [
             ]
         ],
         [
+            'header' => 'Company',
+            'permissions' => [
+                'company view'
+            ],
+            'menus' => [
+                [
+                    'title' => 'Company',
+                    'icon' => '<i class="bi bi-list"></i>',
+                    'route' => '/company',
+                    'permission' => 'company view',
+                    'permissions' => [],
+                    'submenus' => []
+                ]
+            ]
+        ],
+        [
             'header' => 'Utilities',
             'permissions' => [
                 'user view',
-                'role & permission view'
+                'role & permission view',
+                'backup database view'
             ],
             'menus' => [
                 [
                     'title' => 'Utilities',
-                    'icon' => '<i class="bi bi-gear-fill"></i>',
+                    'icon' => '<i class="bi bi-tools"></i>',
                     'route' => [
                         'users*',
-                        'roles*'
+                        'roles*',
+                        'backup-database*'
                     ],
                     'permissions' => [
                         'user view',
-                        'role & permission view'
+                        'role & permission view',
+                        'backup database view'
                     ],
                     'submenus' => [
                         [
@@ -267,24 +286,14 @@ return [
                             'title' => 'Roles & permissions',
                             'route' => '/roles',
                             'permission' => 'role & permission view'
+                        ],
+                        [
+                            'title' => 'Backup Database',
+                            'route' => '/backup-database',
+                            'permission' => 'backup database view',
+                            'icon' => '<i class="bi bi-database"></i>'
                         ]
                     ]
-                ]
-            ]
-        ],
-        [
-            'header' => 'Backup Database',
-            'permissions' => [
-                'backup database view'
-            ],
-            'menus' => [
-                [
-                    'title' => 'Backup Database',
-                    'icon' => '<i class="bi bi-database"></i>',
-                    'route' => '/backup-database',
-                    'permission' => 'backup database view',
-                    'permissions' => [],
-                    'submenus' => []
                 ]
             ]
         ]

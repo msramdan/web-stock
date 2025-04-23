@@ -16,6 +16,5 @@ class DatabaseSeeder extends Seeder
         $this->call(RoleAndPermissionSeeder::class);
         $this->call(JenisMaterialSeeder::class);
         $this->call(UnitSatuanSeeder::class);
-        $this->call(SettingAplikasiSeeder::class);
     }
 }

@@ -96,8 +96,3 @@ function is_active_submenu(string|array $route): string
 
     return '';
 }
-
-function get_setting()
-{
-    return DB::table('setting_aplikasi')->first();
-}

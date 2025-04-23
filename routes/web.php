@@ -47,7 +47,6 @@ Route::middleware(['auth', 'web'])->group(function () {
     // Master Data & Settings (kecuali Barang)
     Route::resource('jenis-material', JenisMaterialController::class);
     Route::resource('unit-satuan', UnitSatuanController::class);
-    Route::resource('setting-aplikasi', SettingAplikasiController::class)->except(['show', 'destroy']); // Biasanya hanya ada 1 setting
     Route::resource('backup-database', BackupDatabaseController::class)->only(['index', 'create']); // Sesuaikan jika perlu action lain
     Route::get('/backup/download', [BackupDatabaseController::class, 'downloadBackup'])->name('backup.download');
 
@@ -76,8 +75,6 @@ Route::middleware(['auth', 'web'])->group(function () {
             ->name('exportExcel')
             ->middleware('permission:laporan export excel');
     });
-}); // Akhir dari Route::middleware(['auth', 'web'])
-
-// Jika ada route lain yang tidak memerlukan auth, letakkan di luar group middleware
-
+});
 Route::resource('bom', App\Http\Controllers\BomController::class)->middleware('auth');
+Route::resource('company', App\Http\Controllers\CompanyController::class)->middleware('auth');
