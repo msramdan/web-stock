@@ -118,9 +118,25 @@ return [
             'menus' => [
                 [
                     'title' => 'Daftar Barang',
-                    'icon' => '<i class="bi bi-box"></i>',
+                    'icon' => '<i class="bi bi-box-seam"></i>',
                     'route' => '/barang',
                     'permission' => 'barang view',
+                    'permissions' => [],
+                    'submenus' => []
+                ]
+            ]
+        ],
+        [
+            'header' => 'BoM',
+            'permissions' => [
+                'bom view'
+            ],
+            'menus' => [
+                [
+                    'title' => 'BoM',
+                    'icon' => '<i class="bi bi-diagram-3"></i>',
+                    'route' => '/bom',
+                    'permission' => 'bom view',
                     'permissions' => [],
                     'submenus' => []
                 ]
@@ -161,7 +177,9 @@ return [
         ],
         [
             'header' => 'Laporan',
-            'permissions' => ['laporan view'],
+            'permissions' => [
+                'laporan view'
+            ],
             'menus' => [
                 [
                     'title' => 'Laporan Transaksi',

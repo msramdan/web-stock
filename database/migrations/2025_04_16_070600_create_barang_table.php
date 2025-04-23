@@ -14,10 +14,11 @@ return new class extends Migration
         Schema::create('barang', function (Blueprint $table) {
             $table->id();
             $table->string('kode_barang', 255);
+            $table->string('nama_barang', 255);
 			$table->text('deskripsi_barang');
 			$table->foreignId('jenis_material_id')->constrained('jenis_material')->restrictOnUpdate()->restrictOnDelete();
 			$table->foreignId('unit_satuan_id')->constrained('unit_satuan')->restrictOnUpdate()->restrictOnDelete();
-			$table->integer('stock_barang')->nullable();
+			$table->float('stock_barang')->nullable();
 			$table->string('photo_barang')->nullable();
             $table->timestamps();
         });

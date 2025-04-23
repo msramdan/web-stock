@@ -21,7 +21,7 @@ class Barang extends Model
      *
      * @var string[]
      */
-    protected $fillable = ['kode_barang', 'deskripsi_barang', 'jenis_material_id', 'unit_satuan_id', 'stock_barang', 'photo_barang'];
+    protected $fillable = ['kode_barang', 'nama_barang', 'deskripsi_barang', 'jenis_material_id', 'unit_satuan_id', 'stock_barang', 'photo_barang'];
 
     /**
      * Get the attributes that should be cast.
@@ -30,18 +30,24 @@ class Barang extends Model
      */
     protected function casts(): array
     {
-        return ['kode_barang' => 'string', 'deskripsi_barang' => 'string', 'stock_barang' => 'integer', 'photo_barang' => 'string', 'created_at' => 'datetime:Y-m-d H:i:s', 'updated_at' => 'datetime:Y-m-d H:i:s'];
+        return [
+            'kode_barang' => 'string',
+            'nama_barang' => 'string',
+            'deskripsi_barang' => 'string',
+            'stock_barang' => 'float',
+            'photo_barang' => 'string',
+            'created_at' => 'datetime:Y-m-d H:i:s',
+            'updated_at' => 'datetime:Y-m-d H:i:s',
+        ];
     }
 
+    public function jenis_material(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\JenisMaterial::class);
+    }
 
-	public function jenis_material(): \Illuminate\Database\Eloquent\Relations\BelongsTo
-	{
-		return $this->belongsTo(\App\Models\JenisMaterial::class);
-	}
-
-	public function unit_satuan(): \Illuminate\Database\Eloquent\Relations\BelongsTo
-	{
-		return $this->belongsTo(\App\Models\UnitSatuan::class);
-	}
-
+    public function unit_satuan(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\UnitSatuan::class);
+    }
 }

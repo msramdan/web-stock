@@ -21,6 +21,7 @@ class StoreBarangRequest extends FormRequest
     {
         return [
             'kode_barang' => 'required|string|max:255',
+            'nama_barang' => 'required|string|max:255',
 			'deskripsi_barang' => 'required|string',
 			'jenis_material_id' => 'required|exists:App\Models\JenisMaterial,id',
 			'unit_satuan_id' => 'required|exists:App\Models\UnitSatuan,id',

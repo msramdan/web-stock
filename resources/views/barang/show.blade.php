@@ -35,35 +35,41 @@
                             <div class="table-responsive">
                                 <table class="table table-hover table-striped">
                                     <tr>
-                    <td class="fw-bold">{{ __('Kode Barang') }}</td>
-                    <td>{{ $barang->kode_barang }}</td>
-                </tr>
-<tr>
-                    <td class="fw-bold">{{ __('Deskripsi Barang') }}</td>
-                    <td>{{ $barang->deskripsi_barang }}</td>
-                </tr>
-<tr>
-                    <td class="fw-bold">{{ __('Jenis Material') }}</td>
-                    <td>{{ $barang->jenis_material ? $barang->jenis_material->id : '' }}</td>
-                </tr>
-<tr>
-                    <td class="fw-bold">{{ __('Unit Satuan') }}</td>
-                    <td>{{ $barang->unit_satuan ? $barang->unit_satuan->id : '' }}</td>
-                </tr>
-<tr>
-                    <td class="fw-bold">{{ __('Stock Barang') }}</td>
-                    <td>{{ $barang->stock_barang }}</td>
-                </tr>
-<tr>
-                    <td class="fw-bold">{{ __('Photo Barang') }}</td>
-                    <td>
-                        @if (!$barang->photo_barang)
-                            <img src="https://via.placeholder.com/350?text=No+Image+Avaiable" alt="Photo Barang" class="rounded img-fluid">
-                        @else
-                            <img src="{{ asset('storage/uploads/photo-barangs/' . $barang->photo_barang) }}" alt="Photo Barang" class="rounded img-fluid">
-                        @endif
-                    </td>
-                </tr>
+                                        <td class="fw-bold">{{ __('Kode Barang') }}</td>
+                                        <td>{{ $barang->kode_barang }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">{{ __('Nama Barang') }}</td>
+                                        <td>{{ $barang->nama_barang }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">{{ __('Deskripsi Barang') }}</td>
+                                        <td>{{ $barang->deskripsi_barang }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">{{ __('Jenis Material') }}</td>
+                                        <td>{{ $barang->jenis_material ? $barang->jenis_material->id : '' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">{{ __('Unit Satuan') }}</td>
+                                        <td>{{ $barang->unit_satuan ? $barang->unit_satuan->id : '' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">{{ __('Stock Barang') }}</td>
+                                        <td>{{ $barang->stock_barang }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">{{ __('Photo Barang') }}</td>
+                                        <td>
+                                            @if (!$barang->photo_barang)
+                                                <img src="https://via.placeholder.com/350?text=No+Image+Avaiable"
+                                                    alt="Photo Barang" class="rounded img-fluid">
+                                            @else
+                                                <img src="{{ asset('storage/uploads/photo-barangs/' . $barang->photo_barang) }}"
+                                                    alt="Photo Barang" class="rounded img-fluid">
+                                            @endif
+                                        </td>
+                                    </tr>
                                     <tr>
                                         <td class="fw-bold">{{ __('Created at') }}</td>
                                         <td>{{ $barang->created_at->format('Y-m-d H:i:s') }}</td>

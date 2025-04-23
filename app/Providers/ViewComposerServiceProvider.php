@@ -44,12 +44,19 @@ class ViewComposerServiceProvider extends ServiceProvider
         });
 
 
-				View::composer(['transaksi.create', 'transaksi.edit'], function ($view) {
+        View::composer(['transaksi.create', 'transaksi.edit'], function ($view) {
             return $view->with(
                 'users',
                 \App\Models\User::select('id', 'name')->get()
             );
         });
 
-	}
+
+        View::composer(['bom.create', 'bom.edit'], function ($view) {
+            return $view->with(
+                'barangs',
+                \App\Models\Barang::select('id','kode_barang','nama_barang')->get()
+            );
+        });
+    }
 }

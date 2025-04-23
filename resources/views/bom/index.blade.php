@@ -1,20 +1,20 @@
 @extends('layouts.app')
 
-@section('title', __('Barang'))
+@section('title', __('BoM'))
 
 @section('content')
     <div class="page-heading">
         <div class="page-title">
             <div class="row">
                 <div class="col-12 col-md-8 order-md-1 order-last">
-                    <h3>{{ __('Barang') }}</h3>
+                    <h3>{{ __('BoM') }}</h3>
                     <p class="text-subtitle text-muted">
-                        {{ __('Below is a list of all barang.') }}
+                        {{ __('Below is a list of all BoM.') }}
                     </p>
                 </div>
                 <x-breadcrumb>
                     <li class="breadcrumb-item"><a href="/">{{ __('Dashboard') }}</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ __('Barang') }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('BoM') }}</li>
                 </x-breadcrumb>
             </div>
         </div>
@@ -22,20 +22,14 @@
         <section class="section">
             <x-alert></x-alert>
 
-            <div class="d-flex justify-content-end">
-                @can('barang export pdf')
-                    <a href="{{ route('barang.exportPdf') }}" class="btn btn-success mb-3 me-2" target="_blank">
-                        <i class="fas fa-file-pdf"></i>
-                        {{ __('Export PDF') }}
-                    </a>
-                @endcan
-                @can('barang create')
-                    <a href="{{ route('barang.create') }}" class="btn btn-primary mb-3">
+            @can('bom create')
+                <div class="d-flex justify-content-end">
+                    <a href="{{ route('bom.create') }}" class="btn btn-primary mb-3">
                         <i class="fas fa-plus"></i>
-                        {{ __('Create a new barang') }}
+                        {{ __('Create a new BoM') }}
                     </a>
-                @endcan
-            </div>
+                </div>
+            @endcan
 
             <div class="row">
                 <div class="col-md-12">
@@ -47,11 +41,7 @@
                                         <tr>
                                             <th>{{ __('Kode Barang') }}</th>
                                             <th>{{ __('Nama Barang') }}</th>
-                                            <th>{{ __('Deskripsi Barang') }}</th>
-                                            <th>{{ __('Jenis Material') }}</th>
-                                            <th>{{ __('Unit Satuan') }}</th>
-                                            <th>{{ __('Stock Barang') }}</th>
-                                            <th>{{ __('Photo Barang') }}</th>
+                                            <th>{{ __('Deskripsi') }}</th>
                                             <th>{{ __('Action') }}</th>
                                         </tr>
                                     </thead>
@@ -81,41 +71,18 @@
         $('#data-table').DataTable({
             processing: true,
             serverSide: true,
-            ajax: "{{ route('barang.index') }}",
+            ajax: "{{ route('bom.index') }}",
             columns: [{
                     data: 'kode_barang',
-                    name: 'kode_barang',
+                    name: 'barang.kode_barang'
                 },
                 {
                     data: 'nama_barang',
-                    name: 'nama_barang',
+                    name: 'barang.nama_barang'
                 },
                 {
-                    data: 'deskripsi_barang',
-                    name: 'deskripsi_barang',
-                },
-                {
-                    data: 'jenis_material',
-                    name: 'jenis_material.id'
-                },
-                {
-                    data: 'unit_satuan',
-                    name: 'unit_satuan.id'
-                },
-                {
-                    data: 'stock_barang',
-                    name: 'stock_barang',
-                },
-                {
-                    data: 'photo_barang',
-                    name: 'photo_barang',
-                    orderable: false,
-                    searchable: false,
-                    render: function(data, type, full, meta) {
-                        return `<div>
-                            <img src="${data}" alt="Photo Barang" class="img-thumbnail" style="width:90px; height:90px">
-                        </div>`;
-                    }
+                    data: 'deskripsi',
+                    name: 'deskripsi',
                 },
                 {
                     data: 'action',

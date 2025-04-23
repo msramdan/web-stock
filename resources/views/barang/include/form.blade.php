@@ -13,6 +13,23 @@
             @enderror
         </div>
     </div>
+
+    <div class="col-md-6">
+        <div class="form-group">
+            <label for="nama-barang">{{ __('Nama Barang') }}</label>
+            <input type="text" name="nama_barang" id="nama-barang"
+                class="form-control @error('nama_barang') is-invalid @enderror"
+                value="{{ isset($barang) ? $barang->nama_barang : old('nama_barang') }}"
+                placeholder="{{ __('Nama Barang') }}" required />
+            @error('nama_barang')
+                <span class="text-danger">
+                    {{ $message }}
+                </span>
+            @enderror
+        </div>
+    </div>
+
+
     <div class="col-md-6">
         <div class="form-group">
             <label for="deskripsi-barang">{{ __('Deskripsi Barang') }}</label>

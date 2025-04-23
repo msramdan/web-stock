@@ -79,3 +79,5 @@ Route::middleware(['auth', 'web'])->group(function () {
 }); // Akhir dari Route::middleware(['auth', 'web'])
 
 // Jika ada route lain yang tidak memerlukan auth, letakkan di luar group middleware
+
+Route::resource('bom', App\Http\Controllers\BomController::class)->middleware('auth');
