@@ -111,6 +111,41 @@ return [
      */
     "sidebars" => [
         [
+            'header' => 'Master Data',
+            'permissions' => [
+                'jenis material view',
+                'unit satuan view'
+            ],
+            'menus' => [
+                [
+                    'title' => 'Master Data',
+                    'icon' => '<i class="bi bi-collection"></i>',
+                    'route' => [
+                        'jenis-material*',
+                        'unit-satuan*'
+                    ],
+                    'permissions' => [
+                        'jenis material view',
+                        'unit satuan view'
+                    ],
+                    'submenus' => [
+                        [
+                            'title' => 'Jenis Material',
+                            'route' => '/jenis-material',
+                            'permission' => 'jenis material view',
+                            'icon' => '<i class="bi bi-list"></i>'
+                        ],
+                        [
+                            'title' => 'Unit Satuan',
+                            'route' => '/unit-satuan',
+                            'permission' => 'unit satuan view',
+                            'icon' => '<i class="bi bi-list"></i>'
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        [
             'header' => 'Barang',
             'permissions' => [
                 'barang view'
@@ -146,19 +181,22 @@ return [
             'header' => 'Transaksi',
             'permissions' => [
                 'transaksi stock in view',
-                'transaksi stock out view'
+                'transaksi stock out view',
+                'laporan view'
             ],
             'menus' => [
                 [
-                    'title' => 'Transaksi',
-                    'icon' => '<i class="bi bi-gear-fill"></i>',
+                    'title' => 'Transaksi In Out',
+                    'icon' => '<i class="bi bi-arrow-left-right"></i>',
                     'route' => [
                         'transaksi-stock-in*',
-                        'transaksi-stock-out*'
+                        'transaksi-stock-out*',
+                        'laporan*'
                     ],
                     'permissions' => [
                         'transaksi stock in view',
-                        'transaksi stock out view'
+                        'transaksi stock out view',
+                        'laporan view'
                     ],
                     'submenus' => [
                         [
@@ -170,56 +208,13 @@ return [
                             'title' => 'Stock Out',
                             'route' => '/transaksi-stock-out',
                             'permission' => 'transaksi stock out view'
+                        ],
+                        [
+                            'title' => 'Laporan',
+                            'route' => '/laporan',
+                            'permission' => 'laporan view'
                         ]
                     ]
-                ]
-            ]
-        ],
-        [
-            'header' => 'Laporan',
-            'permissions' => [
-                'laporan view'
-            ],
-            'menus' => [
-                [
-                    'title' => 'Laporan Transaksi',
-                    'icon' => '<i class="bi bi-file-earmark-bar-graph-fill"></i>',
-                    'route' => '/laporan',
-                    'permission' => 'laporan view',
-                    'permissions' => [],
-                    'submenus' => []
-                ]
-            ]
-        ],
-        [
-            'header' => 'Jenis Material',
-            'permissions' => [
-                'jenis material view'
-            ],
-            'menus' => [
-                [
-                    'title' => 'Jenis Material',
-                    'icon' => '<i class="bi bi-list"></i>',
-                    'route' => '/jenis-material',
-                    'permission' => 'jenis material view',
-                    'permissions' => [],
-                    'submenus' => []
-                ]
-            ]
-        ],
-        [
-            'header' => 'Unit Satuan',
-            'permissions' => [
-                'unit satuan view'
-            ],
-            'menus' => [
-                [
-                    'title' => 'Unit Satuan',
-                    'icon' => '<i class="bi bi-list"></i>',
-                    'route' => '/unit-satuan',
-                    'permission' => 'unit satuan view',
-                    'permissions' => [],
-                    'submenus' => []
                 ]
             ]
         ],
@@ -246,7 +241,7 @@ return [
             ],
             'menus' => [
                 [
-                    'title' => 'Company',
+                    'title' => 'Daftar Company',
                     'icon' => '<i class="bi bi-list"></i>',
                     'route' => '/company',
                     'permission' => 'company view',
@@ -265,7 +260,7 @@ return [
             'menus' => [
                 [
                     'title' => 'Utilities',
-                    'icon' => '<i class="bi bi-tools"></i>',
+                    'icon' => '<i class="bi bi-gear-fill"></i>',
                     'route' => [
                         'users*',
                         'roles*',

@@ -15,7 +15,6 @@ class CompanyController extends Controller implements HasMiddleware
     public function __construct(public ImageService $imageService, public string $logoPerusahaanPath = '')
     {
         $this->logoPerusahaanPath = storage_path('app/public/uploads/logo-perusahaans/');
-		
     }
 
     /**
@@ -24,13 +23,11 @@ class CompanyController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            // 'auth',
-
-            // TODO: uncomment this code if you are using spatie permission
-            // new Middleware('permission:company view', only: ['index', 'show']),
-            // new Middleware('permission:company create', only: ['create', 'store']),
-            // new Middleware('permission:company edit', only: ['edit', 'update']),
-            // new Middleware('permission:company delete', only: ['destroy']),
+            'auth',
+            new Middleware('permission:company view', only: ['index', 'show']),
+            new Middleware('permission:company create', only: ['create', 'store']),
+            new Middleware('permission:company edit', only: ['edit', 'update']),
+            new Middleware('permission:company delete', only: ['destroy']),
         ];
     }
 
@@ -43,16 +40,15 @@ class CompanyController extends Controller implements HasMiddleware
             $companies = Company::query();
 
             return Datatables::of($companies)
-                ->addColumn('alamat', function($row) {
-                        return str($row->alamat)->limit(100);
-                    })
-				
-                ->addColumn('logo_perusahaan', function ($company) {
-                    if (!$company->logo_perusahaan) return 'https://via.placeholder.com/350?text=No+Image+Avaiable';
-
-                    return asset('storage/uploads/logo-perusahaans/' . $company->logo_perusahaan);
+                ->addColumn('alamat', function ($row) {
+                    return str($row->alamat)->limit(100);
                 })
-
+                ->addColumn('logo_perusahaan', function ($row) {
+                    if (!$row->logo_perusahaan) {
+                        return 'https://dummyimage.com/150x100/cccccc/000000&text=No+Image';
+                    }
+                    return asset('storage/uploads/photo-perusahaans/' . $row->logo_perusahaan);
+                })
                 ->addColumn('action', 'company.include.action')
                 ->toJson();
         }
@@ -74,7 +70,7 @@ class CompanyController extends Controller implements HasMiddleware
     public function store(StoreCompanyRequest $request): RedirectResponse
     {
         $validated = $request->validated();
-        
+
         $validated['logo_perusahaan'] = $this->imageService->upload(name: 'logo_perusahaan', path: $this->logoPerusahaanPath);
 
         Company::create($validated);
@@ -104,7 +100,7 @@ class CompanyController extends Controller implements HasMiddleware
     public function update(UpdateCompanyRequest $request, Company $company): RedirectResponse
     {
         $validated = $request->validated();
-        
+
         $validated['logo_perusahaan'] = $this->imageService->upload(name: 'logo_perusahaan', path: $this->logoPerusahaanPath, defaultImage: $company?->logo_perusahaan);
 
         $company->update($validated);
@@ -119,11 +115,11 @@ class CompanyController extends Controller implements HasMiddleware
     {
         try {
             $logoPerusahaan = $company->logo_perusahaan;
-			
+
             $company->delete();
 
             $this->imageService->delete(image: $this->logoPerusahaanPath . $logoPerusahaan);
-			
+
             return to_route('company.index')->with('success', __('The company was deleted successfully.'));
         } catch (\Exception $e) {
             return to_route('company.index')->with('error', __("The company can't be deleted because it's related to another table."));

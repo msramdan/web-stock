@@ -96,8 +96,8 @@
                     orderable: false,
                     searchable: false,
                     render: function(data, type, full, meta) {
-                        return `<div class="avatar">
-                            <img src="${data}" alt="Logo Perusahaan" >
+                        return `<div>
+                            <img src="${data}" alt="Photo Perusahaan" class="img-thumbnail" style="width:60px; height:60px">
                         </div>`;
                     }
                 },

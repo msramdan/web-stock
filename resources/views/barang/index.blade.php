@@ -113,7 +113,7 @@
                     searchable: false,
                     render: function(data, type, full, meta) {
                         return `<div>
-                            <img src="${data}" alt="Photo Barang" class="img-thumbnail" style="width:90px; height:90px">
+                            <img src="${data}" alt="Photo Barang" class="img-thumbnail" style="width:60px; height:60px">
                         </div>`;
                     }
                 },
