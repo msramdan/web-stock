@@ -17,5 +17,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CompanySeeder::class);
         $this->call(JenisMaterialSeeder::class);
         $this->call(UnitSatuanSeeder::class);
+        $this->call(AssignCompanySeeder::class);
     }
 }

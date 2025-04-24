@@ -44,14 +44,18 @@
         <div class="sidebar-menu">
             <ul class="menu">
                 @php
-                    $companies = DB::table('company')->get();
+                    $companies = DB::table('assign_company')
+                        ->leftJoin('company', 'assign_company.company_id', '=', 'company.id')
+                        ->where('user_id', '=', auth()->user()->id)
+                        ->select('company.nama_perusahaan', 'assign_company.company_id')
+                        ->get();
                 @endphp
-
                 <div class="mb-3">
                     <select class="form-select" id="changeCompany" name="changeCompany">
                         <option value="" selected disabled>-- Pilih Company --</option>
                         @foreach ($companies as $company)
-                            <option value="{{ $company->id }}" {{ session('sessionCompany') == $company->id ? 'selected' : '' }}>
+                            <option value="{{ $company->id }}"
+                                {{ session('sessionCompany') == $company->id ? 'selected' : '' }}>
                                 {{ $company->nama_perusahaan }}
                             </option>
                         @endforeach

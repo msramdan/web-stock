@@ -26,6 +26,7 @@ class UnitSatuanSeeder extends Seeder
 
         foreach ($data as $item) {
             DB::table('unit_satuan')->insert([
+                'company_id' => 1,
                 'nama_unit_satuan' => $item,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),

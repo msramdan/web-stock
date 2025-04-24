@@ -23,6 +23,7 @@ class JenisMaterialSeeder extends Seeder
 
         foreach ($data as $item) {
             DB::table('jenis_material')->insert([
+                'company_id' => 1,
                 'nama_jenis_material' => $item,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
