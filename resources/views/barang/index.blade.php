@@ -9,7 +9,7 @@
                 <div class="col-12 col-md-8 order-md-1 order-last">
                     <h3>{{ __('Barang') }}</h3>
                     <p class="text-subtitle text-muted">
-                        {{ __('Below is a list of all barang.') }}
+                        {{ __('Berikut adalah daftar semua barang.') }}
                     </p>
                 </div>
                 <x-breadcrumb>
@@ -32,7 +32,7 @@
                 @can('barang create')
                     <a href="{{ route('barang.create') }}" class="btn btn-primary mb-3">
                         <i class="fas fa-plus"></i>
-                        {{ __('Create a new barang') }}
+                        {{ __('Tambah barang') }}
                     </a>
                 @endcan
             </div>

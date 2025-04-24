@@ -9,7 +9,7 @@
                 <div class="col-12 col-md-8 order-md-1 order-last">
                     <h3>{{ __('Roles') }}</h3>
                     <p class="text-subtitle text-muted">
-                        {{ __('Below is a list of all roles.') }}
+                        {{ __('Berikut adalah daftar semua roles.') }}
                     </p>
                 </div>
                 <x-breadcrumb>
@@ -26,7 +26,7 @@
                 <div class="d-flex justify-content-end">
                     <a href="{{ route('roles.create') }}" class="btn btn-primary mb-3">
                         <i class="fas fa-plus"></i>
-                        {{ __('Create a new role') }}
+                        {{ __('Tambah role') }}
                     </a>
                 </div>
             @endcan

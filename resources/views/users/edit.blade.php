@@ -9,7 +9,7 @@
                 <div class="col-12 col-md-8 order-md-1 order-last">
                     <h3>{{ __('User') }}</h3>
                     <p class="text-subtitle text-muted">
-                        {{ __('Edit an user.') }}
+                        {{ __('Edit user.') }}
                     </p>
                 </div>
 

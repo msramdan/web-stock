@@ -9,24 +9,6 @@
 
     <div class="page-content">
         <section class="row">
-
-            {{-- 1. Area Selamat Datang (Paling Atas) --}}
-            <div class="col-12 mb-4">
-                @if (session('status'))
-                    <div class="alert alert-success alert-dismissible show fade">
-                        {{ session('status') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                @endif
-
-                <div class="card">
-                    <div class="card-body">
-                        <h4>Hi 👋, {{ auth()->user()->name }}</h4>
-                        <p>{{ __('You are logged in!') }}</p>
-                    </div>
-                </div>
-            </div>
-
             {{-- 2. Card Ringkasan --}}
             <div class="col-12 mb-4">
                 <div class="row">

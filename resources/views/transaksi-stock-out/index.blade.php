@@ -9,7 +9,7 @@
                 <div class="col-12 col-md-8 order-md-1 order-last">
                     <h3>{{ __('Transaksi Stock Out') }}</h3>
                     <p class="text-subtitle text-muted">
-                        {{ __('Below is a list of all Transaksi Stock Out.') }}
+                        {{ __('Berikut adalah daftar semua Transaksi Stock Out.') }}
                     </p>
                 </div>
                 <x-breadcrumb>

@@ -9,7 +9,7 @@
                 <div class="col-12 col-md-8 order-md-1 order-last">
                     <h3>{{ __('Jenis Material') }}</h3>
                     <p class="text-subtitle text-muted">
-                        {{ __('Below is a list of all jenis Material.') }}
+                        {{ __('Berikut adalah daftar semua jenis Material.') }}
                     </p>
                 </div>
                 <x-breadcrumb>
@@ -26,7 +26,7 @@
                     <div class="d-flex justify-content-end">
                         <a href="{{ route('jenis-material.create') }}" class="btn btn-primary mb-3">
                             <i class="fas fa-plus"></i>
-                            {{ __('Create a new jenis material') }}
+                            {{ __('Tambah jenis material') }}
                         </a>
                     </div>
                 @endcan
