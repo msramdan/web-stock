@@ -4,7 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo; // Pastikan ini di-import
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany; // <-- Tambahkan import HasMany
 
 class Barang extends Model
 {
@@ -22,7 +23,17 @@ class Barang extends Model
      *
      * @var string[]
      */
-    protected $fillable = ['kode_barang', 'nama_barang', 'deskripsi_barang', 'jenis_material_id', 'unit_satuan_id', 'stock_barang', 'photo_barang'];
+    // Tambahkan 'company_id'
+    protected $fillable = [
+        'company_id',
+        'kode_barang',
+        'nama_barang',
+        'deskripsi_barang',
+        'jenis_material_id',
+        'unit_satuan_id',
+        'stock_barang',
+        'photo_barang'
+    ];
 
     /**
      * Get the attributes that should be cast.
@@ -43,21 +54,50 @@ class Barang extends Model
     }
 
     /**
+     * Relasi ke Company. <-- Tambahkan
+     */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'company_id');
+    }
+
+    /**
      * Relasi ke JenisMaterial.
      */
-    public function jenisMaterial(): BelongsTo // Direkomendasikan menggunakan camelCase juga
+    public function jenisMaterial(): BelongsTo
     {
-        // Pastikan foreign key 'jenis_material_id' sudah benar
         return $this->belongsTo(JenisMaterial::class, 'jenis_material_id');
     }
 
     /**
      * Relasi ke UnitSatuan.
-     * Nama method diubah ke camelCase: unit_satuan -> unitSatuan
      */
     public function unitSatuan(): BelongsTo
     {
-        // Pastikan foreign key 'unit_satuan_id' sudah benar
         return $this->belongsTo(UnitSatuan::class, 'unit_satuan_id');
+    }
+
+    /**
+     * Relasi ke TransaksiDetail (Barang bisa ada di banyak detail transaksi) <-- Tambahkan (opsional, tapi baik)
+     */
+    public function transaksiDetails(): HasMany
+    {
+        return $this->hasMany(TransaksiDetail::class, 'barang_id');
+    }
+
+    /**
+     * Relasi ke Bom (jika Barang ini adalah produk jadi) <-- Tambahkan (opsional, tapi baik)
+     */
+    public function boms(): HasMany // Satu barang bisa jadi produk jadi untuk beberapa BoM (jarang, tapi mungkin)
+    {
+        return $this->hasMany(Bom::class, 'barang_id');
+    }
+
+    /**
+     * Relasi ke BomDetail (jika Barang ini adalah material/komponen) <-- Tambahkan (opsional, tapi baik)
+     */
+    public function bomDetails(): HasMany // Satu barang bisa jadi komponen di banyak BoM Detail
+    {
+        return $this->hasMany(BomDetail::class, 'barang_id');
     }
 }

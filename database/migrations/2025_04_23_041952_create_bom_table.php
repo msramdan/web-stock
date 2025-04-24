@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::create('bom', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->nullable()->constrained('company')->onDelete('set null');
             $table->foreignId('barang_id')->constrained('barang')->restrictOnUpdate()->restrictOnDelete();
-			$table->text('deskripsi');
+            $table->text('deskripsi');
             $table->timestamps();
         });
     }

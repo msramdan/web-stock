@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('jenis_material', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->nullable()->constrained('company')->onDelete('set null');
             $table->string('nama_jenis_material', 255);
             $table->timestamps();
         });

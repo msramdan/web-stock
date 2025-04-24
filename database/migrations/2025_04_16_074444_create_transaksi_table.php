@@ -13,12 +13,13 @@ return new class extends Migration
     {
         Schema::create('transaksi', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->nullable()->constrained('company')->onDelete('set null');
             $table->string('no_surat', 255);
-			$table->dateTime('tanggal');
-			$table->enum('type', ['In', 'Out']);
-			$table->text('keterangan')->nullable();
-			$table->string('attachment')->nullable();
-			$table->foreignId('user_id')->constrained('users')->restrictOnUpdate();
+            $table->dateTime('tanggal');
+            $table->enum('type', ['In', 'Out']);
+            $table->text('keterangan')->nullable();
+            $table->string('attachment')->nullable();
+            $table->foreignId('user_id')->constrained('users')->restrictOnUpdate();
             $table->timestamps();
         });
     }
