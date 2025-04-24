@@ -38,7 +38,7 @@
 
                                 @include('company.include.form')
 
-                                <a href="{{ route('company.index') }}" class="btn btn-secondary">{{ __('Back') }}</a>
+                                <a href="{{ route('company.index') }}" class="btn btn-secondary">{{ __('Kembali') }}</a>
 
                                 <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>
                             </form>

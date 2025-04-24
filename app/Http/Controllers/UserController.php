@@ -8,6 +8,7 @@ use Yajra\DataTables\Facades\DataTables;
 use App\Generators\Services\ImageService;
 use Illuminate\Routing\Controllers\{HasMiddleware, Middleware};
 use App\Http\Requests\Users\{StoreUserRequest, UpdateUserRequest};
+use App\Models\Company;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -62,7 +63,10 @@ class UserController extends Controller implements HasMiddleware
      */
     public function create(): View
     {
-        return view('users.create');
+        $companies = Company::orderBy('nama_perusahaan', 'ASC')->get();
+        return view('users.create', [
+            'companies' => $companies
+        ]);
     }
 
     /**
@@ -80,6 +84,15 @@ class UserController extends Controller implements HasMiddleware
             $role = Role::select('id', 'name')->find($request->role);
 
             $user->assignRole($role->name);
+            $companies = $request->companies;
+            if (isset($companies)) {
+                foreach ($companies as $value) {
+                    DB::table('assign_company')->insert([
+                        'company_id' => $value,
+                        'user_id' => $user->id
+                    ]);
+                }
+            }
 
             return to_route('users.index')->with('success', __('The user was created successfully.'));
         });
@@ -92,17 +105,23 @@ class UserController extends Controller implements HasMiddleware
     {
         $user->load('roles:id,name');
 
-        return view('users.show', compact('user'));
+        $companies = DB::table('assign_company')
+            ->join('company', 'assign_company.company_id', '=', 'company.id')
+            ->where('assign_company.user_id', $user->id)
+            ->select('company.nama_perusahaan')
+            ->get();
+
+        return view('users.show', compact('user', 'companies'));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(User $user): View
+    public function edit(User $user)
     {
         $user->load('roles:id,name');
-
-        return view('users.edit', compact('user'));
+        $companies = Company::orderBy('nama_perusahaan', 'ASC')->get();
+        return view('users.edit', compact('user', 'companies'));
     }
 
     /**
@@ -125,6 +144,23 @@ class UserController extends Controller implements HasMiddleware
             $role = Role::select('id', 'name')->find($request->role);
 
             $user->syncRoles($role->name);
+
+            $companies = $request->companies;
+            DB::table('assign_company')
+                ->where('user_id', '=', $user->id)
+                ->delete();
+
+            if (isset($companies)) {
+                if (isset($companies)) {
+                    foreach ($companies as $value) {
+                        DB::table('assign_company')->insert([
+                            'company_id' => $value,
+                            'user_id' => $user->id
+                        ]);
+                    }
+                }
+            }
+
 
             return to_route('users.index')->with('success', __('The user was updated successfully.'));
         });

@@ -28,7 +28,7 @@
         </div>
 
         <section class="section">
-            
+
             <div class="row">
                 <div class="col-md-12">
                     <div class="card">
@@ -39,9 +39,9 @@
 
                                 @include('company.include.form')
 
-                                <a href="{{ route('company.index') }}" class="btn btn-secondary">{{ __('Back') }}</a>
+                                <a href="{{ route('company.index') }}" class="btn btn-secondary">{{ __('Kembali') }}</a>
 
-                                <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
+                                <button type="submit" class="btn btn-primary">{{ __('Simpan') }}</button>
                             </form>
                         </div>
                     </div>

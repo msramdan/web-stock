@@ -49,7 +49,7 @@
                                 </table>
                             </div>
 
-                            <a href="{{ route('jenis-material.index') }}" class="btn btn-secondary">{{ __('Back') }}</a>
+                            <a href="{{ route('jenis-material.index') }}" class="btn btn-secondary">{{ __('Kembali') }}</a>
                         </div>
                     </div>
                 </div>

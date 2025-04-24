@@ -81,7 +81,7 @@
                                 </table>
                             </div>
 
-                            <a href="{{ route('barang.index') }}" class="btn btn-secondary">{{ __('Back') }}</a>
+                            <a href="{{ route('barang.index') }}" class="btn btn-secondary">{{ __('Kembali') }}</a>
                         </div>
                     </div>
                 </div>

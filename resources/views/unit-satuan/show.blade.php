@@ -41,7 +41,7 @@
                                 </table>
                             </div>
 
-                            <a href="{{ route('unit-satuan.index') }}" class="btn btn-secondary">{{ __('Back') }}</a>
+                            <a href="{{ route('unit-satuan.index') }}" class="btn btn-secondary">{{ __('Kembali') }}</a>
                         </div>
                     </div>
                 </div>

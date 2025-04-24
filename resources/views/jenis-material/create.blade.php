@@ -39,9 +39,9 @@
 
                                 @include('jenis-material.include.form')
 
-                                <a href="{{ route('jenis-material.index') }}" class="btn btn-secondary">{{ __('Back') }}</a>
+                                <a href="{{ route('jenis-material.index') }}" class="btn btn-secondary">{{ __('Kembali') }}</a>
 
-                                <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
+                                <button type="submit" class="btn btn-primary">{{ __('Simpan') }}</button>
                             </form>
                         </div>
                     </div>

@@ -39,7 +39,7 @@
 
                                 @include('roles.include.form')
 
-                                <a href="{{ url()->previous() }}" class="btn btn-secondary">{{ __('Back') }}</a>
+                                <a href="{{ url()->previous() }}" class="btn btn-secondary">{{ __('Kembali') }}</a>
 
                                 <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>
                             </form>

@@ -73,7 +73,7 @@
                                 </table>
                             </div>
 
-                            <a href="{{ route('company.index') }}" class="btn btn-secondary">{{ __('Back') }}</a>
+                            <a href="{{ route('company.index') }}" class="btn btn-secondary">{{ __('Kembali') }}</a>
                         </div>
                     </div>
                 </div>
