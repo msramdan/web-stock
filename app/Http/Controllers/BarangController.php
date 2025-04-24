@@ -89,10 +89,19 @@ class BarangController extends Controller implements HasMiddleware
      */
     public function create(): View
     {
-        // Ambil data relasi HANYA dari company yang aktif
         $companyId = session('sessionCompany');
-        $jenisMaterials = JenisMaterial::where('company_id', $companyId)->orderBy('nama_jenis_material')->pluck('nama_jenis_material', 'id');
-        $unitSatuans = UnitSatuan::where('company_id', $companyId)->orderBy('nama_unit_satuan')->pluck('nama_unit_satuan', 'id');
+        \Log::info('BarangController::create() - ID Company dari Session: ' . $companyId); // Optional log
+
+        $jenisMaterials = JenisMaterial::where('company_id', $companyId)
+            ->orderBy('nama_jenis_material')
+            ->get(['id', 'nama_jenis_material']);
+
+        $unitSatuans = UnitSatuan::where('company_id', $companyId) // <- Filter penting
+            ->orderBy('nama_unit_satuan')
+            ->get(['id', 'nama_unit_satuan']); // <- Gunakan get()
+
+        \Log::info('BarangController::create() - Jumlah Unit Satuan ditemukan: ' . $unitSatuans->count()); // Optional log
+
 
         return view('barang.create', compact('jenisMaterials', 'unitSatuans'));
     }
@@ -163,8 +172,15 @@ class BarangController extends Controller implements HasMiddleware
 
         // Ambil data relasi HANYA dari company yang aktif untuk dropdown
         $companyId = session('sessionCompany');
-        $jenisMaterials = JenisMaterial::where('company_id', $companyId)->orderBy('nama_jenis_material')->pluck('nama_jenis_material', 'id');
-        $unitSatuans = UnitSatuan::where('company_id', $companyId)->orderBy('nama_unit_satuan')->pluck('nama_unit_satuan', 'id');
+
+        // Ambil collection object, bukan hasil pluck
+        $jenisMaterials = JenisMaterial::where('company_id', $companyId)
+            ->orderBy('nama_jenis_material')
+            ->get(['id', 'nama_jenis_material']); // Ambil kolom yang dibutuhkan
+
+        $unitSatuans = UnitSatuan::where('company_id', $companyId)
+            ->orderBy('nama_unit_satuan')
+            ->get(['id', 'nama_unit_satuan']); // Ambil kolom yang dibutuhkan
 
 
         return view('barang.edit', compact('barang', 'jenisMaterials', 'unitSatuans'));
