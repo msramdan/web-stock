@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo; // Pastikan ini di-import
 
 class Barang extends Model
 {
@@ -41,13 +42,22 @@ class Barang extends Model
         ];
     }
 
-    public function jenis_material(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    /**
+     * Relasi ke JenisMaterial.
+     */
+    public function jenisMaterial(): BelongsTo // Direkomendasikan menggunakan camelCase juga
     {
-        return $this->belongsTo(\App\Models\JenisMaterial::class);
+        // Pastikan foreign key 'jenis_material_id' sudah benar
+        return $this->belongsTo(JenisMaterial::class, 'jenis_material_id');
     }
 
-    public function unit_satuan(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    /**
+     * Relasi ke UnitSatuan.
+     * Nama method diubah ke camelCase: unit_satuan -> unitSatuan
+     */
+    public function unitSatuan(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\UnitSatuan::class);
+        // Pastikan foreign key 'unit_satuan_id' sudah benar
+        return $this->belongsTo(UnitSatuan::class, 'unit_satuan_id');
     }
 }

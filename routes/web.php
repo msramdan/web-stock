@@ -8,7 +8,6 @@ use App\Http\Controllers\{
     RoleAndPermissionController,
     JenisMaterialController,
     UnitSatuanController,
-    SettingAplikasiController,
     BackupDatabaseController,
     BarangController,
     TransaksiStockInController,
