@@ -47,7 +47,7 @@
                     $companies = DB::table('assign_company')
                         ->leftJoin('company', 'assign_company.company_id', '=', 'company.id')
                         ->where('user_id', '=', auth()->user()->id)
-                        ->select('company.nama_perusahaan', 'assign_company.company_id')
+                        ->select('company.id','company.nama_perusahaan')
                         ->get();
                 @endphp
                 <div class="mb-3">

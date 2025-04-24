@@ -130,6 +130,13 @@ class CompanyController extends Controller implements HasMiddleware
     public function updateSession(Request $request)
     {
         $value = $request->input('selectedValue');
+        if (!is_numeric($value)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid company ID'
+            ]);
+        }
+
         session()->forget('sessionCompany');
         session(['sessionCompany' => $value]);
         return response()->json([
