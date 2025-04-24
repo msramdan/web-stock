@@ -51,7 +51,7 @@
                     <select class="form-select" id="changeCompany" name="changeCompany">
                         <option value="" selected disabled>-- Pilih Company --</option>
                         @foreach ($companies as $company)
-                            <option value="{{ $company->id }}">
+                            <option value="{{ $company->id }}" {{ session('sessionCompany') == $company->id ? 'selected' : '' }}>
                                 {{ $company->nama_perusahaan }}
                             </option>
                         @endforeach

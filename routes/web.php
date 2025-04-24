@@ -74,6 +74,12 @@ Route::middleware(['auth', 'web'])->group(function () {
             ->name('exportExcel')
             ->middleware('permission:laporan export excel');
     });
+    Route::resource('bom', App\Http\Controllers\BomController::class);
+    Route::resource('company', App\Http\Controllers\CompanyController::class);
+    Route::controller(App\Http\Controllers\CompanyController::class)->group(function () {
+        Route::post('/update-session', 'updateSession')->name('updateSession');
+    });
+
 });
-Route::resource('bom', App\Http\Controllers\BomController::class)->middleware('auth');
-Route::resource('company', App\Http\Controllers\CompanyController::class)->middleware('auth');
+
+

@@ -31,7 +31,7 @@ class JenisMaterialController extends Controller implements HasMiddleware
     public function index(): View|JsonResponse
     {
         if (request()->ajax()) {
-            $jenisMaterials = JenisMaterial::query();
+            $jenisMaterials = JenisMaterial::where('company_id', session('sessionCompany'));
 
             return DataTables::of($jenisMaterials)
                 ->addColumn('action', 'jenis-material.include.action')
@@ -40,7 +40,6 @@ class JenisMaterialController extends Controller implements HasMiddleware
 
         return view('jenis-material.index');
     }
-
     /**
      * Show the form for creating a new resource.
      */
@@ -54,9 +53,9 @@ class JenisMaterialController extends Controller implements HasMiddleware
      */
     public function store(StoreJenisMaterialRequest $request): RedirectResponse
     {
-
-        JenisMaterial::create($request->validated());
-
+        $attr = $request->validated();
+        $attr['company_id'] =  session('sessionCompany');
+        JenisMaterial::create($attr);
         return to_route('jenis-material.index')->with('success', __('The jenis material was created successfully.'));
     }
 

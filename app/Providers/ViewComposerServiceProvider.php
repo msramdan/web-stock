@@ -32,7 +32,9 @@ class ViewComposerServiceProvider extends ServiceProvider
         View::composer(['barang.create', 'barang.edit'], function ($view) {
             return $view->with(
                 'jenisMaterials',
-                \App\Models\JenisMaterial::select('id', 'nama_jenis_material')->get()
+                \App\Models\JenisMaterial::select('id', 'nama_jenis_material')
+                    ->where('company_id', session('sessionCompany'))
+                    ->get()
             );
         });
 
@@ -55,7 +57,7 @@ class ViewComposerServiceProvider extends ServiceProvider
         View::composer(['bom.create', 'bom.edit'], function ($view) {
             return $view->with(
                 'barangs',
-                \App\Models\Barang::select('id','kode_barang','nama_barang')->get()
+                \App\Models\Barang::select('id', 'kode_barang', 'nama_barang')->get()
             );
         });
     }

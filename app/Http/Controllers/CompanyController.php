@@ -9,6 +9,7 @@ use Yajra\DataTables\Facades\DataTables;
 use App\Generators\Services\ImageService;
 use Illuminate\Http\{JsonResponse, RedirectResponse};
 use Illuminate\Routing\Controllers\{HasMiddleware, Middleware};
+use Illuminate\Http\Request;
 
 class CompanyController extends Controller implements HasMiddleware
 {
@@ -124,5 +125,15 @@ class CompanyController extends Controller implements HasMiddleware
         } catch (\Exception $e) {
             return to_route('company.index')->with('error', __("The company can't be deleted because it's related to another table."));
         }
+    }
+
+    public function updateSession(Request $request)
+    {
+        $value = $request->input('selectedValue');
+        session()->forget('sessionCompany');
+        session(['sessionCompany' => $value]);
+        return response()->json([
+            'success' => true
+        ]);
     }
 }
