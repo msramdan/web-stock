@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo; // <-- Tambahkan import BelongsTo
+use Illuminate\Database\Eloquent\Relations\HasMany; // <-- Tambahkan import HasMany
 
 class UnitSatuan extends Model
 {
@@ -21,7 +23,8 @@ class UnitSatuan extends Model
      *
      * @var string[]
      */
-    protected $fillable = ['nama_unit_satuan'];
+    // Tambahkan 'company_id'
+    protected $fillable = ['company_id', 'nama_unit_satuan'];
 
     /**
      * Get the attributes that should be cast.
@@ -30,8 +33,34 @@ class UnitSatuan extends Model
      */
     protected function casts(): array
     {
-        return ['nama_unit_satuan' => 'string', 'created_at' => 'datetime:Y-m-d H:i:s', 'updated_at' => 'datetime:Y-m-d H:i:s'];
+        return [
+            'nama_unit_satuan' => 'string',
+            'created_at' => 'datetime:Y-m-d H:i:s',
+            'updated_at' => 'datetime:Y-m-d H:i:s'
+        ];
     }
 
+    /**
+     * Relasi ke Company. <-- Tambahkan
+     */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'company_id');
+    }
 
+    /**
+     * Relasi ke Barang (jika diperlukan, UnitSatuan bisa dipakai banyak Barang) <-- Tambahkan (opsional, tapi baik)
+     */
+    public function barangs(): HasMany
+    {
+        return $this->hasMany(Barang::class, 'unit_satuan_id');
+    }
+
+    /**
+     * Relasi ke BomDetail (UnitSatuan bisa dipakai banyak BomDetail) <-- Tambahkan (opsional, tapi baik)
+     */
+    public function bomDetails(): HasMany
+    {
+        return $this->hasMany(BomDetail::class, 'unit_satuan_id');
+    }
 }

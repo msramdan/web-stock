@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo; // Import BelongsTo
-use Illuminate\Database\Eloquent\Relations\HasMany; // Import HasMany
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Bom extends Model
 {
@@ -23,7 +23,8 @@ class Bom extends Model
      *
      * @var string[]
      */
-    protected $fillable = ['barang_id', 'deskripsi'];
+    // Tambahkan 'company_id'
+    protected $fillable = ['company_id', 'barang_id', 'deskripsi'];
 
     /**
      * Get the attributes that should be cast.
@@ -32,24 +33,34 @@ class Bom extends Model
      */
     protected function casts(): array
     {
-        return ['deskripsi' => 'string', 'created_at' => 'datetime:Y-m-d H:i:s', 'updated_at' => 'datetime:Y-m-d H:i:s'];
+        return [
+            'deskripsi' => 'string',
+            'created_at' => 'datetime:Y-m-d H:i:s',
+            'updated_at' => 'datetime:Y-m-d H:i:s'
+        ];
     }
 
+    /**
+     * Relasi ke Company. <-- Tambahkan
+     */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'company_id');
+    }
 
     /**
      * Relasi ke Barang (Produk Jadi).
      */
     public function barang(): BelongsTo
     {
-        return $this->belongsTo(Barang::class, 'barang_id'); // Pastikan foreign key 'barang_id'
+        return $this->belongsTo(Barang::class, 'barang_id');
     }
 
     /**
-     * Relasi ke Detail BoM (Material/Komponen). << DITAMBAHKAN
+     * Relasi ke Detail BoM (Material/Komponen).
      */
     public function details(): HasMany
     {
-        // Relasi ke model BomDetail, menggunakan foreign key 'bom_id' di tabel bom_detail
         return $this->hasMany(BomDetail::class, 'bom_id');
     }
 }

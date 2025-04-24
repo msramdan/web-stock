@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('unit_satuan', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('company_id')->nullable()->constrained('company')->onDelete('set null');
             $table->string('nama_unit_satuan', 100);
             $table->timestamps();
         });
