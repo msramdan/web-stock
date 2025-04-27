@@ -7,16 +7,18 @@ use App\Http\Requests\Barangs\{StoreBarangRequest, UpdateBarangRequest};
 use Illuminate\Contracts\View\View;
 use Yajra\DataTables\Facades\DataTables;
 use App\Generators\Services\ImageService;
-use App\Models\SettingAplikasi;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Http\{JsonResponse, RedirectResponse};
 use Illuminate\Routing\Controllers\{HasMiddleware, Middleware};
-use Illuminate\Support\Facades\DB; // Pastikan DB di-import
-use App\Models\JenisMaterial; // Import model relasi
-use App\Models\UnitSatuan; // Import model relasi
+use Illuminate\Support\Facades\DB;
+use App\Models\JenisMaterial;
+use App\Models\UnitSatuan;
+use App\Models\Company;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
 
 class BarangController extends Controller implements HasMiddleware
 {
@@ -90,7 +92,6 @@ class BarangController extends Controller implements HasMiddleware
     public function create(): View
     {
         $companyId = session('sessionCompany');
-        \Log::info('BarangController::create() - ID Company dari Session: ' . $companyId); // Optional log
 
         $jenisMaterials = JenisMaterial::where('company_id', $companyId)
             ->orderBy('nama_jenis_material')
@@ -99,9 +100,6 @@ class BarangController extends Controller implements HasMiddleware
         $unitSatuans = UnitSatuan::where('company_id', $companyId) // <- Filter penting
             ->orderBy('nama_unit_satuan')
             ->get(['id', 'nama_unit_satuan']); // <- Gunakan get()
-
-        \Log::info('BarangController::create() - Jumlah Unit Satuan ditemukan: ' . $unitSatuans->count()); // Optional log
-
 
         return view('barang.create', compact('jenisMaterials', 'unitSatuans'));
     }
@@ -256,10 +254,10 @@ class BarangController extends Controller implements HasMiddleware
             if ($errorCode == 1451) { // Kode error MySQL untuk constraint violation
                 return to_route('barang.index')->with('error', __("Barang tidak bisa dihapus karena terhubung dengan data lain (misal: Transaksi, BoM)."));
             }
-            Log::error("Error deleting Barang ID {$barang->id}: " . $e->getMessage());
+
             return to_route('barang.index')->with('error', __("Gagal menghapus barang: Terjadi kesalahan database."));
         } catch (\Exception $e) {
-            Log::error("Error deleting Barang ID {$barang->id}: " . $e->getMessage());
+
             return to_route('barang.index')->with('error', __("Gagal menghapus barang: Terjadi kesalahan tidak dikenal."));
         }
     }
@@ -291,93 +289,89 @@ class BarangController extends Controller implements HasMiddleware
     /**
      * Export data barang to PDF.
      */
-    public function exportPdf()
+    public function exportPdf(): RedirectResponse|StreamedResponse
     {
-        Log::info('Memanggil metode exportPdf di BarangController');
-        try {
-            $companyId = session('sessionCompany'); // Ambil company ID
 
-            // 1. Ambil data Barang sesuai company
+        try {
+            $companyId = session('sessionCompany');
+            if (!$companyId) {
+                return redirect()->route('barang.index')->with('error', 'Gagal export PDF: Silakan pilih perusahaan.');
+            }
+
+            $activeCompany = Company::find($companyId);
+            if (!$activeCompany) {
+                return redirect()->route('barang.index')->with('error', 'Gagal export PDF: Perusahaan tidak ditemukan.');
+            }
+            $namaPerusahaanCetak = $activeCompany->nama_perusahaan;
+
+            // Ambil Data Barang (filter companyId)
             $barangs = DB::table('barang')
-                ->leftJoin('jenis_material', 'barang.jenis_material_id', '=', 'jenis_material.id')
-                ->leftJoin('unit_satuan', 'barang.unit_satuan_id', '=', 'unit_satuan.id')
+                ->leftJoin('jenis_material', function ($join) use ($companyId) {
+                    $join->on('barang.jenis_material_id', '=', 'jenis_material.id')
+                        ->where('jenis_material.company_id', '=', $companyId);
+                })
+                ->leftJoin('unit_satuan', function ($join) use ($companyId) {
+                    $join->on('barang.unit_satuan_id', '=', 'unit_satuan.id')
+                        ->where('unit_satuan.company_id', '=', $companyId);
+                })
+                ->where('barang.company_id', $companyId)
                 ->select(
                     'barang.kode_barang',
-                    'barang.nama_barang', // Tambahkan nama barang
+                    'barang.nama_barang',
                     'barang.deskripsi_barang',
                     'barang.stock_barang',
                     'jenis_material.nama_jenis_material',
                     'unit_satuan.nama_unit_satuan'
                 )
-                ->where('barang.company_id', $companyId) // Filter company
                 ->orderBy('barang.kode_barang')
                 ->get();
 
-            // 2. Ambil Setting Aplikasi (asumsi setting global, bukan per company)
-            // Jika setting per company, perlu penyesuaian
-            $setting = SettingAplikasi::first();
-            $logoPath = null;
-            $logoUrl = null;
+            // Panggil helper HANYA dengan $activeCompany
+            $logoUrl = function_exists('get_company_logo_base64') ? get_company_logo_base64($activeCompany) : null;
 
-            // Ambil logo dari company yang aktif jika ada, fallback ke setting global
-            $activeCompany = \App\Models\Company::find($companyId);
-            $logoFilename = $activeCompany?->logo_perusahaan ?? $setting?->logo_perusahaan;
-
-            if ($logoFilename) {
-                // Cek path logo company dulu
-                $companyLogoPath = storage_path('app/public/uploads/logo-perusahaans/' . $activeCompany->logo_perusahaan);
-                // Jika tidak ada, cek path logo setting global
-                $globalLogoPath = $setting?->logo_perusahaan ? storage_path('app/public/uploads/logo-perusahaans/' . $setting->logo_perusahaan) : null;
-
-                if (file_exists($companyLogoPath)) {
-                    $logoPath = $companyLogoPath;
-                } elseif ($globalLogoPath && file_exists($globalLogoPath)) {
-                    $logoPath = $globalLogoPath;
-                } else {
-                    Log::warning('File logo perusahaan (' . ($activeCompany->logo_perusahaan ?? 'N/A') . ') atau setting (' . ($setting?->logo_perusahaan ?? 'N/A') . ') tidak ditemukan.');
-                }
-            } else {
-                Log::warning('Nama file logo perusahaan atau setting aplikasi tidak ditemukan.');
-            }
-
-            // Encode logo ke base64 jika path valid
-            if ($logoPath) {
-                try {
-                    $logoMimeType = mime_content_type($logoPath);
-                    if (str_starts_with($logoMimeType, 'image/')) {
-                        $logoUrl = 'data:' . $logoMimeType . ';base64,' . base64_encode(file_get_contents($logoPath));
-                    } else {
-                        Log::warning('File logo bukan gambar: ' . $logoPath);
-                    }
-                } catch (\Exception $e) {
-                    Log::error('Gagal membaca atau encode file logo: ' . $logoPath . ' - Error: ' . $e->getMessage());
-                    $logoUrl = null;
-                }
-            }
-
-            // 3. Data tambahan untuk view PDF
             $tanggalCetak = Carbon::now()->translatedFormat('d F Y H:i');
-            $namaPembuat = auth()->user()->name ?? 'N/A';
-            $namaPerusahaanCetak = $activeCompany?->nama_perusahaan ?? $setting?->nama_perusahaan ?? 'Nama Perusahaan Tidak Ditemukan';
+            $namaPembuat = auth()->user()?->name ?? 'N/A';
 
-            // 4. Siapkan data untuk view
-            $data = [
-                'barangs' => $barangs,
-                'setting' => $setting, // Kirim setting global jika masih diperlukan di view
-                'logoUrl' => $logoUrl,
-                'tanggalCetak' => $tanggalCetak,
-                'namaPembuat' => $namaPembuat,
-                'namaPerusahaan' => $namaPerusahaanCetak, // Kirim nama perusahaan aktif
-            ];
+            // Kirim $activeCompany ke view, HAPUS $setting
+            $data = compact('barangs', 'activeCompany', 'logoUrl', 'tanggalCetak', 'namaPembuat', 'namaPerusahaanCetak'); // Pastikan 'activeCompany' ada
 
-            // 5. Generate PDF
-            $pdf = Pdf::loadView('barang.export-pdf', $data);
-            $pdf->setPaper('a4', 'portrait');
+            $pdf = Pdf::loadView('barang.export-pdf', $data)
+                ->setPaper('a4', 'portrait')
+                ->setOption('isRemoteEnabled', true);
+
             $filename = 'Data-Barang-' . Str::slug($namaPerusahaanCetak) . '-' . date('YmdHis') . '.pdf';
-            return $pdf->stream($filename);
-        } catch (\Exception $e) {
-            Log::error('Error generating Barang PDF: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-            return redirect()->route('barang.index')->with('error', 'Gagal membuat PDF data barang. Silakan coba lagi atau hubungi administrator.');
+
+            // === PENDEKATAN MANUAL STREAM (Sudah Benar Sebelumnya) ===
+            try {
+                $pdfOutput = $pdf->output();
+                return response()->streamDownload(
+                    function () use ($pdfOutput) {
+                        echo $pdfOutput;
+                    },
+                    $filename,
+                    ['Content-Type' => 'application/pdf']
+                );
+            } catch (\Throwable $renderOrOutputError) {
+                Log::error('Gagal saat render/output PDF Barang: ' . $renderOrOutputError->getMessage(), [
+                    'company_id' => session('sessionCompany'),
+                    'user_id' => auth()->id(),
+                    'file' => $renderOrOutputError->getFile(),
+                    'line' => $renderOrOutputError->getLine()
+                ]);
+                return redirect()->route('barang.index')->with('error', 'Gagal saat generate output PDF. (' . $renderOrOutputError->getMessage() . ')');
+            }
+            // === AKHIR PENDEKATAN MANUAL STREAM ===
+
+        } catch (\Throwable $th) {
+            Log::error('Gagal membuat PDF Barang (Outer Catch): ' . $th->getMessage(), [
+                'company_id' => session('sessionCompany'),
+                'user_id' => auth()->id(),
+                'file' => $th->getFile(),
+                'line' => $th->getLine(),
+                'trace' => $th->getTraceAsString()
+            ]);
+            // Perbaiki pesan error agar lebih informatif
+            return redirect()->route('barang.index')->with('error', 'Gagal memproses PDF data barang. (' . $th->getMessage() . ')');
         }
     }
 }

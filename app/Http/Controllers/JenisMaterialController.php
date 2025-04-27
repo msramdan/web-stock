@@ -22,6 +22,8 @@ class JenisMaterialController extends Controller implements HasMiddleware
             new Middleware('permission:jenis material create', only: ['create', 'store']),
             new Middleware('permission:jenis material edit', only: ['edit', 'update']),
             new Middleware('permission:jenis material delete', only: ['destroy']),
+            // Tambahkan middleware company.access jika sudah dibuat dan ingin diterapkan di level controller
+            // new Middleware(\App\Http\Middleware\CheckCompanyAccess::class),
         ];
     }
 
@@ -45,6 +47,7 @@ class JenisMaterialController extends Controller implements HasMiddleware
      */
     public function create(): View
     {
+        // Tidak perlu validasi company di create
         return view('jenis-material.create');
     }
 
@@ -54,9 +57,10 @@ class JenisMaterialController extends Controller implements HasMiddleware
     public function store(StoreJenisMaterialRequest $request): RedirectResponse
     {
         $attr = $request->validated();
-        $attr['company_id'] =  session('sessionCompany');
+        $attr['company_id'] =  session('sessionCompany'); // Sudah benar
         JenisMaterial::create($attr);
-        return to_route('jenis-material.index')->with('success', __('The jenis material was created successfully.'));
+        // Pesan sudah diubah ke Bahasa Indonesia di langkah sebelumnya
+        return to_route('jenis-material.index')->with('success', __('Jenis material berhasil dibuat.'));
     }
 
     /**
@@ -64,6 +68,11 @@ class JenisMaterialController extends Controller implements HasMiddleware
      */
     public function show(JenisMaterial $jenisMaterial): View
     {
+        // --- TAMBAHKAN VALIDASI COMPANY ---
+        if ($jenisMaterial->company_id !== session('sessionCompany')) {
+            abort(403, 'Akses ditolak.');
+        }
+        // --- AKHIR VALIDASI ---
         return view('jenis-material.show', compact('jenisMaterial'));
     }
 
@@ -72,6 +81,11 @@ class JenisMaterialController extends Controller implements HasMiddleware
      */
     public function edit(JenisMaterial $jenisMaterial): View
     {
+        // --- TAMBAHKAN VALIDASI COMPANY ---
+        if ($jenisMaterial->company_id !== session('sessionCompany')) {
+            abort(403, 'Akses ditolak.');
+        }
+        // --- AKHIR VALIDASI ---
         return view('jenis-material.edit', compact('jenisMaterial'));
     }
 
@@ -80,10 +94,21 @@ class JenisMaterialController extends Controller implements HasMiddleware
      */
     public function update(UpdateJenisMaterialRequest $request, JenisMaterial $jenisMaterial): RedirectResponse
     {
+        // --- TAMBAHKAN VALIDASI COMPANY ---
+        if ($jenisMaterial->company_id !== session('sessionCompany')) {
+            abort(403, 'Akses ditolak.');
+        }
+        // --- AKHIR VALIDASI ---
 
-        $jenisMaterial->update($request->validated());
+        // Validated data sudah benar
+        $attr = $request->validated();
+        // Pastikan company_id tidak ikut terupdate secara tidak sengaja
+        // unset($attr['company_id']); // Uncomment jika company ID tidak boleh diubah
 
-        return to_route('jenis-material.index')->with('success', __('The jenis material was updated successfully.'));
+        $jenisMaterial->update($attr);
+
+        // Pesan sudah diubah ke Bahasa Indonesia di langkah sebelumnya
+        return to_route('jenis-material.index')->with('success', __('Jenis material berhasil diperbarui.'));
     }
 
     /**
@@ -91,12 +116,19 @@ class JenisMaterialController extends Controller implements HasMiddleware
      */
     public function destroy(JenisMaterial $jenisMaterial): RedirectResponse
     {
+        // --- TAMBAHKAN VALIDASI COMPANY ---
+        if ($jenisMaterial->company_id !== session('sessionCompany')) {
+            abort(403, 'Akses ditolak.');
+        }
+        // --- AKHIR VALIDASI ---
+
         try {
             $jenisMaterial->delete();
-
-            return to_route('jenis-material.index')->with('success', __('The jenis material was deleted successfully.'));
+            // Pesan sudah diubah ke Bahasa Indonesia di langkah sebelumnya
+            return to_route('jenis-material.index')->with('success', __('Jenis material berhasil dihapus.'));
         } catch (\Exception $e) {
-            return to_route('jenis-material.index')->with('error', __("The jenis material can't be deleted because it's related to another table."));
+            // Pesan sudah diubah ke Bahasa Indonesia di langkah sebelumnya
+            return to_route('jenis-material.index')->with('error', __("Jenis material tidak dapat dihapus karena terkait dengan tabel lain atau terjadi kesalahan."));
         }
     }
 }

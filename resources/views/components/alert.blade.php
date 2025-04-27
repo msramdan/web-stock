@@ -18,7 +18,7 @@
     <div class="alert alert-success alert-dismissible show fade mb-4">
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         <h4 class="alert-heading">{{ __('Success') }}</h4>
-        <p>{{ __('Profile information updated successfully.') }}</p>
+        <p>{{ __('Informasi profil berhasil diperbarui.') }}</p>
     </div>
 @endif
 
@@ -26,7 +26,7 @@
     <div class="alert alert-success alert-dismissible show fade mb-4">
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         <h4 class="alert-heading">{{ __('Success') }}</h4>
-        <p>{{ __('Password updated successfully.') }}</p>
+        <p>{{ __('Kata sandi berhasil diperbarui.') }}</p>
     </div>
 @endif
 
@@ -34,7 +34,7 @@
     <div class="alert alert-success alert-dismissible show fade mb-4">
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         <h4 class="alert-heading">{{ __('Success') }}</h4>
-        <p>{{ __('Two factor Authentication has been disabled.') }}</p>
+        <p>{{ __('Autentikasi dua faktor telah dinonaktifkan.') }}</p>
     </div>
 @endif
 
@@ -42,7 +42,7 @@
     <div class="alert alert-success alert-dismissible show fade mb-4">
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         <h4 class="alert-heading">{{ __('Success') }}</h4>
-        <p>{{ __('Two factor Authentication has been enabled.') }}</p>
+        <p>{{ __('Autentikasi dua faktor telah diaktifkan.') }}</p>
     </div>
 @endif
 
@@ -50,6 +50,6 @@
     <div class="alert alert-success alert-dismissible show fade mb-4">
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         <h4 class="alert-heading">{{ __('Success') }}</h4>
-        <p>{{ __('Regenerated Recovery Codes Successfully.') }}</p>
+        <p>{{ __('Kode pemulihan berhasil dibuat ulang.') }}</p>
     </div>
 @endif

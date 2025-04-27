@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 // Import model dan request yang diperlukan
 use App\Models\{Bom, BomDetail, Barang, UnitSatuan, Company}; // Tambahkan Company
 use App\Http\Requests\Boms\{StoreBomRequest, UpdateBomRequest}; // Pastikan request ini ada
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request; // Gunakan Request standar jika perlu validasi manual tambahan
 use Yajra\DataTables\Facades\DataTables;
