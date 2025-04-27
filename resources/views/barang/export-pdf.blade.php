@@ -242,19 +242,19 @@
                 @endif
             </td>
             <td class="header-text-cell">
-                <div class="header-instansi">{{ $setting?->nama_perusahaan ?? 'NAMA PERUSAHAAN' }}</div>
+                <div class="header-instansi">{{ $activeCompany?->nama_perusahaan ?? 'NAMA PERUSAHAAN' }}</div>
                 <div class="header-address">
-                    {{ $setting?->alamat ?? 'Alamat Perusahaan' }}
-                    @if ($setting?->no_telepon || $setting?->email)
+                    {{ $activeCompany?->alamat ?? 'Alamat Perusahaan' }}
+                    @if ($activeCompany?->no_telepon || $activeCompany?->email)
                         <span class="header-contact">
-                            @if ($setting?->no_telepon)
-                                Telepon: {{ $setting->no_telepon }}
+                            @if ($activeCompany?->no_telepon)
+                                Telepon: {{ $activeCompany->no_telepon }}
                             @endif
-                            @if ($setting?->no_telepon && $setting?->email)
+                            @if ($activeCompany?->no_telepon && $activeCompany?->email)
                                 |
                             @endif
-                            @if ($setting?->email)
-                                Email: <span>{{ $setting->email }}</span>
+                            @if ($activeCompany?->email)
+                                Email: <span>{{ $activeCompany->email }}</span>
                             @endif
                         </span>
                     @endif

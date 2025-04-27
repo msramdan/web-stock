@@ -10,7 +10,6 @@ use App\Models\UnitSatuan;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
@@ -21,79 +20,91 @@ class DashboardController extends Controller
      */
     public function index(): View
     {
-        // Hitung data ringkasan
-        $totalBarang = Barang::count();
-        $totalJenisMaterial = JenisMaterial::count();
-        $totalUnitSatuan = UnitSatuan::count();
-        $totalUser = User::count();
+        $companyId = session('sessionCompany');
 
-        // Ambil 5 transaksi terakhir (gabungan In & Out)
+        // Jika tidak ada company terpilih, tampilkan pesan atau data kosong
+        if (!$companyId) {
+            // Opsi 1: Tampilkan view dengan pesan error/warning
+            // return view('dashboard-no-company'); // Buat view ini jika perlu
+
+            // Opsi 2: Tetap tampilkan dashboard tapi dengan data 0 atau kosong
+            $totalBarang = 0;
+            $totalJenisMaterial = 0;
+            $totalUnitSatuan = 0;
+            $totalUser = User::count(); // User mungkin global
+            $latestTransactions = collect(); // Collection kosong
+            $chartMonths = [];
+            $chartStockIn = [];
+            $chartStockOut = [];
+
+            return view('dashboard', compact(
+                'totalBarang',
+                'totalJenisMaterial',
+                'totalUnitSatuan',
+                'totalUser',
+                'latestTransactions',
+                'chartMonths',
+                'chartStockIn',
+                'chartStockOut'
+            ))->with('warning', 'Silakan pilih perusahaan untuk melihat data.'); // Kirim pesan
+        }
+
+        // Hitung data ringkasan BERDASARKAN COMPANY ID
+        $totalBarang = Barang::where('company_id', $companyId)->count();
+        $totalJenisMaterial = JenisMaterial::where('company_id', $companyId)->count();
+        $totalUnitSatuan = UnitSatuan::where('company_id', $companyId)->count();
+        $totalUser = User::count(); // Asumsi user global, jika tidak perlu join assign_company
+
+        // Ambil 5 transaksi terakhir BERDASARKAN COMPANY ID
         $latestTransactions = DB::table('transaksi')
             ->select('transaksi.id', 'transaksi.no_surat', 'transaksi.tanggal', 'transaksi.type', 'users.name as user_name')
             ->join('users', 'users.id', '=', 'transaksi.user_id')
-            ->orderByDesc('transaksi.tanggal') // Urutkan berdasarkan tanggal terbaru
-            ->limit(5) // Ambil 5 teratas
+            ->where('transaksi.company_id', $companyId) // <<<---- FILTER COMPANY
+            ->orderByDesc('transaksi.tanggal')
+            ->limit(5)
             ->get();
 
-        // --- Data untuk Chart Transaksi Bulanan (12 Bulan Terakhir) ---
-        $endDate = Carbon::now()->endOfDay(); // Sampai akhir hari ini
-        $startDate = Carbon::now()->subMonths(11)->startOfMonth(); // Mulai dari 11 bulan lalu, awal bulan
+        // --- Data Chart BERDASARKAN COMPANY ID ---
+        $endDate = Carbon::now()->endOfDay();
+        $startDate = Carbon::now()->subMonths(11)->startOfMonth();
 
-        // Log untuk debugging
-        Log::info('Rentang waktu untuk transaksi bulanan', [
-            'startDate' => $startDate->toDateTimeString(),
-            'endDate' => $endDate->toDateTimeString()
-        ]);
-
-        // Query data transaksi
         $monthlyTransactions = DB::table('transaksi')
             ->select(
-                DB::raw("DATE_FORMAT(tanggal, '%Y-%m') as month"), // Format YYYY-MM
-                DB::raw("DATE_FORMAT(tanggal, '%b %Y') as month_name"), // Format 'Jan 2025'
+                DB::raw("DATE_FORMAT(tanggal, '%Y-%m') as month"),
+                // DB::raw("DATE_FORMAT(tanggal, '%b %Y') as month_name"), // Tidak perlu group by month_name
                 'type',
                 DB::raw('COUNT(*) as count')
             )
+            ->where('company_id', $companyId) // <<<---- FILTER COMPANY
             ->whereBetween('tanggal', [$startDate, $endDate])
-            ->groupBy('month', 'month_name', 'type')
+            ->groupBy('month', 'type') // Group by month (YYYY-MM) dan type
             ->orderBy('month')
             ->get()
-            ->keyBy(function ($item) {
-                // Buat kunci unik per bulan dan tipe (misal: '2025-04-In')
-                return $item->month . '-' . $item->type;
-            });
-
-        // Log hasil query untuk debugging
-        Log::info('Data transaksi bulanan', [
-            'transactions' => $monthlyTransactions->toArray()
-        ]);
+            ->keyBy(fn($item) => $item->month . '-' . $item->type); // Kunci: 2025-04-In
 
         // Siapkan array untuk chart
         $chartMonths = [];
         $chartStockIn = [];
         $chartStockOut = [];
 
-        // Loop 12 bulan terakhir untuk memastikan semua bulan ada
         $currentMonth = $startDate->copy();
         for ($i = 0; $i < 12; $i++) {
-            $monthKey = $currentMonth->format('Y-m'); // YYYY-MM
-            // Format nama bulan sesuai locale aplikasi
+            $monthKey = $currentMonth->format('Y-m');
             try {
-                $monthName = $currentMonth->translatedFormat('M Y'); // Misal: Apr 2025
+                $monthName = $currentMonth->translatedFormat('M Y');
             } catch (\Exception $e) {
-                $monthName = $currentMonth->format('M Y'); // Fallback: Apr 2025
+                $monthName = $currentMonth->format('M Y'); // Fallback
             }
 
             $chartMonths[] = $monthName;
 
-            // Cari data In untuk bulan ini
             $keyIn = $monthKey . '-In';
-            $chartStockIn[] = $monthlyTransactions->has($keyIn) ? $monthlyTransactions[$keyIn]->count : 0;
+            $chartStockIn[] = $monthlyTransactions->get($keyIn)?->count ?? 0; // Gunakan get() untuk safety
 
-            // Cari data Out untuk bulan ini
             $keyOut = $monthKey . '-Out';
-            $chartStockOut[] = $monthlyTransactions->has($keyOut) ? $monthlyTransactions[$keyOut]->count : 0;
+            $chartStockOut[] = $monthlyTransactions->get($keyOut)?->count ?? 0; // Gunakan get() untuk safety
 
-            $currentMonth->addMonth(); // Pindah ke bulan berikutnya
+            $currentMonth->addMonth();
         }
         // --- Akhir Data Chart ---
 

@@ -80,28 +80,17 @@ class ViewComposerServiceProvider extends ServiceProvider
         View::composer(['bom.create', 'bom.edit'], function ($view) {
             // PENTING: Filter barang di BOM juga berdasarkan company!
             $companyId = session('sessionCompany');
-            return $view->with(
-                // 'barangs', // Nama variabel mungkin perlu disesuaikan (misal: barangOptions)
-                // Barang::select('id', 'kode_barang', 'nama_barang')
-                //     ->where('company_id', $companyId) // <<<---- TAMBAHKAN FILTER INI
-                //     ->orderBy('nama_barang')       // Tambah order by
-                //     ->get()
-
-                // --- Pilihan Lebih Baik untuk BOM ---
-                // Pisahkan antara Produk Jadi dan Material jika logikanya berbeda
-                $view->with([
-                    'produkJadi' => Barang::where('company_id', $companyId)
-                        // ->where('jenis_barang', 'Produk Jadi') // Tambahkan filter jika ada kolom jenis
-                        ->orderBy('nama_barang')
-                        ->get(['id', 'kode_barang', 'nama_barang']), // Ambil kolom perlu
-                    'barangMaterials' => Barang::with('unitSatuan') // Eager load unit default
-                        ->where('company_id', $companyId)
-                        // ->where('jenis_barang', 'Material') // Tambahkan filter jika ada kolom jenis
-                        ->orderBy('nama_barang')
-                        ->get(['id', 'kode_barang', 'nama_barang', 'unit_satuan_id']) // Ambil kolom perlu
-                ])
-
-            );
+            return $view->with([
+                'produkJadi' => Barang::where('company_id', $companyId)
+                    // ->where('jenis_barang', 'Produk Jadi') // Tambahkan filter jika ada kolom jenis
+                    ->orderBy('nama_barang')
+                    ->get(['id', 'kode_barang', 'nama_barang']), // Ambil kolom perlu
+                'barangMaterials' => Barang::with('unitSatuan') // Eager load unit default
+                    ->where('company_id', $companyId)
+                    // ->where('jenis_barang', 'Material') // Tambahkan filter jika ada kolom jenis
+                    ->orderBy('nama_barang')
+                    ->get(['id', 'kode_barang', 'nama_barang', 'unit_satuan_id']) // Ambil kolom perlu
+            ]);
         });
     }
 }

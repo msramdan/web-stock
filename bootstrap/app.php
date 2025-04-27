@@ -2,8 +2,8 @@
 
 use App\Providers\{FortifyServiceProvider, ViewComposerServiceProvider};
 use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Configuration\{Exceptions,Middleware};
-use Spatie\Permission\Middleware\{RoleMiddleware, PermissionMiddleware,RoleOrPermissionMiddleware};
+use Illuminate\Foundation\Configuration\{Exceptions, Middleware};
+use Spatie\Permission\Middleware\{RoleMiddleware, PermissionMiddleware, RoleOrPermissionMiddleware};
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
+            'company.access' => \App\Http\Middleware\CheckCompanyAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
