@@ -67,26 +67,26 @@ Route::middleware(['auth', 'web'])->group(function () {
         // Transaksi Spesifik Company
         Route::prefix('transaksi-stock-in')->name('transaksi-stock-in.')->group(function () {
             Route::get('/', [TransaksiStockInController::class, 'index'])->name('index');
+            Route::get('/export-pdf', [TransaksiStockInController::class, 'exportPdf'])->name('exportPdf');
+            Route::get('/{transaksiStockIn}/export-item-pdf', [TransaksiStockInController::class, 'exportItemPdf'])->name('exportItemPdf');
             Route::get('/create', [TransaksiStockInController::class, 'create'])->name('create');
             Route::post('/', [TransaksiStockInController::class, 'store'])->name('store');
             Route::get('/{transaksiStockIn}', [TransaksiStockInController::class, 'show'])->name('show');
             Route::get('/{transaksiStockIn}/edit', [TransaksiStockInController::class, 'edit'])->name('edit');
             Route::put('/{transaksiStockIn}', [TransaksiStockInController::class, 'update'])->name('update');
             Route::delete('/{transaksiStockIn}', [TransaksiStockInController::class, 'destroy'])->name('destroy');
-            Route::get('/export-pdf', [TransaksiStockInController::class, 'exportPdf'])->name('exportPdf');
-            Route::get('/{transaksiStockIn}/export-item-pdf', [TransaksiStockInController::class, 'exportItemPdf'])->name('exportItemPdf');
         }); // Middleware permission sudah ada di dalam controller
 
         Route::prefix('transaksi-stock-out')->name('transaksi-stock-out.')->group(function () {
             Route::get('/', [TransaksiStockOutController::class, 'index'])->name('index');
+            Route::get('/export-pdf', [TransaksiStockOutController::class, 'exportPdf'])->name('exportPdf');
+            Route::get('/{transaksiStockOut}/export-item-pdf', [TransaksiStockOutController::class, 'exportItemPdf'])->name('exportItemPdf');
             Route::get('/create', [TransaksiStockOutController::class, 'create'])->name('create');
             Route::post('/', [TransaksiStockOutController::class, 'store'])->name('store');
             Route::get('/{transaksiStockOut}', [TransaksiStockOutController::class, 'show'])->name('show');
             Route::get('/{transaksiStockOut}/edit', [TransaksiStockOutController::class, 'edit'])->name('edit');
             Route::put('/{transaksiStockOut}', [TransaksiStockOutController::class, 'update'])->name('update');
             Route::delete('/{transaksiStockOut}', [TransaksiStockOutController::class, 'destroy'])->name('destroy');
-            Route::get('/export-pdf', [TransaksiStockOutController::class, 'exportPdf'])->name('exportPdf');
-            Route::get('/{transaksiStockOut}/export-item-pdf', [TransaksiStockOutController::class, 'exportItemPdf'])->name('exportItemPdf');
         }); // Middleware permission sudah ada di dalam controller
 
         // Laporan Spesifik Company
