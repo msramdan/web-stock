@@ -178,6 +178,22 @@ return [
             ]
         ],
         [
+            'header' => 'Produksi',
+            'permissions' => [
+                'produksi view'
+            ],
+            'menus' => [
+                [
+                    'title' => 'Produksi',
+                    'icon' => '<i class="bi bi-gear-wide-connected"></i>',
+                    'route' => '/produksi',
+                    'permission' => 'produksi view',
+                    'permissions' => [],
+                    'submenus' => []
+                ]
+            ]
+        ],
+        [
             'header' => 'Transaksi',
             'permissions' => [
                 'transaksi stock in view',

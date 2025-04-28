@@ -31,6 +31,7 @@ class Barang extends Model
         'deskripsi_barang',
         'jenis_material_id',
         'unit_satuan_id',
+        'tipe_barang',
         'stock_barang',
         'photo_barang'
     ];
@@ -45,6 +46,7 @@ class Barang extends Model
         return [
             'kode_barang' => 'string',
             'nama_barang' => 'string',
+            'tipe_barang' => 'string',
             'deskripsi_barang' => 'string',
             'stock_barang' => 'float',
             'photo_barang' => 'string',
