@@ -43,6 +43,10 @@
                                         <td>{{ $barang->nama_barang }}</td>
                                     </tr>
                                     <tr>
+                                        <td class="fw-bold">{{ __('Tipe Barang') }}</td>
+                                        <td>{{ $barang->tipe_barang ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
                                         <td class="fw-bold">{{ __('Deskripsi Barang') }}</td>
                                         <td>{{ $barang->deskripsi_barang }}</td>
                                     </tr>

@@ -1,6 +1,8 @@
+{{-- resources/views/transaksi-stock-in/include/form.blade.php --}}
 <section class="content">
     <div class="container-fluid">
         <div class="row">
+            {{-- Kolom Informasi User, No Surat, Tanggal --}}
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-body">
@@ -18,23 +20,24 @@
                             </tr>
                             <tr>
                                 <td style="vertical-align: top;">
-                                    <label for="date">No Surat</label>
+                                    <label for="no_surat">No Surat</label>
                                 </td>
                                 <td>
                                     <div class="form-group">
                                         <input type="text" name="no_surat" id="no_surat" class="form-control"
-                                            value="" />
+                                            value="{{ old('no_surat') }}" required />
                                     </div>
                                 </td>
                             </tr>
                             <tr>
                                 <td style="vertical-align: top;">
-                                    <label for="date">Tanggal</label>
+                                    <label for="tanggal">Tanggal</label>
                                 </td>
                                 <td>
                                     <div class="form-group">
                                         <input type="datetime-local" name="tanggal" id="tanggal" class="form-control"
-                                            value="" placeholder="{{ __('Tanggal') }}" />
+                                            value="{{ old('tanggal', now()->format('Y-m-d\TH:i')) }}"
+                                            placeholder="{{ __('Tanggal') }}" required />
                                     </div>
                                 </td>
                             </tr>
@@ -43,6 +46,7 @@
                 </div>
             </div>
 
+            {{-- Kolom Attachment & Keterangan --}}
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-body">
@@ -57,14 +61,13 @@
                                     </div>
                                 </td>
                             </tr>
-                            <!-- Combined Keterangan Textarea -->
                             <tr>
                                 <td style="vertical-align: top; width:30%;">
                                     <label for="keterangan">Keterangan</label>
                                 </td>
                                 <td>
                                     <div class="form-group">
-                                        <textarea name="keterangan" id="keterangan" name="keterangan" class="form-control" rows="3"></textarea>
+                                        <textarea name="keterangan" id="keterangan" class="form-control" rows="3">{{ old('keterangan') }}</textarea>
                                     </div>
                                 </td>
                             </tr>
@@ -73,35 +76,35 @@
                 </div>
             </div>
 
-
-
-
+            {{-- Kolom Input Barang & Qty --}}
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-body">
                         <table>
                             <tr>
                                 <td style="vertical-align: top; width:30%;">
-                                    <label for="kode_barang">Barang</label>
+                                    <label for="kode_barang">Kode Barang</label>
                                 </td>
                                 <td>
                                     <div class="form-group input-group">
                                         <input type="hidden" id="barang_id">
+                                        <input type="hidden" id="nama_barang_hidden">
                                         <input type="hidden" id="stock">
                                         <input type="hidden" id="jenis_material" readonly>
                                         <input type="hidden" id="unit_satuan" readonly>
-                                        <input type="text" name="kode_barang" id="kode_barang" class="form-control"
-                                            readonly="">
-                                        <div class="input-group-append">
-                                            <span>
-                                                <button type="button"
-                                                    class="input-group-text btn btn-success form-control"
-                                                    id="cari_barang" data-bs-toggle="modal"
-                                                    data-bs-target="#modal-item">
-                                                    <i class="fa fa-search"></i>
-                                                </button>
-                                            </span>
-                                        </div>
+                                        <input type="text" name="kode_barang_display" id="kode_barang"
+                                            class="form-control" readonly placeholder="Pilih Barang...">
+                                        <span class="input-group-text btn btn-success" id="cari_barang"
+                                            data-bs-toggle="modal" data-bs-target="#modal-item"
+                                            style="cursor: pointer;">
+                                            <i class="fa fa-search"></i>
+                                        </span>
+                                    </div>
+                                    <div class="mt-1">
+                                        <small>Nama Barang: <strong id="nama_barang_display">-</strong></small>
+                                        <br>
+                                        {{-- TAMBAHKAN DISPLAY STOK DI SINI --}}
+                                        <small>Stok Tersedia: <strong id="stock_display">-</strong></small>
                                     </div>
                                 </td>
                             </tr>
@@ -121,7 +124,7 @@
                                 <td>
                                     <div>
                                         <button type="button" id="add_cart" class="btn btn-primary">
-                                            <i class="fa fa-cart-plus">Add</i>
+                                            <i class="fa fa-cart-plus"></i> Add
                                         </button>
                                     </div>
                                 </td>
@@ -133,24 +136,31 @@
 
         </div>
 
+        {{-- Tabel Keranjang --}}
         <div class="row">
             <div class="col-lg-12">
                 <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Keranjang Stock In</h5>
+                    </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-bordered table-striped">
+                            <table class="table table-bordered table-striped table-sm">
                                 <thead>
                                     <tr>
-                                        <th>#</th>
-                                        <th>Barang</th>
-                                        <th>Jenis Matrial</th>
-                                        <th>Unit Satuan</th>
-                                        <th>Qty</th>
-                                        <th>Aksi</th>
+                                        <th style="width: 5%;">#</th>
+                                        <th style="width: 20%;">Kode Barang</th>
+                                        <th style="width: 30%;">Nama Barang</th>
+                                        <th style="width: 15%;">Jenis Material</th>
+                                        <th style="width: 15%;">Unit Satuan</th>
+                                        <th style="width: 10%;">Qty</th>
+                                        <th style="width: 5%;">Aksi</th>
                                     </tr>
                                 </thead>
-
                                 <tbody id="cart_tabel">
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted">Keranjang kosong</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -160,25 +170,30 @@
         </div>
     </div>
 </section>
+
+{{-- Modal Pencarian Barang --}}
 <div class="modal fade" id="modal-item">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title">Tambah Barang</h4>
+                <h4 class="modal-title">Pilih Barang</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body table-responsive">
                 <div class="container-fluid">
-                    <table class="table table-bordered table-striped" id="example1">
+                    <table class="table table-bordered table-striped" id="modal_table_barang" style="width:100%;">
                         <thead>
                             <tr>
-                                <th>Barang</th>
-                                <th>Jenis Matrial</th>
+                                <th>Kode Barang</th>
+                                <th>Nama Barang</th>
+                                <th>Jenis Material</th>
                                 <th>Unit Satuan</th>
                                 <th>Stock</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="tblItem">
+                            {{-- Isi tabel modal akan dirender oleh JS --}}
                         </tbody>
                     </table>
                 </div>
@@ -190,200 +205,199 @@
 @push('css')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <style>
+        #modal_table_barang th,
+        #modal_table_barang td {
+            white-space: nowrap;
+        }
+
+        #cari_barang {
+            height: calc(1.5em + .75rem + 2px);
+        }
+    </style>
 @endpush
 
 @push('js')
+    {{-- jQuery sudah ada di layout utama --}}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('#example1').DataTable({
-                language: {
-                    url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
-                }
-            });
-        });
-    </script>
-    <script>
-        $(document).ready(function() {
-            // Saat modal dibuka (tombol cari diklik)
-            $('#modal-item').on('show.bs.modal', function() {
-                $('#tblItem').html('<tr><td colspan="5" class="text-center">Loading...</td></tr>');
-                // Ambil data via AJAX
-                $.ajax({
-                    url: '{{ route('listDataBarang') }}', // ganti sesuai rute kamu
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function(data) {
-                        let html = '';
-                        if (data.length === 0) {
-                            html =
-                                '<tr><td colspan="5" class="text-center">Tidak ada data</td></tr>';
-                        } else {
-                            data.forEach(item => {
-                                html += `
-                                    <tr>
-                                        <td>${item.kode_barang}</td>
-                                        <td>${item.jenis_material}</td>
-                                        <td>${item.unit_satuan}</td>
-                                        <td>${item.stock}</td>
-                                        <td>
-                                            <button type="button" class="btn btn-sm btn-primary pilih-barang"
-                                                data-id="${item.id}"
-                                                data-nama="${item.kode_barang}"
-                                                data-stock="${item.stock}"
-                                                data-jenis-material="${item.jenis_material}"
-                                                data-unit-satuan="${item.unit_satuan}">
-                                                Pilih
-                                            </button>
-                                        </td>
-                                    </tr>`;
-                            });
-                        }
 
-                        $('#tblItem').html(html);
+    <script>
+        $(document).ready(function() {
+            var modalTable;
+
+            $('#modal-item').one('shown.bs.modal', function() {
+                modalTable = $('#modal_table_barang').DataTable({
+                    processing: true,
+                    serverSide: false,
+                    ajax: {
+                        url: "{{ route('listDataBarang') }}",
+                        dataSrc: ""
                     },
-                    error: function() {
-                        $('#tblItem').html(
-                            '<tr><td colspan="5" class="text-danger text-center">Gagal memuat data</td></tr>'
-                        );
-                    }
+                    columns: [{
+                            data: 'kode_barang'
+                        }, {
+                            data: 'nama_barang'
+                        },
+                        {
+                            data: 'jenis_material'
+                        }, {
+                            data: 'unit_satuan'
+                        }, {
+                            data: 'stock'
+                        },
+                        {
+                            data: null,
+                            orderable: false,
+                            searchable: false,
+                            render: function(data, type, row) {
+                                return `<button type="button" class="btn btn-sm btn-primary pilih-barang"
+                                            data-id="${row.id}" data-kode="${row.kode_barang}" data-nama-barang="${row.nama_barang}"
+                                            data-stock="${row.stock}" data-jenis-material="${row.jenis_material}" data-unit-satuan="${row.unit_satuan}">Pilih</button>`;
+                            }
+                        }
+                    ],
+                    language: {
+                        url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
+                    },
                 });
             });
 
-            // Saat tombol pilih diklik
-            $(document).on('click', '.pilih-barang', function() {
+            $('#modal-item').on('show.bs.modal', function() {
+                if ($.fn.dataTable.isDataTable('#modal_table_barang')) {
+                    modalTable.ajax.reload();
+                }
+            });
+
+            // --- Tombol Pilih Barang di Modal ---
+            $('#modal_table_barang tbody').on('click', '.pilih-barang', function() {
                 let id = $(this).data('id');
-                let nama = $(this).data('nama');
+                let kode = $(this).data('kode');
+                let nama_barang = $(this).data('nama-barang');
                 let stock = $(this).data('stock');
                 let jenis_material = $(this).data('jenis-material');
                 let unit_satuan = $(this).data('unit-satuan');
 
-                // Set data ke input form
                 $('#barang_id').val(id);
-                $('#kode_barang').val(nama);
+                $('#kode_barang').val(kode);
+                $('#nama_barang_hidden').val(nama_barang);
+                $('#nama_barang_display').text(nama_barang);
                 $('#stock').val(stock);
-                $('#jenis_material').val(jenis_material); // Pastikan ada input ini di form
-                $('#unit_satuan').val(unit_satuan); // Pastikan ada input ini di form
+                $('#stock_display').text(stock); // <-- UBAH INI UNTUK MENAMPILKAN STOK
+                $('#jenis_material').val(jenis_material);
+                $('#unit_satuan').val(unit_satuan);
 
                 var modal = bootstrap.Modal.getInstance(document.getElementById('modal-item'));
                 modal.hide();
             });
-        });
-    </script>
-    <script>
-        let cart = []; // Menyimpan item cart sementara
 
-        $('#add_cart').on('click', function() {
-            const id = $('#barang_id').val();
-            const kode = $('#kode_barang').val();
-            const qty = parseInt($('#qty').val());
-            const jenis_material = $('#jenis_material').val(); // Ambil dari input
-            const unit_satuan = $('#unit_satuan').val(); // Ambil dari input
+            // --- Logika Keranjang (Cart) ---
+            let cart = [];
 
-            if (!id || !kode) {
-                alert('Silakan pilih barang terlebih dahulu.');
-                return;
-            }
+            $('#add_cart').on('click', function() {
+                const id = $('#barang_id').val();
+                const kode = $('#kode_barang').val();
+                const nama_barang = $('#nama_barang_hidden').val();
+                const qty = parseInt($('#qty').val());
+                const jenis_material = $('#jenis_material').val();
+                const unit_satuan = $('#unit_satuan').val();
 
-            if (!qty || qty < 1) {
-                alert('Qty minimal 1.');
-                return;
-            }
+                if (!id || !kode) {
+                    alert('Silakan pilih barang terlebih dahulu.');
+                    return;
+                }
+                if (!nama_barang) {
+                    alert('Nama barang tidak ditemukan. Coba pilih ulang.');
+                    return;
+                }
+                if (!qty || qty < 1) {
+                    alert('Qty minimal 1.');
+                    return;
+                }
 
-            // Cek apakah barang sudah ada di cart
-            const index = cart.findIndex(item => item.id === id);
-            if (index !== -1) {
-                cart[index].qty += qty;
-            } else {
-                cart.push({
-                    id,
-                    kode,
-                    jenis_material,
-                    unit_satuan,
-                    qty
+                const index = cart.findIndex(item => item.id === id);
+                if (index !== -1) {
+                    cart[index].qty += qty;
+                } else {
+                    cart.push({
+                        id,
+                        kode,
+                        nama_barang,
+                        jenis_material,
+                        unit_satuan,
+                        qty
+                    });
+                }
+
+                renderCartTable();
+                clearInput();
+            });
+
+            function renderCartTable() {
+                const $tableBody = $('#cart_tabel');
+                $tableBody.empty();
+                if (cart.length === 0) {
+                    $tableBody.append(
+                        '<tr><td colspan="7" class="text-center text-muted">Keranjang kosong</td></tr>');
+                    return;
+                }
+                cart.forEach((item, index) => {
+                    $tableBody.append(`
+                        <tr data-id="${item.id}">
+                            <td>${index + 1}</td> <td>${item.kode}</td> <td>${item.nama_barang}</td>
+                            <td>${item.jenis_material}</td> <td>${item.unit_satuan}</td> <td class="text-center">${item.qty}</td>
+                            <td class="text-center"><button type="button" class="btn btn-danger btn-sm remove-item" data-id="${item.id}"><i class="fa fa-trash"></i></button></td>
+                        </tr>`);
                 });
             }
 
-            renderCartTable();
-            clearInput();
-        });
-
-        function renderCartTable() {
-            const $table = $('#cart_tabel');
-            $table.empty();
-
-            if (cart.length === 0) {
-                $table.append('<tr><td colspan="6" class="text-center">Cart kosong</td></tr>');
-                return;
-            }
-
-            cart.forEach((item, index) => {
-                $table.append(`
-            <tr data-id="${item.id}">
-                <td>${index + 1}</td>
-                <td>${item.kode}</td>
-                <td>${item.jenis_material}</td>
-                <td>${item.unit_satuan}</td>
-                <td>${item.qty}</td>
-                <td>
-                    <button type="button" class="btn btn-danger btn-sm remove-item" data-id="${item.id}">
-                        <i class="fa fa-trash"></i> Hapus
-                    </button>
-                </td>
-            </tr>
-        `);
+            $('#cart_tabel').on('click', '.remove-item', function() {
+                const idToRemove = $(this).data('id');
+                cart = cart.filter(item => item.id !== idToRemove.toString());
+                renderCartTable();
             });
-        }
 
-        // Hapus item dari cart
-        $(document).on('click', '.remove-item', function() {
-            const id = $(this).data('id');
-            cart = cart.filter(item => item.id !== id.toString());
-            renderCartTable();
-        });
-
-        // Reset input setelah tambah ke cart
-        function clearInput() {
-            $('#barang_id').val('');
-            $('#kode_barang').val('');
-            $('#qty').val(1);
-            $('#jenis_material').val('');
-            $('#unit_satuan').val('');
-        }
-
-        // Validasi saat submit form
-        $('#transactionForm').on('submit', function(e) {
-            console.log(cart.length);
-
-            e.preventDefault();
-
-            // Validate  fields
-            if ($('#no_surat').val() === '') {
-                alert('No Surat tidak boleh kosong');
-                $('#no_surat').focus();
-                return false;
+            function clearInput() {
+                $('#barang_id').val('');
+                $('#kode_barang').val('');
+                $('#nama_barang_hidden').val('');
+                $('#nama_barang_display').text('-');
+                $('#stock').val('');
+                $('#stock_display').text('-'); // <-- UBAH INI UNTUK RESET DISPLAY STOK
+                $('#qty').val(1);
+                $('#jenis_material').val('');
+                $('#unit_satuan').val('');
             }
 
-            if ($('#tanggal').val() === '') {
-                alert('Tanggal tidak boleh kosong');
-                $('#tanggal').focus();
-                return false;
-            }
-
-            if (cart.length === 0) {
-                alert('Minimal 1 item harus dimasukkan ke cart');
-                return false;
-            }
-
-            const cartData = JSON.stringify(cart);
-            $('<input>').attr({
-                type: 'hidden',
-                name: 'cart_items',
-                value: cartData
-            }).appendTo('#transactionForm');
-            this.submit();
+            $('#transactionForm').on('submit', function(e) {
+                if ($('#no_surat').val() === '') {
+                    e.preventDefault();
+                    alert('No Surat tidak boleh kosong');
+                    $('#no_surat').focus();
+                    return false;
+                }
+                if ($('#tanggal').val() === '') {
+                    e.preventDefault();
+                    alert('Tanggal tidak boleh kosong');
+                    $('#tanggal').focus();
+                    return false;
+                }
+                if (cart.length === 0) {
+                    e.preventDefault();
+                    alert('Minimal 1 item harus dimasukkan ke keranjang');
+                    $('#cari_barang').focus();
+                    return false;
+                }
+                $('input[name="cart_items"]').remove();
+                const cartData = JSON.stringify(cart);
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'cart_items',
+                    value: cartData
+                }).appendTo('#transactionForm');
+                return true;
+            });
         });
     </script>
 @endpush

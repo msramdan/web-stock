@@ -22,11 +22,12 @@ class StoreBarangRequest extends FormRequest
         return [
             'kode_barang' => 'required|string|max:255',
             'nama_barang' => 'required|string|max:255',
-			'deskripsi_barang' => 'required|string',
-			'jenis_material_id' => 'required|exists:App\Models\JenisMaterial,id',
-			'unit_satuan_id' => 'required|exists:App\Models\UnitSatuan,id',
-			'stock_barang' => 'nullable',
-			'photo_barang' => 'nullable|image|max:4000',
+            'deskripsi_barang' => 'required|string',
+            'tipe_barang' => 'required|string|in:Bahan Baku,Barang Jadi',
+            'jenis_material_id' => 'required|exists:App\Models\JenisMaterial,id',
+            'unit_satuan_id' => 'required|exists:App\Models\UnitSatuan,id',
+            'stock_barang' => 'nullable',
+            'photo_barang' => 'nullable|image|max:4000',
         ];
     }
 }

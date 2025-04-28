@@ -14,7 +14,8 @@ use App\Http\Controllers\{
     TransaksiStockOutController,
     LaporanController,
     BomController,
-    CompanyController
+    CompanyController,
+    ProduksiController,
 };
 
 /*
@@ -63,6 +64,7 @@ Route::middleware(['auth', 'web'])->group(function () {
         Route::resource('unit-satuan', UnitSatuanController::class);
         Route::resource('barang', BarangController::class);
         Route::resource('bom', BomController::class);
+        Route::resource('produksi', ProduksiController::class);
 
         // Transaksi Spesifik Company
         Route::prefix('transaksi-stock-in')->name('transaksi-stock-in.')->group(function () {

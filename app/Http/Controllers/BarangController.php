@@ -61,6 +61,14 @@ class BarangController extends Controller implements HasMiddleware
                 ->where('barang.company_id', $companyId); // Terapkan filter
 
             return DataTables::of($barangs)
+                ->addColumn('tipe_barang', function ($row) { // Tambahkan render untuk tipe barang jika perlu styling
+                    if ($row->tipe_barang == 'Barang Jadi') {
+                        return '<span class="badge bg-light-primary">Barang Jadi</span>';
+                    } elseif ($row->tipe_barang == 'Bahan Baku') {
+                        return '<span class="badge bg-light-secondary">Bahan Baku</span>';
+                    }
+                    return $row->tipe_barang ?? '-';
+                })
                 ->addColumn('deskripsi_barang', function ($row) {
                     return str($row->deskripsi_barang)->limit(100);
                 })
@@ -80,6 +88,7 @@ class BarangController extends Controller implements HasMiddleware
                     return asset('storage/uploads/photo-barangs/' . $row->photo_barang);
                 })
                 ->addColumn('action', 'barang.include.action')
+                ->rawColumns(['tipe_barang', 'action'])
                 ->toJson();
         }
 

@@ -214,6 +214,8 @@ return [
         ['group' => 'transaksi stock out', 'access' => ['transaksi stock out view', 'transaksi stock out create', 'transaksi stock out edit', 'transaksi stock out delete', 'transaksi stock out export pdf']],
         ['group' => 'laporan', 'access' => ['laporan view', 'laporan export excel']],
         ['group' => 'bom', 'access' => ['bom view', 'bom create', 'bom edit', 'bom delete']],
+        ['group' => 'produksi', 'access' => ['produksi view', 'produksi create', 'produksi edit', 'produksi delete']],
+        ['group' => 'produksi details', 'access' => ['produksi details view', 'produksi details create', 'produksi details edit', 'produksi details delete']],
         ['group' => 'company', 'access' => ['company view', 'company create', 'company edit', 'company delete']],
     ],
 ];
