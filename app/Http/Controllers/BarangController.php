@@ -78,6 +78,9 @@ class BarangController extends Controller implements HasMiddleware
                 ->addColumn('unit_satuan', function ($row) {
                     return $row->nama_unit_satuan ?? '';
                 })
+                ->addColumn('stock_barang', function ($row) {
+                    return rtrim(rtrim(number_format((float)$row->stock_barang, 4, '.', ''), '0'), '.');
+                })
                 ->addColumn('photo_barang', function ($row) {
                     if (!$row->photo_barang) {
                         // Jika perlu, gunakan URL default dari .env atau config

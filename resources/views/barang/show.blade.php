@@ -60,7 +60,8 @@
                                     </tr>
                                     <tr>
                                         <td class="fw-bold">{{ __('Stock Barang') }}</td>
-                                        <td>{{ $barang->stock_barang }}</td>
+                                        <td>{{ rtrim(rtrim(number_format((float) $barang->stock_barang, 4, '.', ''), '0'), '.') }}
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td class="fw-bold">{{ __('Photo Barang') }}</td>

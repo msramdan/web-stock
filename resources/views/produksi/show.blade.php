@@ -109,7 +109,7 @@
                                                 <th class="text-center">Satuan</th>
                                                 <th class="text-center">Qty/Unit Rate</th>
                                                 <th class="text-center">Qty Target Prod.</th>
-                                                <th class="text-center">Total Diperlukan</th>
+                                                <th class="text-center">Total</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -131,12 +131,13 @@
                                                     <td class="text-center">
                                                         {{ $detailIn->unitSatuan?->nama_unit_satuan ?? '-' }}</td>
                                                     <td class="text-center">
-                                                        {{ number_format($detailIn->qty_rate, 4, ',', '.') }}</td>
+                                                        {{ rtrim(rtrim($detailIn->qty_rate, '0'), '.') }}
+                                                    </td>
                                                     <td class="text-center">
-                                                        {{ number_format($detailIn->qty_target_produksi, 4, ',', '.') }}
+                                                        {{ rtrim(rtrim($detailIn->qty_target_produksi, '0'), '.') }}
                                                     </td>
                                                     <td class="text-center fw-bold">
-                                                        {{ number_format($detailIn->qty_total_diperlukan, 4, ',', '.') }}
+                                                        {{ rtrim(rtrim($detailIn->qty_total_diperlukan, '0'), '.') }}
                                                     </td>
                                                 </tr>
                                             @endif
@@ -153,11 +154,13 @@
                                                     <td class="text-center">
                                                         {{ $detail->unitSatuan?->nama_unit_satuan ?? '-' }}</td>
                                                     <td class="text-center">
-                                                        {{ number_format($detail->qty_rate, 4, ',', '.') }}</td>
+                                                        {{ rtrim(rtrim($detail->qty_rate, '0'), '.') }}
+                                                    </td>
                                                     <td class="text-center">
-                                                        {{ number_format($detail->qty_target_produksi, 4, ',', '.') }}</td>
+                                                        {{ rtrim(rtrim($detail->qty_target_produksi, '0'), '.') }}
+                                                    </td>
                                                     <td class="text-center">
-                                                        {{ number_format($detail->qty_total_diperlukan, 4, ',', '.') }}
+                                                        {{ rtrim(rtrim($detail->qty_total_diperlukan, '0'), '.') }}
                                                     </td>
                                                 </tr>
                                             @empty

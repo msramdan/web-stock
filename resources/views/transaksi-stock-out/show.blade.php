@@ -105,7 +105,8 @@
                                                                             <thead>
                                                                                 <tr>
                                                                                     <th>#</th>
-                                                                                    <th>Barang</th>
+                                                                                    <th>Kode Barang</th>
+                                                                                    <th>Nama Barang</th>
                                                                                     <th>Jenis Material</th>
                                                                                     <th>Unit Satuan</th>
                                                                                     <th>Qty</th>
@@ -116,6 +117,7 @@
                                                                                 <tr>
                                                                                     <td>{{ $index + 1 }}</td>
                                                                                     <td>{{ $detail->kode_barang }}</td>
+                                                                                    <td>{{ $detail->nama_barang }}</td>
                                                                                     <td>{{ $detail->nama_jenis_material }}</td>
                                                                                     <td>{{ $detail->nama_unit_satuan }}</td>
                                                                                     <td>{{ $detail->qty }}</td>

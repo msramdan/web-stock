@@ -243,25 +243,32 @@
                 if (!materialTableBody) return;
 
                 materialTableBody.querySelectorAll('tr[data-material-id]').forEach(row => {
-                    const qtyPerUnitText = row.querySelector('.qty-per-unit')?.textContent || '0';
-                    // Bersihkan format angka Indonesia sebelum parsing
-                    const qtyPerUnit = parseFloat(qtyPerUnitText.replace(/\./g, '').replace(',', '.')) || 0;
+                    const qtyPerUnitText = row.querySelector('.qty-per-unit')?.textContent?.trim() || '0';
+                    const currentStockText = row.querySelector('.current-stock')?.textContent?.trim() ||
+                    '0';
 
-                    const currentStockText = row.querySelector('.current-stock')?.textContent || '0';
-                    // Bersihkan format angka Indonesia
+                    // Parsing angka
+                    const qtyPerUnit = parseFloat(qtyPerUnitText.replace(',', '.')) ||
+                    0; // hanya ganti koma ke titik
                     const currentStock = parseFloat(currentStockText.replace(/\./g, '').replace(',',
-                        '.')) || 0;
+                        '.')) || 0; // hapus titik, ubah koma ke titik
 
                     const requiredQtyCell = row.querySelector('.required-qty');
+
+                    console.log('qtyPerUnitText:', qtyPerUnitText);
+                    console.log('qtyPerUnit:', qtyPerUnit);
+                    console.log('targetQty:', targetQty);
+
                     if (requiredQtyCell) {
                         const requiredQty = qtyPerUnit * targetQty;
-                        // Format angka Indonesia
+
+                        // Tampilkan dengan format Indonesia
                         requiredQtyCell.textContent = requiredQty.toLocaleString('id-ID', {
                             minimumFractionDigits: 0,
                             maximumFractionDigits: 4
                         });
 
-                        // Cek stok dan tambahkan/hapus class danger
+                        // Tambahkan/hapus class text-danger jika stok tidak cukup
                         if (requiredQty > currentStock) {
                             requiredQtyCell.classList.add('text-danger');
                         } else {

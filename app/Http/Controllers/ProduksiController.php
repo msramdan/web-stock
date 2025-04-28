@@ -57,6 +57,9 @@ class ProduksiController extends Controller implements HasMiddleware
                 ->orderBy('tanggal', 'desc'); // Urutkan terbaru
 
             return DataTables::of($produksi)
+                ->addColumn('qty_target', function ($row) {
+                    return rtrim(rtrim($row->qty_target, '0'), '.');
+                })
                 ->addColumn('produk_jadi', function ($row) {
                     return $row->produkJadi?->kode_barang . ' - ' . $row->produkJadi?->nama_barang;
                 })
