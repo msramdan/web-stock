@@ -72,7 +72,7 @@ class UnitSatuanController extends Controller implements HasMiddleware
     public function show(UnitSatuan $unitSatuan): View
     {
         // Optional: Tambahkan validasi bahwa data ini milik company user
-        if ($unitSatuan->company_id !== session('sessionCompany')) {
+        if ($unitSatuan->company_id != session('sessionCompany')) {
             abort(403, 'Unauthorized action.');
         }
         return view('unit-satuan.show', compact('unitSatuan'));
@@ -84,7 +84,7 @@ class UnitSatuanController extends Controller implements HasMiddleware
     public function edit(UnitSatuan $unitSatuan): View
     {
         // Optional: Tambahkan validasi bahwa data ini milik company user
-        if ($unitSatuan->company_id !== session('sessionCompany')) {
+        if ($unitSatuan->company_id != session('sessionCompany')) {
             abort(403, 'Unauthorized action.');
         }
         return view('unit-satuan.edit', compact('unitSatuan'));
@@ -96,7 +96,7 @@ class UnitSatuanController extends Controller implements HasMiddleware
     public function update(UpdateUnitSatuanRequest $request, UnitSatuan $unitSatuan): RedirectResponse
     {
         // Optional: Tambahkan validasi bahwa data ini milik company user
-        if ($unitSatuan->company_id !== session('sessionCompany')) {
+        if ($unitSatuan->company_id != session('sessionCompany')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -115,7 +115,7 @@ class UnitSatuanController extends Controller implements HasMiddleware
     public function destroy(UnitSatuan $unitSatuan): RedirectResponse
     {
         // Optional: Tambahkan validasi bahwa data ini milik company user
-        if ($unitSatuan->company_id !== session('sessionCompany')) {
+        if ($unitSatuan->company_id != session('sessionCompany')) {
             abort(403, 'Unauthorized action.');
         }
 

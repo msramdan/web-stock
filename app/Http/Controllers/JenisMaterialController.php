@@ -69,7 +69,7 @@ class JenisMaterialController extends Controller implements HasMiddleware
     public function show(JenisMaterial $jenisMaterial): View
     {
         // --- TAMBAHKAN VALIDASI COMPANY ---
-        if ($jenisMaterial->company_id !== session('sessionCompany')) {
+        if ($jenisMaterial->company_id != session('sessionCompany')) {
             abort(403, 'Akses ditolak.');
         }
         // --- AKHIR VALIDASI ---
@@ -82,7 +82,7 @@ class JenisMaterialController extends Controller implements HasMiddleware
     public function edit(JenisMaterial $jenisMaterial): View
     {
         // --- TAMBAHKAN VALIDASI COMPANY ---
-        if ($jenisMaterial->company_id !== session('sessionCompany')) {
+        if ($jenisMaterial->company_id != session('sessionCompany')) {
             abort(403, 'Akses ditolak.');
         }
         // --- AKHIR VALIDASI ---
@@ -95,7 +95,7 @@ class JenisMaterialController extends Controller implements HasMiddleware
     public function update(UpdateJenisMaterialRequest $request, JenisMaterial $jenisMaterial): RedirectResponse
     {
         // --- TAMBAHKAN VALIDASI COMPANY ---
-        if ($jenisMaterial->company_id !== session('sessionCompany')) {
+        if ($jenisMaterial->company_id != session('sessionCompany')) {
             abort(403, 'Akses ditolak.');
         }
         // --- AKHIR VALIDASI ---
@@ -117,7 +117,7 @@ class JenisMaterialController extends Controller implements HasMiddleware
     public function destroy(JenisMaterial $jenisMaterial): RedirectResponse
     {
         // --- TAMBAHKAN VALIDASI COMPANY ---
-        if ($jenisMaterial->company_id !== session('sessionCompany')) {
+        if ($jenisMaterial->company_id != session('sessionCompany')) {
             abort(403, 'Akses ditolak.');
         }
         // --- AKHIR VALIDASI ---

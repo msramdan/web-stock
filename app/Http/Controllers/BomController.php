@@ -203,7 +203,7 @@ class BomController extends Controller implements HasMiddleware
     {
         $companyId = session('sessionCompany');
         // Validasi company
-        if ($bom->company_id !== $companyId) {
+        if ($bom->company_id != $companyId) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -225,7 +225,7 @@ class BomController extends Controller implements HasMiddleware
     {
         $companyId = session('sessionCompany');
         // Validasi company
-        if ($bom->company_id !== $companyId) {
+        if ($bom->company_id != $companyId) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -254,7 +254,7 @@ class BomController extends Controller implements HasMiddleware
     {
         $companyId = session('sessionCompany');
         // Validasi company
-        if ($bom->company_id !== $companyId) {
+        if ($bom->company_id != $companyId) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -411,7 +411,7 @@ class BomController extends Controller implements HasMiddleware
     {
         $companyId = session('sessionCompany');
         // Validasi company
-        if ($bom->company_id !== $companyId) {
+        if ($bom->company_id != $companyId) {
             abort(403, 'Unauthorized action.');
         }
 

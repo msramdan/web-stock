@@ -147,7 +147,7 @@ class BarangController extends Controller implements HasMiddleware
     public function show(Barang $barang): View
     {
         // Optional: Validasi company
-        if ($barang->company_id !== session('sessionCompany')) {
+        if ($barang->company_id != session('sessionCompany')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -162,7 +162,7 @@ class BarangController extends Controller implements HasMiddleware
     public function edit(Barang $barang): View
     {
         // Optional: Validasi company
-        if ($barang->company_id !== session('sessionCompany')) {
+        if ($barang->company_id != session('sessionCompany')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -190,7 +190,7 @@ class BarangController extends Controller implements HasMiddleware
     public function update(UpdateBarangRequest $request, Barang $barang): RedirectResponse
     {
         // Optional: Validasi company
-        if ($barang->company_id !== session('sessionCompany')) {
+        if ($barang->company_id != session('sessionCompany')) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -234,7 +234,7 @@ class BarangController extends Controller implements HasMiddleware
     public function destroy(Barang $barang): RedirectResponse
     {
         // Optional: Validasi company
-        if ($barang->company_id !== session('sessionCompany')) {
+        if ($barang->company_id != session('sessionCompany')) {
             abort(403, 'Unauthorized action.');
         }
 
