@@ -197,8 +197,7 @@ return [
             'header' => 'Transaksi',
             'permissions' => [
                 'transaksi stock in view',
-                'transaksi stock out view',
-                'laporan view'
+                'transaksi stock out view'
             ],
             'menus' => [
                 [
@@ -206,13 +205,11 @@ return [
                     'icon' => '<i class="bi bi-arrow-left-right"></i>',
                     'route' => [
                         'transaksi-stock-in*',
-                        'transaksi-stock-out*',
-                        'laporan*'
+                        'transaksi-stock-out*'
                     ],
                     'permissions' => [
                         'transaksi stock in view',
-                        'transaksi stock out view',
-                        'laporan view'
+                        'transaksi stock out view'
                     ],
                     'submenus' => [
                         [
@@ -224,13 +221,24 @@ return [
                             'title' => 'Stock Out',
                             'route' => '/transaksi-stock-out',
                             'permission' => 'transaksi stock out view'
-                        ],
-                        [
-                            'title' => 'Laporan',
-                            'route' => '/laporan',
-                            'permission' => 'laporan view'
                         ]
                     ]
+                ]
+            ]
+        ],
+        [
+            'header' => 'Laporan',
+            'permissions' => [
+                'laporan view'
+            ],
+            'menus' => [
+                [
+                    'title' => 'Laporan Barang',
+                    'icon' => '<i class="bi bi-file-earmark-text"></i>',
+                    'route' => '/laporan',
+                    'permission' => 'laporan view',
+                    'permissions' => [],
+                    'submenus' => []
                 ]
             ]
         ],
