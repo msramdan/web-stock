@@ -46,8 +46,7 @@ Route::middleware(['auth', 'web'])->group(function () {
 
     // Backup Database (Asumsi Global)
     Route::get('/backup-database', [BackupDatabaseController::class, 'index'])->name('backup-database.index')->middleware('permission:backup database view');
-    Route::get('/backup-database/create', [BackupDatabaseController::class, 'create'])->name('backup-database.create')->middleware('permission:backup database create');
-    Route::get('/backup/download', [BackupDatabaseController::class, 'downloadBackup'])->name('backup.download')->middleware('permission:backup database create');
+    Route::get('/backup/download', [BackupDatabaseController::class, 'downloadBackup'])->name('backup.download')->middleware('permission:download backup database');
 
 
     // --- Grup Route yang WAJIB memiliki company aktif dan user punya akses ---
