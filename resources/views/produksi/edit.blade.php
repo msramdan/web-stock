@@ -1,21 +1,21 @@
 @extends('layouts.app')
 
-@section('title', __('Edit Produksi') . ' - ' . $produksi->no_produksi)
+@section('title', 'Edit Produksi - ' . $produksi->no_produksi)
 
 @section('content')
     <div class="page-heading">
         <div class="page-title">
             <div class="row">
                 <div class="col-12 col-md-8 order-md-1 order-last">
-                    <h3>{{ __('Edit Produksi') }}</h3>
+                    <h3>Edit Produksi</h3>
                     <p class="text-subtitle text-muted">
-                        {{ __('Ubah perintah produksi') }} <strong>{{ $produksi->no_produksi }}</strong>.
+                        Ubah perintah produksi <strong>{{ $produksi->no_produksi }}</strong>.
                     </p>
                 </div>
                 <x-breadcrumb>
-                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">{{ __('Dashboard') }}</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('produksi.index') }}">{{ __('Produksi') }}</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ __('Edit') }}</li>
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('produksi.index') }}">Produksi</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Edit</li>
                 </x-breadcrumb>
             </div>
         </div>
@@ -40,7 +40,7 @@
                 <input type="hidden" name="bom_id" value="{{ $produksi->bom_id }}">
 
                 <div class="row">
-                    {{-- Kolom Kiri: Info Produksi --}}
+                    {{-- Kolom Kiri: Informasi Produksi --}}
                     <div class="col-md-6 col-12">
                         <div class="card">
                             <div class="card-header">
@@ -113,29 +113,32 @@
                                         <div class="col-lg-8 col-md-12">
                                             <input type="number" id="qty_target"
                                                 class="form-control @error('qty_target') is-invalid @enderror"
-                                                name="qty_target" value="{{ old('qty_target', $produksi->qty_target) }}"
-                                                step="any" min="0.0001" required>
+                                                name="qty_target" value="{{ $produksi->qty_target }}" step="any"
+                                                min="0.0001" required
+                                                onfocus="this.value = this.getAttribute('data-raw-value')"
+                                                onblur="formatNumberInput(this)">
+                                            <input type="hidden" id="qty_target_display"
+                                                value="{{ rtrim(rtrim(number_format($produksi->qty_target, 4, ',', '.'), '0'), ',') }}">
                                             @error('qty_target')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center">
-                                        <label for="attachment"
-                                            class="col-lg-4 col-md-12 col-form-label">Attachment</label>
+                                        <label for="attachment" class="col-lg-4 col-md-12 col-form-label">Lampiran</label>
                                         <div class="col-lg-8 col-md-12">
                                             @if ($attachmentUrl)
                                                 <div class="mb-2">
                                                     <a href="{{ $attachmentUrl }}" target="_blank"
                                                         class="btn btn-sm btn-outline-primary">
-                                                        <i class="bi bi-paperclip"></i> Lihat Attachment
+                                                        <i class="bi bi-paperclip"></i> Lihat Lampiran
                                                     </a>
                                                     <div class="form-check mt-2">
                                                         <input class="form-check-input" type="checkbox"
                                                             name="remove_attachment" id="remove_attachment"
                                                             value="1">
                                                         <label class="form-check-label" for="remove_attachment">
-                                                            Hapus attachment saat menyimpan
+                                                            Hapus lampiran saat menyimpan
                                                         </label>
                                                     </div>
                                                 </div>
@@ -183,9 +186,9 @@
                                                 <tr>
                                                     <th>Material</th>
                                                     <th class="text-center">
-                                                        Qty/Unit<br><small>({{ $produksi->produkJadi->unitSatuan?->nama_unit_satuan ?? 'N/A' }})</small>
+                                                        Kuantitas/Unit<br><small>({{ $produksi->produkJadi->unitSatuan?->nama_unit_satuan ?? 'N/A' }})</small>
                                                     </th>
-                                                    <th class="text-center">Unit</th>
+                                                    <th class="text-center">Satuan</th>
                                                     <th class="text-center">Stok Saat Ini</th>
                                                     <th class="text-center">Total Dibutuhkan</th>
                                                 </tr>
@@ -198,11 +201,11 @@
                                                             <small>{{ $material['nama_barang'] }}</small>
                                                         </td>
                                                         <td class="text-center qty-per-unit">
-                                                            {{ $material['qty_per_unit'] }}
+                                                            {{ rtrim(rtrim(number_format($material['qty_per_unit'], 4, ',', '.'), '0'), ',') }}
                                                         </td>
                                                         <td class="text-center">{{ $material['unit_satuan'] }}</td>
                                                         <td class="text-center current-stock">
-                                                            {{ $material['stok_saat_ini'] }}
+                                                            {{ rtrim(rtrim(number_format($material['stok_saat_ini'], 4, ',', '.'), '0'), ',') }}
                                                         </td>
                                                         <td class="text-center required-qty fw-bold">0</td>
                                                     </tr>
@@ -250,19 +253,42 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const qtyTargetInput = document.getElementById('qty_target');
+            const qtyTargetDisplay = document.getElementById('qty_target_display');
             const materialTableBody = document.getElementById('material-table')?.querySelector('tbody');
 
+            // Inisialisasi nilai terformat untuk input qty_target
+            if (qtyTargetInput && qtyTargetDisplay) {
+                qtyTargetInput.value = qtyTargetDisplay.value;
+                qtyTargetInput.setAttribute('data-raw-value', qtyTargetInput.getAttribute('value'));
+            }
+
+            // Fungsi untuk memformat angka ke format Indonesia tanpa trailing zeros
+            function formatNumberInput(input) {
+                let value = parseFloat(input.value);
+                if (isNaN(value)) {
+                    input.value = '';
+                    return;
+                }
+                input.value = value.toLocaleString('id-ID', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 4
+                });
+            }
+
+            // Fungsi untuk menghitung kebutuhan bahan berdasarkan qty_target
             function calculateRequiredMaterials() {
-                const targetQty = parseFloat(qtyTargetInput.value) || 0;
+                // Parse input yang mungkin dalam format Indonesia (1.234,5678)
+                let targetQty = parseFloat(qtyTargetInput.value.replace(/\./g, '').replace(',', '.')) || 0;
 
                 if (!materialTableBody) return;
 
                 materialTableBody.querySelectorAll('tr[data-material-id]').forEach(row => {
                     const qtyPerUnitText = row.querySelector('.qty-per-unit')?.textContent?.trim() || '0';
                     const currentStockText = row.querySelector('.current-stock')?.textContent?.trim() ||
-                    '0';
+                        '0';
 
-                    const qtyPerUnit = parseFloat(qtyPerUnitText.replace(',', '.')) || 0;
+                    // Parse qty_per_unit dan current_stock dari format Indonesia
+                    const qtyPerUnit = parseFloat(qtyPerUnitText.replace(/\./g, '').replace(',', '.')) || 0;
                     const currentStock = parseFloat(currentStockText.replace(/\./g, '').replace(',',
                         '.')) || 0;
 
@@ -271,11 +297,13 @@
                     if (requiredQtyCell) {
                         const requiredQty = qtyPerUnit * targetQty;
 
+                        // Format total dibutuhkan ke format Indonesia
                         requiredQtyCell.textContent = requiredQty.toLocaleString('id-ID', {
                             minimumFractionDigits: 0,
                             maximumFractionDigits: 4
                         });
 
+                        // Tandai merah jika kebutuhan melebihi stok
                         if (requiredQty > currentStock) {
                             requiredQtyCell.classList.add('text-danger');
                         } else {
@@ -285,9 +313,18 @@
                 });
             }
 
+            // Hitung kebutuhan bahan saat halaman dimuat
             calculateRequiredMaterials();
+
+            // Event listener untuk perubahan qty_target
             qtyTargetInput.addEventListener('input', calculateRequiredMaterials);
             qtyTargetInput.addEventListener('change', calculateRequiredMaterials);
+            qtyTargetInput.addEventListener('blur', function() {
+                formatNumberInput(this);
+            });
+            qtyTargetInput.addEventListener('focus', function() {
+                this.value = this.getAttribute('data-raw-value');
+            });
         });
     </script>
 @endpush
