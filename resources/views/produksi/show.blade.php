@@ -45,7 +45,7 @@
                                         {{ $produksi->produkJadi?->nama_barang }}</dd>
 
                                     <dt class="col-sm-4">Target Qty</dt>
-                                    <dd class="col-sm-8">: {{ number_format($produksi->qty_target, 4, ',', '.') }}
+                                    <dd class="col-sm-8">: {{ $produksi->qty_target }}
                                         {{ $produksi->produkJadi?->unitSatuan?->nama_unit_satuan }}</dd>
 
                                     <dt class="col-sm-4">BoM Digunakan</dt>

@@ -329,14 +329,39 @@ class ProduksiController extends Controller implements HasMiddleware
             abort(403, 'Akses ditolak.');
         }
 
-        // TODO: Implementasi form edit jika diperlukan
-        // Perlu load data seperti create + data produksi yg ada
-        return view('produksi.edit', compact('produksi')); // Buat view ini
+        // Load relasi yang diperlukan
+        $produksi->load([
+            'produkJadi.unitSatuan',
+            'bom.details.material.unitSatuan',
+            'bom.details.unitSatuan',
+            'details.barang.unitSatuan',
+            'details.unitSatuan',
+        ]);
+
+        // Siapkan data requiredMaterials seperti di create
+        $requiredMaterials = [];
+        foreach ($produksi->bom->details as $detail) {
+            $requiredMaterials[] = [
+                'material_id' => $detail->barang_id,
+                'kode_barang' => $detail->material?->kode_barang ?? 'N/A',
+                'nama_barang' => $detail->material?->nama_barang ?? 'Material Tidak Ditemukan',
+                'qty_per_unit' => $detail->jumlah,
+                'unit_satuan_id' => $detail->unit_satuan_id,
+                'unit_satuan' => $detail->unitSatuan?->nama_unit_satuan ?? '-',
+                'stok_saat_ini' => $detail->material?->stock_barang ?? 0,
+            ];
+        }
+
+        // Ambil attachment URL jika ada
+        $attachmentUrl = $produksi->attachment
+            ? Storage::url('uploads/attachments/' . $produksi->company_id . '/' . $produksi->attachment)
+            : null;
+
+        return view('produksi.edit', compact('produksi', 'requiredMaterials', 'attachmentUrl'));
     }
 
     /**
      * Update the specified resource in storage.
-     * (Implementasi update bisa kompleks)
      */
     public function update(Request $request, Produksi $produksi): RedirectResponse
     {
@@ -345,15 +370,177 @@ class ProduksiController extends Controller implements HasMiddleware
             abort(403, 'Akses ditolak.');
         }
 
-        // TODO: Implementasi logika update jika diperlukan
-        // Hati-hati dengan perubahan qty target dan dampaknya ke stok & detail
+        $companyId = session('sessionCompany');
+        $userId = Auth::id();
 
-        return redirect()->route('produksi.index')->with('info', 'Fitur update produksi belum diimplementasikan.');
+        // Validasi input
+        $validator = Validator::make($request->all(), [
+            'no_produksi' => 'required|string|max:255|unique:produksi,no_produksi,' . $produksi->id . ',id,company_id,' . $companyId,
+            'batch' => 'required|integer|min:1',
+            'tanggal' => 'required|date_format:Y-m-d\TH:i',
+            'qty_target' => 'required|numeric|min:0.0001',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10048',
+            'keterangan' => 'nullable|string',
+        ], [
+            'no_produksi.unique' => 'No. Produksi sudah digunakan di perusahaan ini.',
+            'qty_target.min' => 'Target Kuantitas minimal harus lebih besar dari 0.',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        // Ambil data tervalidasi
+        $validated = $validator->validated();
+        $newQtyTarget = (float) $validated['qty_target'];
+        $oldQtyTarget = (float) $produksi->qty_target;
+
+        // Load BoM dan details
+        $bom = Bom::with('details.material')
+            ->where('id', $produksi->bom_id)
+            ->where('company_id', $companyId)
+            ->first();
+
+        if (!$bom || $bom->details->isEmpty()) {
+            return redirect()->back()->with('error', 'BoM tidak valid atau tidak memiliki detail bahan.')->withInput();
+        }
+
+        // Validasi stok untuk perubahan qty_target
+        $stockErrors = [];
+        $qtyDiff = $newQtyTarget - $oldQtyTarget; // Positif = butuh lebih, Negatif = kurangi
+        if ($qtyDiff > 0) {
+            // Jika qty_target meningkat, cek stok bahan baku
+            foreach ($bom->details as $detail) {
+                $additionalQtyNeeded = (float) $detail->jumlah * $qtyDiff;
+                $materialStock = (float) ($detail->material->stock_barang ?? 0);
+                if ($materialStock < $additionalQtyNeeded) {
+                    $stockErrors[] = "Stok '{$detail->material->kode_barang} - {$detail->material->nama_barang}' tidak cukup (dibutuhkan tambahan: {$additionalQtyNeeded}, tersedia: {$materialStock})";
+                }
+            }
+        } elseif ($qtyDiff < 0) {
+            // Jika qty_target menurun, cek stok produk jadi
+            $productStock = (float) Barang::where('id', $produksi->barang_id)
+                ->where('company_id', $companyId)
+                ->value('stock_barang');
+            $qtyToDeduct = abs($qtyDiff);
+            if ($productStock < $qtyToDeduct) {
+                $stockErrors[] = "Stok produk jadi tidak cukup untuk pengurangan (dibutuhkan: {$qtyToDeduct}, tersedia: {$productStock})";
+            }
+        }
+
+        if (!empty($stockErrors)) {
+            return redirect()->back()->withErrors(['stok' => $stockErrors])->withInput()->with('error', 'Stok tidak mencukupi untuk perubahan ini.');
+        }
+
+        DB::beginTransaction();
+        try {
+            // Handle attachment
+            $attachmentName = $produksi->attachment;
+            if ($request->hasFile('attachment')) {
+                // Hapus attachment lama jika ada
+                if ($attachmentName) {
+                    Storage::delete('public/uploads/attachments/' . $companyId . '/' . $attachmentName);
+                }
+                // Simpan attachment baru
+                $file = $request->file('attachment');
+                $originalName = $file->getClientOriginalName();
+                $attachmentName = $companyId . '_prod_' . time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+                $file->storeAs('public/uploads/attachments/' . $companyId, $attachmentName);
+            } elseif ($request->input('remove_attachment') === '1') {
+                // Hapus attachment jika diminta
+                if ($attachmentName) {
+                    Storage::delete('public/uploads/attachments/' . $companyId . '/' . $attachmentName);
+                    $attachmentName = null;
+                }
+            }
+
+            // Update header Produksi
+            $produksi->update([
+                'no_produksi' => $validated['no_produksi'],
+                'batch' => $validated['batch'],
+                'tanggal' => $validated['tanggal'],
+                'qty_target' => $newQtyTarget,
+                'attachment' => $attachmentName,
+                'keterangan' => $validated['keterangan'],
+                'updated_at' => now(),
+            ]);
+
+            // Update ProduksiDetail
+            $produksiDetails = [];
+
+            // Update detail untuk Produk Jadi (Type 'In')
+            $produkJadiModel = Barang::find($produksi->barang_id);
+            ProduksiDetail::where('produksi_id', $produksi->id)
+                ->where('type', 'In')
+                ->update([
+                    'qty_target_produksi' => $newQtyTarget,
+                    'qty_total_diperlukan' => $newQtyTarget,
+                    'updated_at' => now(),
+                ]);
+
+            // Update detail untuk Material (Type 'Out')
+            foreach ($bom->details as $detail) {
+                $qtyDiperlukan = (float) $detail->jumlah * $newQtyTarget;
+                ProduksiDetail::where('produksi_id', $produksi->id)
+                    ->where('type', 'Out')
+                    ->where('barang_id', $detail->barang_id)
+                    ->update([
+                        'qty_target_produksi' => $newQtyTarget,
+                        'qty_total_diperlukan' => $qtyDiperlukan,
+                        'updated_at' => now(),
+                    ]);
+            }
+
+            // Adjust stock
+            if ($qtyDiff != 0) {
+                // Adjust material stock (Type 'Out')
+                foreach ($bom->details as $detail) {
+                    $stockChange = (float) $detail->jumlah * $qtyDiff;
+                    if ($stockChange > 0) {
+                        // Kurangi stok material
+                        DB::table('barang')
+                            ->where('id', $detail->barang_id)
+                            ->where('company_id', $companyId)
+                            ->decrement('stock_barang', $stockChange, ['updated_at' => now()]);
+                    } elseif ($stockChange < 0) {
+                        // Tambah kembali stok material
+                        DB::table('barang')
+                            ->where('id', $detail->barang_id)
+                            ->where('company_id', $companyId)
+                            ->increment('stock_barang', abs($stockChange), ['updated_at' => now()]);
+                    }
+                }
+
+                // Adjust produk jadi stock (Type 'In')
+                if ($qtyDiff > 0) {
+                    // Tambah stok produk jadi
+                    DB::table('barang')
+                        ->where('id', $produksi->barang_id)
+                        ->where('company_id', $companyId)
+                        ->increment('stock_barang', $qtyDiff, ['updated_at' => now()]);
+                } elseif ($qtyDiff < 0) {
+                    // Kurangi stok produk jadi
+                    DB::table('barang')
+                        ->where('id', $produksi->barang_id)
+                        ->where('company_id', $companyId)
+                        ->decrement('stock_barang', abs($qtyDiff), ['updated_at' => now()]);
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('produksi.index')->with('success', 'Data produksi berhasil diperbarui dan stok disesuaikan.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Hapus attachment baru jika gagal
+            if ($request->hasFile('attachment') && $attachmentName) {
+                Storage::delete('public/uploads/attachments/' . $companyId . '/' . $attachmentName);
+            }
+            return redirect()->back()->with('error', 'Gagal memperbarui data produksi: ' . $e->getMessage())->withInput();
+        }
     }
 
     /**
      * Remove the specified resource from storage.
-     * (Implementasi destroy perlu membatalkan/mengembalikan stok)
      */
     public function destroy(Produksi $produksi): RedirectResponse
     {
@@ -362,31 +549,54 @@ class ProduksiController extends Controller implements HasMiddleware
             abort(403, 'Akses ditolak.');
         }
 
+        $companyId = session('sessionCompany');
+
+        // Load details untuk pengembalian stok
+        $produksi->load(['details.barang', 'details.unitSatuan']);
+
+        // Validasi stok produk jadi sebelum pengurangan
+        $detailIn = $produksi->details->where('type', 'In')->first();
+        if ($detailIn) {
+            $productStock = (float) Barang::where('id', $detailIn->barang_id)
+                ->where('company_id', $companyId)
+                ->value('stock_barang');
+            $qtyToDeduct = (float) $detailIn->qty_total_diperlukan;
+            if ($productStock < $qtyToDeduct) {
+                return redirect()->route('produksi.index')->with('error', "Stok produk jadi tidak cukup untuk penghapusan (dibutuhkan: {$qtyToDeduct}, tersedia: {$productStock})");
+            }
+        }
+
         DB::beginTransaction();
         try {
-
-            // TODO: Implementasi pengembalian stok
-            // 1. Ambil detail produksi
-            // 2. Untuk type 'Out', TAMBAH stok material
-            // 3. Untuk type 'In', KURANGI stok produk jadi
-            // Hati-hati jika status produksi sudah 'Completed' atau 'In Progress'
+            // Pengembalian stok
+            foreach ($produksi->details as $detail) {
+                if ($detail->type === 'Out') {
+                    // Tambah kembali stok material
+                    DB::table('barang')
+                        ->where('id', $detail->barang_id)
+                        ->where('company_id', $companyId)
+                        ->increment('stock_barang', (float) $detail->qty_total_diperlukan, ['updated_at' => now()]);
+                } elseif ($detail->type === 'In') {
+                    // Kurangi stok produk jadi
+                    DB::table('barang')
+                        ->where('id', $detail->barang_id)
+                        ->where('company_id', $companyId)
+                        ->decrement('stock_barang', (float) $detail->qty_total_diperlukan, ['updated_at' => now()]);
+                }
+            }
 
             // Hapus attachment jika ada
             if ($produksi->attachment) {
                 Storage::delete('public/uploads/attachments/' . $produksi->company_id . '/' . $produksi->attachment);
             }
 
-            // Hapus detail (cascadeOnDelete harusnya sudah menghapus ini, tapi bisa eksplisit)
-            // ProduksiDetail::where('produksi_id', $produksi->id)->delete();
-
-            // Hapus header
+            // Hapus Produksi dan details (cascadeOnDelete seharusnya menangani details)
             $produksi->delete();
 
             DB::commit();
-            return redirect()->route('produksi.index')->with('success', 'Data produksi berhasil dihapus (Logika pengembalian stok perlu diimplementasikan).');
+            return redirect()->route('produksi.index')->with('success', 'Data produksi berhasil dihapus dan stok disesuaikan.');
         } catch (\Exception $e) {
             DB::rollBack();
-            // Log::error(...) // Logging dinonaktifkan
             return redirect()->route('produksi.index')->with('error', 'Gagal menghapus data produksi: ' . $e->getMessage());
         }
     }
