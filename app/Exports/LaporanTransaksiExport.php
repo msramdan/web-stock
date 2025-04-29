@@ -2,15 +2,7 @@
 
 namespace App\Exports;
 
-// Pastikan semua model yang dibutuhkan di-import
-use App\Models\TransaksiDetail;
-use App\Models\Transaksi;
-use App\Models\Barang;
-use App\Models\JenisMaterial;
-use App\Models\UnitSatuan;
-use App\Models\User; // Tambahkan use User jika belum ada
-
-use Illuminate\Support\Facades\DB; // Tidak perlu jika pakai Eloquent
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -22,86 +14,115 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
     protected $tanggalMulai;
     protected $tanggalSelesai;
     protected $jenisMaterialId;
-    protected $companyId; // Tambahkan properti untuk companyId
+    protected $tipeBarang;
+    protected $companyId;
 
-    public function __construct(string $tanggalMulai, string $tanggalSelesai, $jenisMaterialId)
+    public function __construct(string $tanggalMulai, string $tanggalSelesai, $jenisMaterialId, $tipeBarang)
     {
         $this->tanggalMulai = $tanggalMulai;
         $this->tanggalSelesai = $tanggalSelesai;
         $this->jenisMaterialId = $jenisMaterialId;
-        $this->companyId = session('sessionCompany'); // Ambil companyId saat export dibuat
+        $this->tipeBarang = $tipeBarang;
+        $this->companyId = session('sessionCompany');
     }
 
-    /**
-     * Mengambil data transaksi berdasarkan filter.
-     *
-     * @return \Illuminate\Support\Collection
-     */
     public function collection()
     {
-        // Menggunakan Eloquent untuk query yang lebih rapi
-        $query = TransaksiDetail::with([
-            'transaksi' => function ($q) { // Eager load transaksi
-                $q->with('user:id,name'); // Eager load user dari transaksi
-            },
-            'barang' => function ($q) { // Eager load barang
-                $q->with(['jenisMaterial', 'unitSatuan']); // Eager load relasi dari barang
-            }
-        ])
-            ->whereHas('transaksi', function ($q) { // Filter berdasarkan transaksi
-                $q->where('company_id', $this->companyId) // Filter Company ID dari transaksi
-                    ->whereBetween('tanggal', [
-                        Carbon::parse($this->tanggalMulai)->startOfDay(),
-                        Carbon::parse($this->tanggalSelesai)->endOfDay()
-                    ]);
-            });
+        $startDate = Carbon::parse($this->tanggalMulai)->startOfDay();
+        $endDate = Carbon::parse($this->tanggalSelesai)->endOfDay();
+        $companyId = $this->companyId;
 
-        // Filter berdasarkan jenis material (jika ada)
+        // Query Transaksi (Stock In/Out)
+        $transaksiQuery = DB::table('transaksi_detail as td')
+            ->select(
+                DB::raw("'Transaksi' as sumber_data"),
+                't.no_surat as no_dokumen',
+                't.tanggal',
+                't.type as tipe_pergerakan',
+                'u.name as user_name',
+                'b.kode_barang',
+                'b.nama_barang',
+                'b.tipe_barang',
+                'b.deskripsi_barang',
+                'jm.nama_jenis_material',
+                'us.nama_unit_satuan',
+                'td.qty'
+            )
+            ->join('transaksi as t', 'td.transaksi_id', '=', 't.id')
+            ->join('barang as b', 'td.barang_id', '=', 'b.id')
+            ->join('users as u', 't.user_id', '=', 'u.id')
+            ->leftJoin('jenis_material as jm', 'b.jenis_material_id', '=', 'jm.id')
+            ->leftJoin('unit_satuan as us', 'b.unit_satuan_id', '=', 'us.id')
+            ->where('t.company_id', $companyId)
+            ->whereBetween('t.tanggal', [$startDate, $endDate]);
+
         if (!empty($this->jenisMaterialId)) {
-            $query->whereHas('barang', function ($q) {
-                $q->where('jenis_material_id', $this->jenisMaterialId);
-            });
+            $transaksiQuery->where('b.jenis_material_id', $this->jenisMaterialId);
+        }
+        if (!empty($this->tipeBarang)) {
+            $transaksiQuery->where('b.tipe_barang', $this->tipeBarang);
         }
 
-        // Urutkan hasil
-        $query->orderBy(
-            Transaksi::select('tanggal') // Order by tanggal dari tabel transaksi
-                ->whereColumn('transaksi.id', 'transaksi_detail.transaksi_id')
-                ->orderBy('tanggal', 'asc')
-                ->limit(1)
-        )
-            ->orderBy(
-                Transaksi::select('no_surat') // Lalu order by no_surat
-                    ->whereColumn('transaksi.id', 'transaksi_detail.transaksi_id')
-                    ->orderBy('no_surat', 'asc')
-                    ->limit(1)
+        // Query Produksi
+        $produksiQuery = DB::table('produksi_details as pd')
+            ->select(
+                DB::raw("'Produksi' as sumber_data"),
+                'p.no_produksi as no_dokumen',
+                'p.tanggal',
+                'pd.type as tipe_pergerakan',
+                DB::raw("'N/A' as user_name"), // Ganti user_name dengan nilai default
+                'b.kode_barang',
+                'b.nama_barang',
+                'b.tipe_barang',
+                'b.deskripsi_barang',
+                'jm.nama_jenis_material',
+                'us.nama_unit_satuan',
+                'pd.qty_total_diperlukan as qty'
             )
-            ->orderBy(
-                Barang::select('kode_barang') // Lalu order by kode barang
-                    ->whereColumn('barang.id', 'transaksi_detail.barang_id')
-                    ->orderBy('kode_barang', 'asc')
-                    ->limit(1)
-            );
+            ->join('produksi as p', 'pd.produksi_id', '=', 'p.id')
+            ->join('barang as b', 'pd.barang_id', '=', 'b.id')
+            ->leftJoin('jenis_material as jm', 'b.jenis_material_id', '=', 'jm.id')
+            ->leftJoin('unit_satuan as us', 'pd.unit_satuan_id', '=', 'us.id')
+            ->where('p.company_id', $companyId)
+            ->whereBetween('p.tanggal', [$startDate, $endDate]);
 
+        if (!empty($this->jenisMaterialId)) {
+            $produksiQuery->where('b.jenis_material_id', $this->jenisMaterialId);
+        }
+        if (!empty($this->tipeBarang)) {
+            $produksiQuery->where('b.tipe_barang', $this->tipeBarang);
+        }
 
-        return $query->get();
+        // Gabungkan Query dengan UNION ALL
+        $transaksiQuery->unionAll($produksiQuery);
+
+        // Eksekusi dan Urutkan hasil gabungan
+        $results = DB::query()->fromSub($transaksiQuery, 'combined_data')
+            ->orderBy('tanggal', 'asc')
+            ->orderBy('no_dokumen', 'asc')
+            ->orderBy('tipe_pergerakan', 'desc')
+            ->orderBy('kode_barang', 'asc')
+            ->get();
+
+        // Penanganan data kosong
+        if ($results->isEmpty()) {
+            return collect([]);
+        }
+
+        return $results;
     }
 
-    /**
-     * Mendefinisikan header kolom untuk file Excel.
-     *
-     * @return array
-     */
     public function headings(): array
     {
         return [
-            'No Surat',
-            'Tanggal Transaksi',
-            'Tipe Transaksi', // Ganti Tipe -> Tipe Transaksi
+            'Sumber Data',
+            'No Dokumen',
+            'Tanggal',
+            'Tipe Pergerakan',
             'User',
             'Kode Barang',
-            'Nama Barang', // Tambahkan Nama Barang
-            'Tipe Barang', // <-- TAMBAHKAN HEADER BARU
+            'Nama Barang',
+            'Tipe Barang',
             'Deskripsi Barang',
             'Jenis Material',
             'Unit Satuan',
@@ -109,27 +130,26 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
         ];
     }
 
-    /**
-     * Memetakan data dari collection ke array untuk setiap baris Excel.
-     *
-     * @param mixed $detail instance dari TransaksiDetail dengan relasi eager loaded
-     * @return array
-     */
-    public function map($detail): array
+    public function map($row): array
     {
-        // Akses data melalui relasi yang sudah di-load
+        // Format qty: Hilangkan nol di belakang dan desimal jika bilangan bulat
+        $formattedQty = is_numeric($row->qty)
+            ? rtrim(rtrim(number_format((float)$row->qty, 4, ',', '.'), '0'), ',')
+            : '0';
+
         return [
-            $detail->transaksi?->no_surat ?? '-', // Akses relasi transaksi
-            $detail->transaksi?->tanggal ? Carbon::parse($detail->transaksi->tanggal)->format('d/m/Y H:i') : '-',
-            $detail->transaksi?->type ?? '-',
-            $detail->transaksi?->user?->name ?? '-', // Akses relasi user dari transaksi
-            $detail->barang?->kode_barang ?? '-', // Akses relasi barang
-            $detail->barang?->nama_barang ?? '-', // Akses relasi barang
-            $detail->barang?->tipe_barang ?? '-', // <-- AMBIL DATA TIPE BARANG
-            $detail->barang?->deskripsi_barang ?? '-',
-            $detail->barang?->jenisMaterial?->nama_jenis_material ?? '-', // Akses relasi dari barang
-            $detail->barang?->unitSatuan?->nama_unit_satuan ?? '-', // Akses relasi dari barang
-            $detail->qty,
+            $row->sumber_data ?? 'N/A',
+            $row->no_dokumen ?? 'N/A',
+            $row->tanggal ? Carbon::parse($row->tanggal)->format('d/m/Y H:i') : '-',
+            $row->tipe_pergerakan ?? '-',
+            $row->user_name ?? '-',
+            $row->kode_barang ?? '-',
+            $row->nama_barang ?? '-',
+            $row->tipe_barang ?? '-',
+            $row->deskripsi_barang ?? '-',
+            $row->nama_jenis_material ?? '-',
+            $row->nama_unit_satuan ?? '-',
+            $formattedQty,
         ];
     }
 }

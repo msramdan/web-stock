@@ -138,53 +138,52 @@
             /* Tambah margin untuk ruang tanda tangan */
         }
 
-        .table-data th {
-            background-color: #EAEAEA;
-            font-weight: bold;
-            text-align: center;
-            vertical-align: middle;
-            font-size: 11px;
-            padding: 4px 5px;
-            border: 1px solid #333;
-        }
-
+        .table-data th,
         .table-data td {
-            font-size: 10px;
-            vertical-align: middle;
-            padding: 4px 5px;
+            font-size: 9px;
+            padding: 3px 4px;
             border: 1px solid #333;
         }
 
-        /* Penyesuaian lebar kolom */
         .table-data th:nth-child(1),
         .table-data td:nth-child(1) {
-            width: 5%;
+            width: 4%;
             text-align: center;
         }
 
         .table-data th:nth-child(2),
         .table-data td:nth-child(2) {
-            width: 15%;
+            width: 12%;
         }
 
         .table-data th:nth-child(3),
         .table-data td:nth-child(3) {
-            width: 35%;
+            width: 18%;
         }
 
         .table-data th:nth-child(4),
         .table-data td:nth-child(4) {
-            width: 15%;
+            width: 10%;
         }
 
         .table-data th:nth-child(5),
         .table-data td:nth-child(5) {
-            width: 15%;
+            width: 21%;
         }
 
         .table-data th:nth-child(6),
         .table-data td:nth-child(6) {
-            width: 15%;
+            width: 12%;
+        }
+
+        .table-data th:nth-child(7),
+        .table-data td:nth-child(7) {
+            width: 10%;
+        }
+
+        .table-data th:nth-child(8),
+        .table-data td:nth-child(8) {
+            width: 13%;
             text-align: center;
         }
 
@@ -280,10 +279,12 @@
             <tr>
                 <th>No</th>
                 <th>Kode Barang</th>
-                <th>Deskripsi Barang</th>
+                <th>Nama Barang</th>
+                <th>Tipe Barang</th>
+                <th>Deskripsi</th>
                 <th>Jenis Material</th>
-                <th>Unit Satuan</th>
-                <th>Stok Barang</th>
+                <th>Unit</th>
+                <th>Stok</th>
             </tr>
         </thead>
         <tbody>
@@ -291,14 +292,19 @@
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ $barang->kode_barang ?? '-' }}</td>
+                    <td>{{ $barang->nama_barang ?? '-' }}</td> {{-- Tambah Kolom --}}
+                    <td>{{ $barang->tipe_barang ?? '-' }}</td> {{-- <-- TAMBAHKAN DATA BARU --}}
                     <td>{{ $barang->deskripsi_barang ?? '-' }}</td>
                     <td>{{ $barang->nama_jenis_material ?? '-' }}</td>
                     <td>{{ $barang->nama_unit_satuan ?? '-' }}</td>
-                    <td class="text-center">{{ number_format($barang->stock_barang ?? 0, 0, ',', '.') }}</td>
+                    <td class="text-center">
+                        {{ rtrim(rtrim(number_format((float) ($barang->stock_barang ?? 0), 4, ',', '.'), '0'), ',') }}
+                    </td> {{-- Format stok --}}
                 </tr>
             @empty
                 <tr class="no-border">
-                    <td colspan="6" class="text-center">Tidak ada data barang yang dapat ditampilkan.</td>
+                    <td colspan="8" class="text-center">Tidak ada data barang yang dapat ditampilkan.</td>
+                    {{-- Colspan jadi 8 --}}
                 </tr>
             @endforelse
         </tbody>
