@@ -44,7 +44,7 @@
                                             <th>{{ __('Batch') }}</th>
                                             <th>{{ __('Tanggal') }}</th>
                                             <th>{{ __('Produk Jadi') }}</th>
-                                            <th>{{ __('Target Qty') }}</th>
+                                            {{-- <th>{{ __('Target Qty') }}</th> <-- HAPUS KOLOM INI --}}
                                             {{-- Tambahkan kolom Status jika ada --}}
                                             {{-- <th>{{ __('Status') }}</th> --}}
                                             <th>{{ __('Action') }}</th>
@@ -82,22 +82,17 @@
                     name: 'no_produksi'
                 },
                 {
-                    data: 'batch',
+                    data: 'batch', // Tampilkan kolom batch
                     name: 'batch'
                 },
                 {
                     data: 'tanggal_f',
                     name: 'tanggal'
-                }, // Gunakan tanggal yang sudah diformat
+                },
                 {
                     data: 'produk_jadi',
                     name: 'produkJadi.nama_barang'
-                }, // Relasi dari controller
-                {
-                    data: 'qty_target',
-                    name: 'qty_target'
                 },
-                // { data: 'status', name: 'status' }, // Jika ada kolom status
                 {
                     data: 'action',
                     name: 'action',
@@ -106,8 +101,8 @@
                 }
             ],
             order: [
-                [2, 'desc']
-            ] // Urutkan berdasarkan tanggal terbaru
+                [2, 'desc'] // Urutkan berdasarkan tanggal (indeks 2 sekarang setelah menghapus qty_target)
+            ]
         });
     </script>
 @endpush

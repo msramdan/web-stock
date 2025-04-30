@@ -22,7 +22,6 @@ class Produksi extends Model
         'tanggal',
         'barang_id', // ID Produk Jadi
         'bom_id',    // ID BoM yang digunakan
-        'qty_target', // Target Produksi Produk Jadi
         'attachment',
         'keterangan',
         // 'status', // Jika Anda tambahkan kembali kolom status
@@ -32,7 +31,6 @@ class Produksi extends Model
     // Tipe casting untuk kolom tertentu
     protected $casts = [
         'tanggal' => 'datetime',
-        'qty_target' => 'decimal:4', // Sesuaikan presisi jika perlu
         'batch' => 'integer',
     ];
 

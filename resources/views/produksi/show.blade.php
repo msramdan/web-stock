@@ -1,5 +1,6 @@
 @extends('layouts.app')
 
+{{-- Gunakan No Produksi di title --}}
 @section('title', 'Detail Produksi - ' . $produksi->no_produksi)
 
 @section('content')
@@ -34,20 +35,21 @@
                                     <dt class="col-sm-4">No. Produksi</dt>
                                     <dd class="col-sm-8">: {{ $produksi->no_produksi }}</dd>
 
-                                    <dt class="col-sm-4">Batch</dt>
+                                    {{-- Tampilkan Jumlah Batch --}}
+                                    <dt class="col-sm-4">Jumlah Batch</dt>
                                     <dd class="col-sm-8">: {{ $produksi->batch }}</dd>
 
                                     <dt class="col-sm-4">Tanggal</dt>
                                     <dd class="col-sm-8">: {{ $produksi->tanggal->isoFormat('D MMMM YYYY, HH:mm') }}</dd>
+                                    {{-- Format lebih baik --}}
 
                                     <dt class="col-sm-4">Produk Jadi</dt>
                                     <dd class="col-sm-8">: ({{ $produksi->produkJadi?->kode_barang }})
                                         {{ $produksi->produkJadi?->nama_barang }}</dd>
 
-                                    <dt class="col-sm-4">Target Kuantitas</dt>
-                                    <dd class="col-sm-8">:
-                                        {{ rtrim(rtrim(number_format($produksi->qty_target, 4, ',', '.'), '0'), ',') }}
-                                        {{ $produksi->produkJadi?->unitSatuan?->nama_unit_satuan ?? 'N/A' }}</dd>
+                                    {{-- Hapus Target Kuantitas --}}
+                                    {{-- <dt class="col-sm-4">Target Kuantitas</dt>
+                                    <dd class="col-sm-8">: ... </dd> --}}
 
                                     <dt class="col-sm-4">BoM Digunakan</dt>
                                     <dd class="col-sm-8">: {{ $produksi->bom?->deskripsi }} (ID: {{ $produksi->bom_id }})
@@ -97,17 +99,20 @@
                                                 <th class="text-center">Tipe</th>
                                                 <th>Item</th>
                                                 <th class="text-center">Satuan</th>
-                                                <th class="text-center">Kuantitas/Unit</th>
-                                                <th class="text-center">Target Produksi</th>
-                                                <th class="text-center">Total</th>
+                                                {{-- Ubah Header Kolom --}}
+                                                <th class="text-center">Kuantitas/Batch</th>
+                                                <th class="text-center">Jumlah Batch</th>
+                                                <th class="text-center">Total Dibutuhkan</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @php
+                                                // Ambil detail 'In' (Produk Jadi) dan 'Out' (Material)
                                                 $detailIn = $produksi->details->where('type', 'In')->first();
                                                 $detailsOut = $produksi->details->where('type', 'Out');
                                             @endphp
 
+                                            {{-- Baris Produk Jadi (In) --}}
                                             @if ($detailIn)
                                                 <tr class="table-light">
                                                     <td class="text-center"><span
@@ -118,18 +123,22 @@
                                                     </td>
                                                     <td class="text-center">
                                                         {{ $detailIn->unitSatuan?->nama_unit_satuan ?? '-' }}</td>
+                                                    {{-- Kolom Qty/Batch (Asumsi 1 untuk produk jadi) --}}
                                                     <td class="text-center">
-                                                        {{ rtrim(rtrim(number_format($detailIn->qty_rate, 4, ',', '.'), '0'), ',') }}
+                                                        {{ rtrim(rtrim(number_format($detailIn->qty_rate ?? 1, 4, ',', '.'), '0'), ',') }}
                                                     </td>
+                                                    {{-- Kolom Jumlah Batch --}}
                                                     <td class="text-center">
-                                                        {{ rtrim(rtrim(number_format($detailIn->qty_target_produksi, 4, ',', '.'), '0'), ',') }}
+                                                        {{ number_format($produksi->batch, 0, ',', '.') }}
                                                     </td>
+                                                    {{-- Kolom Total (Produk Jadi = Jumlah Batch * 1) --}}
                                                     <td class="text-center fw-bold">
-                                                        {{ rtrim(rtrim(number_format($detailIn->qty_total_diperlukan, 4, ',', '.'), '0'), ',') }}
+                                                        {{ rtrim(rtrim(number_format($detailIn->qty_total_diperlukan ?? $produksi->batch, 4, ',', '.'), '0'), ',') }}
                                                     </td>
                                                 </tr>
                                             @endif
 
+                                            {{-- Baris Material (Out) --}}
                                             @forelse($detailsOut as $detail)
                                                 <tr>
                                                     <td class="text-center"><span
@@ -140,20 +149,23 @@
                                                     </td>
                                                     <td class="text-center">
                                                         {{ $detail->unitSatuan?->nama_unit_satuan ?? '-' }}</td>
+                                                    {{-- Kolom Qty/Batch (dari BoM detail) --}}
                                                     <td class="text-center">
-                                                        {{ rtrim(rtrim(number_format($detail->qty_rate, 4, ',', '.'), '0'), ',') }}
+                                                        {{ rtrim(rtrim(number_format($detail->qty_rate ?? 0, 4, ',', '.'), '0'), ',') }}
                                                     </td>
+                                                    {{-- Kolom Jumlah Batch --}}
                                                     <td class="text-center">
-                                                        {{ rtrim(rtrim(number_format($detail->qty_target_produksi, 4, ',', '.'), '0'), ',') }}
+                                                        {{ number_format($produksi->batch, 0, ',', '.') }}
                                                     </td>
+                                                    {{-- Kolom Total Dibutuhkan --}}
                                                     <td class="text-center">
-                                                        {{ rtrim(rtrim(number_format($detail->qty_total_diperlukan, 4, ',', '.'), '0'), ',') }}
+                                                        {{ rtrim(rtrim(number_format($detail->qty_total_diperlukan ?? 0, 4, ',', '.'), '0'), ',') }}
                                                     </td>
                                                 </tr>
                                             @empty
                                                 <tr>
                                                     <td colspan="6" class="text-center text-muted">Tidak ada detail
-                                                        material untuk produksi ini.</td>
+                                                        material untuk produksi ini.</td> {{-- Colspan jadi 6 --}}
                                                 </tr>
                                             @endforelse
                                         </tbody>
@@ -169,6 +181,7 @@
 @endsection
 
 @push('css')
+    {{-- CSS Sama --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
     <link rel="stylesheet" href="{{ asset('mazer/static/css/pages/bootstrap-icons.css') }}">
     <style>

@@ -20,17 +20,13 @@ class ProduksiDetail extends Model
         'unit_satuan_id',
         'type',
         'qty_rate',
-        'qty_target_produksi',
         'qty_total_diperlukan',
-        // 'qty_digunakan' // Jika Anda tambahkan kolom ini
     ];
 
     // Tipe casting untuk kolom desimal
     protected $casts = [
         'qty_rate' => 'decimal:4',
-        'qty_target_produksi' => 'decimal:4',
         'qty_total_diperlukan' => 'decimal:4',
-        // 'qty_digunakan' => 'decimal:4', // Jika Anda tambahkan
     ];
 
     // Menonaktifkan timestamps jika tidak didefinisikan di migrasi
