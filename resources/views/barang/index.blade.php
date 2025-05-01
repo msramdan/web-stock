@@ -42,12 +42,24 @@
                 {{-- Gunakan flexbox & gap --}}
                 @can('barang export pdf')
                     {{-- Link Export PDF akan diupdate oleh JS --}}
-                    <a href="{{ route('barang.exportPdf') }}" id="exportPdfLink" class="btn btn-success btn-sm" target="_blank">
-                        {{-- btn-sm --}}
+                    <a href="{{ route('barang.exportPdf') }}" id="exportPdfLink" class="btn btn-danger btn-sm" target="_blank">
+                        {{-- Ubah ke danger/merah --}}
                         <i class="fas fa-file-pdf"></i>
                         {{ __('Export PDF') }}
                     </a>
                 @endcan
+
+                {{-- === TOMBOL EXPORT EXCEL BARU === --}}
+                @can('barang export excel')
+                    {{-- Sesuaikan nama permission --}}
+                    <a href="{{ route('barang.exportExcel') }}" id="exportExcelLink" class="btn btn-success btn-sm"
+                        target="_blank">
+                        <i class="fas fa-file-excel"></i>
+                        {{ __('Export Excel') }}
+                    </a>
+                @endcan
+                {{-- === AKHIR TOMBOL EXCEL === --}}
+
                 @can('barang create')
                     <a href="{{ route('barang.create') }}" class="btn btn-primary btn-sm"> {{-- btn-sm --}}
                         <i class="fas fa-plus"></i>
@@ -126,15 +138,22 @@
                 columns: [{
                         data: 'kode_barang',
                         name: 'barang.kode_barang'
-                    }, // Prefix nama tabel
+                    },
                     {
                         data: 'nama_barang',
                         name: 'barang.nama_barang'
                     },
                     {
-                        data: 'tipe_barang',
-                        name: 'barang.tipe_barang'
-                    }, // Kolom baru
+                        data: 'tipe_barang', // Kolom Tipe Barang sudah ada di query controller
+                        name: 'barang.tipe_barang',
+                        render: function(data, type, row) { // Render badge di JS
+                            if (data === 'Barang Jadi')
+                                return '<span class="badge bg-light-primary">Barang Jadi</span>';
+                            if (data === 'Bahan Baku')
+                                return '<span class="badge bg-light-secondary">Bahan Baku</span>';
+                            return data ?? '-';
+                        }
+                    },
                     {
                         data: 'deskripsi_barang',
                         name: 'barang.deskripsi_barang',
@@ -180,23 +199,28 @@
             });
 
             // Fungsi untuk update link export PDF
-            function updateExportLink() {
+            function updateExportLinks() { // Ubah nama fungsi
                 var selectedType = $('#filter_tipe_barang').val();
-                var exportUrl = "{{ route('barang.exportPdf') }}";
+                var exportPdfUrl = "{{ route('barang.exportPdf') }}";
+                var exportExcelUrl = "{{ route('barang.exportExcel') }}"; // URL Excel
+
                 if (selectedType) {
-                    exportUrl += "?tipe_barang=" + encodeURIComponent(selectedType);
+                    exportPdfUrl += "?tipe_barang=" + encodeURIComponent(selectedType);
+                    exportExcelUrl += "?tipe_barang=" + encodeURIComponent(
+                    selectedType); // Tambahkan filter ke Excel
                 }
-                $('#exportPdfLink').attr('href', exportUrl);
+                $('#exportPdfLink').attr('href', exportPdfUrl);
+                $('#exportExcelLink').attr('href', exportExcelUrl); // Update link Excel
             }
 
             // Event listener untuk filter dropdown
             $('#filter_tipe_barang').on('change', function() {
                 dataTable.ajax.reload(); // Muat ulang tabel
-                updateExportLink(); // Update link export
+                updateExportLinks(); // Update kedua link export
             });
 
             // Panggil sekali saat load untuk set link awal
-            updateExportLink();
+            updateExportLinks();
 
         });
     </script>

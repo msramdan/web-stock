@@ -56,7 +56,9 @@ Route::middleware(['auth', 'web'])->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->middleware('auth'); // Fallback jika akses root
         // === PINDAHKAN RUTE SPESIFIK BARANG KE SINI ===
         Route::get('/listDataBarang', [BarangController::class, 'listDataBarang'])->name('listDataBarang');
-        Route::get('/barang/export-pdf', [BarangController::class, 'exportPdf'])->name('barang.exportPdf'); // <-- SEBELUM RESOURCE
+        Route::get('/barang/export-pdf', [BarangController::class, 'exportPdf'])->name('barang.exportPdf');
+        Route::get('/barang/export-excel', [BarangController::class, 'exportExcel'])->name('barang.exportExcel');
+
 
         // Master Data Spesifik Company
         Route::resource('jenis-material', JenisMaterialController::class);

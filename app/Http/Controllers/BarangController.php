@@ -20,6 +20,10 @@ use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\Request;
 
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\BarangExport;
+
+
 class BarangController extends Controller implements HasMiddleware
 {
     public function __construct(public ImageService $imageService, public string $photoBarangPath = '')
@@ -39,6 +43,7 @@ class BarangController extends Controller implements HasMiddleware
             new Middleware('permission:barang edit', only: ['edit', 'update']),
             new Middleware('permission:barang delete', only: ['destroy']),
             new Middleware('permission:barang export pdf', only: ['exportPdf']),
+            new Middleware('permission:barang export excel', only: ['exportExcel']),
         ];
     }
 
@@ -87,7 +92,16 @@ class BarangController extends Controller implements HasMiddleware
                     return $row->nama_unit_satuan ?? '-';
                 })
                 ->addColumn('stock_barang', function ($row) {
-                    return rtrim(rtrim(number_format((float)$row->stock_barang, 4, ',', '.'), '0'), '.');
+                    // 1. Konversi ke float (menangani non-numerik -> 0)
+                    $stock = (float) $row->stock_barang;
+                    // 2. Format dengan koma desimal, tanpa pemisah ribuan, maks 4 desimal
+                    $formattedStock = number_format($stock, 4, ',', '');
+                    // 3. Hapus trailing zero
+                    $trimmedZeros = rtrim($formattedStock, '0');
+                    // 4. Hapus trailing koma jika ada (jika semua desimal adalah nol)
+                    $finalStock = rtrim($trimmedZeros, ',');
+
+                    return $finalStock;
                 })
                 ->addColumn('photo_barang', function ($row) {
                     $defaultImg = asset('assets/static/images/faces/2.jpg');
@@ -372,6 +386,39 @@ class BarangController extends Controller implements HasMiddleware
             }
         } catch (\Throwable $th) {
             return redirect()->route('barang.index')->with('error', 'Gagal memproses PDF data barang.');
+        }
+    }
+
+    /**
+     * Export data barang to Excel.
+     */
+    public function exportExcel(Request $request) // Tambahkan Request $request
+    {
+        // Middleware check (inline atau via route group)
+        // Pastikan user punya permission 'barang export excel'
+        if (!auth()->user()->can('barang export excel')) {
+            abort(403, 'Anda tidak punya izin untuk ekspor Excel data barang.');
+        }
+
+        try {
+            $companyId = session('sessionCompany');
+            $activeCompany = Company::find($companyId);
+            $namaPerusahaan = $activeCompany ? Str::slug($activeCompany->nama_perusahaan) : 'data';
+
+            // Ambil filter tipe barang dari request
+            $tipeBarangFilter = $request->input('tipe_barang');
+
+            $filename = 'Data-Barang-' . $namaPerusahaan;
+            if ($tipeBarangFilter) {
+                $filename .= '-' . Str::slug($tipeBarangFilter);
+            }
+            $filename .= '-' . date('YmdHis') . '.xlsx';
+
+
+            // Panggil export class, lewatkan filter
+            return Excel::download(new BarangExport($tipeBarangFilter), $filename);
+        } catch (\Exception $e) {
+            return redirect()->route('barang.index')->with('error', 'Gagal mengekspor data barang ke Excel.');
         }
     }
 }

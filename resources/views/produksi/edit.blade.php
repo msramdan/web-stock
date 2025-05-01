@@ -48,6 +48,7 @@
                             </div>
                             <div class="card-content">
                                 <div class="card-body">
+                                    {{-- Info Produk Jadi & BoM (Sama) --}}
                                     <div class="form-group row align-items-center">
                                         <label for="produk_jadi_info" class="col-lg-4 col-md-12 col-form-label">Produk
                                             Jadi</label>
@@ -68,6 +69,7 @@
                                         </div>
                                     </div>
                                     <hr>
+                                    {{-- No Produksi (Sama) --}}
                                     <div class="form-group row align-items-center">
                                         <label for="no_produksi" class="col-lg-4 col-md-12 col-form-label">No. Produksi
                                             <span class="text-danger">*</span></label>
@@ -81,8 +83,9 @@
                                             @enderror
                                         </div>
                                     </div>
+                                    {{-- Batch (Sama, tapi sekarang jadi input utama kalkulasi) --}}
                                     <div class="form-group row align-items-center">
-                                        <label for="batch" class="col-lg-4 col-md-12 col-form-label">Batch <span
+                                        <label for="batch" class="col-lg-4 col-md-12 col-form-label">Jumlah Batch <span
                                                 class="text-danger">*</span></label>
                                         <div class="col-lg-8 col-md-12">
                                             <input type="number" id="batch"
@@ -93,6 +96,7 @@
                                             @enderror
                                         </div>
                                     </div>
+                                    {{-- Tanggal Produksi (Sama) --}}
                                     <div class="form-group row align-items-center">
                                         <label for="tanggal" class="col-lg-4 col-md-12 col-form-label">Tanggal Produksi
                                             <span class="text-danger">*</span></label>
@@ -106,24 +110,10 @@
                                             @enderror
                                         </div>
                                     </div>
-                                    <div class="form-group row align-items-center">
-                                        <label for="qty_target" class="col-lg-4 col-md-12 col-form-label">Target Kuantitas
-                                            ({{ $produksi->produkJadi->unitSatuan?->nama_unit_satuan ?? 'N/A' }}) <span
-                                                class="text-danger">*</span></label>
-                                        <div class="col-lg-8 col-md-12">
-                                            <input type="number" id="qty_target"
-                                                class="form-control @error('qty_target') is-invalid @enderror"
-                                                name="qty_target" value="{{ $produksi->qty_target }}" step="any"
-                                                min="0.0001" required
-                                                onfocus="this.value = this.getAttribute('data-raw-value')"
-                                                onblur="formatNumberInput(this)">
-                                            <input type="hidden" id="qty_target_display"
-                                                value="{{ rtrim(rtrim(number_format($produksi->qty_target, 4, ',', '.'), '0'), ',') }}">
-                                            @error('qty_target')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    </div>
+                                    {{-- Target Kuantitas (HAPUS BAGIAN INI) --}}
+                                    {{-- <div class="form-group row align-items-center"> ... </div> --}}
+
+                                    {{-- Attachment (Sama) --}}
                                     <div class="form-group row align-items-center">
                                         <label for="attachment" class="col-lg-4 col-md-12 col-form-label">Lampiran</label>
                                         <div class="col-lg-8 col-md-12">
@@ -135,8 +125,7 @@
                                                     </a>
                                                     <div class="form-check mt-2">
                                                         <input class="form-check-input" type="checkbox"
-                                                            name="remove_attachment" id="remove_attachment"
-                                                            value="1">
+                                                            name="remove_attachment" id="remove_attachment" value="1">
                                                         <label class="form-check-label" for="remove_attachment">
                                                             Hapus lampiran saat menyimpan
                                                         </label>
@@ -151,6 +140,7 @@
                                             @enderror
                                         </div>
                                     </div>
+                                    {{-- Keterangan (Sama) --}}
                                     <div class="form-group row">
                                         <label for="keterangan"
                                             class="col-lg-4 col-md-12 col-form-label">Keterangan</label>
@@ -173,7 +163,7 @@
                             <div class="card-header">
                                 <h4 class="card-title">Estimasi Kebutuhan Bahan</h4>
                                 <p class="text-muted mt-1 mb-0"><small>Kebutuhan akan dihitung ulang saat Anda mengubah
-                                        Target Kuantitas.</small></p>
+                                        Jumlah Batch.</small></p> {{-- Ubah teks --}}
                             </div>
                             <div class="card-content">
                                 <div class="card-body" style="max-height: 450px; overflow-y: auto;">
@@ -185,10 +175,11 @@
                                             <thead>
                                                 <tr>
                                                     <th>Material</th>
-                                                    <th class="text-center">
-                                                        Kuantitas/Unit<br><small>({{ $produksi->produkJadi->unitSatuan?->nama_unit_satuan ?? 'N/A' }})</small>
+                                                    {{-- Ubah Header Kolom --}}
+                                                    <th class="text-center">Kuantitas/Batch
+                                                        <br><small>({{ $produksi->produkJadi->unitSatuan?->nama_unit_satuan ?? 'N/A' }})</small>
                                                     </th>
-                                                    <th class="text-center">Satuan</th>
+                                                    <th class="text-center">Unit</th>
                                                     <th class="text-center">Stok Saat Ini</th>
                                                     <th class="text-center">Total Dibutuhkan</th>
                                                 </tr>
@@ -200,8 +191,9 @@
                                                             {{ $material['kode_barang'] }} <br>
                                                             <small>{{ $material['nama_barang'] }}</small>
                                                         </td>
-                                                        <td class="text-center qty-per-unit">
-                                                            {{ rtrim(rtrim(number_format($material['qty_per_unit'], 4, ',', '.'), '0'), ',') }}
+                                                        {{-- Ubah Class & Tampilkan Qty/Batch --}}
+                                                        <td class="text-center qty-per-batch">
+                                                            {{ rtrim(rtrim(number_format($material['qty_per_batch'], 4, ',', '.'), '0'), ',') }}
                                                         </td>
                                                         <td class="text-center">{{ $material['unit_satuan'] }}</td>
                                                         <td class="text-center current-stock">
@@ -216,11 +208,19 @@
                                                     </tr>
                                                 @endforelse
                                             </tbody>
+                                            {{-- Footer Total (Sama) --}}
+                                            <tfoot>
+                                                <tr>
+                                                    <td colspan="4" class="text-end fw-bold">Total Keseluruhan:</td>
+                                                    <td id="total-required-sum" class="text-center fw-bold">0</td>
+                                                </tr>
+                                            </tfoot>
                                         </table>
                                     </div>
                                 </div>
                                 <div class="card-footer pt-0 border-top-0">
                                     <div class="d-flex justify-content-end">
+                                        {{-- Kembali ke halaman show, bukan index --}}
                                         <a href="{{ route('produksi.show', $produksi->id) }}"
                                             class="btn btn-light-secondary me-1 mb-1">Kembali</a>
                                         <button type="submit" class="btn btn-primary me-1 mb-1">Simpan Perubahan</button>
@@ -236,6 +236,7 @@
 @endsection
 
 @push('css')
+    {{-- CSS sama seperti create --}}
     <style>
         .table-sm td,
         .table-sm th {
@@ -249,82 +250,102 @@
     </style>
 @endpush
 
+{{-- JavaScript Baru (Sama seperti create, hanya event listener focus/blur untuk batch tidak perlu) --}}
 @push('js')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const qtyTargetInput = document.getElementById('qty_target');
-            const qtyTargetDisplay = document.getElementById('qty_target_display');
+            // --- Element References ---
+            const batchInput = document.getElementById('batch'); // <-- Ganti ke input batch
             const materialTableBody = document.getElementById('material-table')?.querySelector('tbody');
+            const totalRequiredSumCell = document.getElementById('total-required-sum');
 
-            // Inisialisasi nilai terformat untuk input qty_target
-            if (qtyTargetInput && qtyTargetDisplay) {
-                qtyTargetInput.value = qtyTargetDisplay.value;
-                qtyTargetInput.setAttribute('data-raw-value', qtyTargetInput.getAttribute('value'));
+            // --- Log Pemeriksaan Elemen ---
+            if (!batchInput) {
+                console.error('DEBUG: Element #batch NOT FOUND!');
+            }
+            if (!materialTableBody) {
+                console.error('DEBUG: Element #material-table tbody NOT FOUND!');
+            }
+            if (!totalRequiredSumCell) {
+                console.error('DEBUG: Element #total-required-sum NOT FOUND!');
             }
 
-            // Fungsi untuk memformat angka ke format Indonesia tanpa trailing zeros
-            function formatNumberInput(input) {
-                let value = parseFloat(input.value);
-                if (isNaN(value)) {
-                    input.value = '';
+            // --- Definisi Fungsi: calculateRequiredMaterials ---
+            function calculateRequiredMaterials() {
+                // console.log('DEBUG: Running calculateRequiredMaterials...');
+                if (!batchInput || !materialTableBody || !totalRequiredSumCell) {
+                    // console.error('DEBUG: Missing critical element(s) for calculation. Aborting.');
                     return;
                 }
-                input.value = value.toLocaleString('id-ID', {
+
+                // Parse input BATCH
+                const batchCount = parseInt(batchInput.value) || 0; // Ambil nilai batch
+                // console.log('DEBUG: Batch Parsed:', batchCount);
+
+                let totalSum = 0; // Inisialisasi total sum
+
+                materialTableBody.querySelectorAll('tr[data-material-id]').forEach((row) => {
+                    const qtyPerBatchCell = row.querySelector('.qty-per-batch'); // <-- Cari class baru
+                    const currentStockCell = row.querySelector('.current-stock');
+                    const requiredQtyCell = row.querySelector('.required-qty');
+
+                    if (!qtyPerBatchCell || !currentStockCell || !requiredQtyCell) {
+                        // console.warn('Skipping row: Missing cells.');
+                        return;
+                    }
+
+                    // Parse Qty/Batch (dari BoM, format ID)
+                    const qtyPerBatchText = qtyPerBatchCell.textContent?.trim() || '0';
+                    const qtyPerBatch = parseFloat(qtyPerBatchText.replace(/\./g, '').replace(',', '.')) ||
+                        0;
+
+                    // Parse Current Stock (format ID)
+                    const currentStockText = currentStockCell.textContent?.trim() || '0';
+                    const currentStock = parseFloat(currentStockText.replace(/\./g, '').replace(',',
+                        '.')) || 0;
+
+                    // Calculate required quantity based on BATCH
+                    const requiredQty = qtyPerBatch * batchCount; // <-- Kalkulasi baru
+                    // console.log(`DEBUG: Row - Qty/Batch: ${qtyPerBatch}, Required: ${requiredQty}`);
+
+                    requiredQtyCell.textContent = requiredQty.toLocaleString('id-ID', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 4
+                    });
+
+                    if (requiredQty > currentStock) {
+                        requiredQtyCell.classList.add('text-danger');
+                    } else {
+                        requiredQtyCell.classList.remove('text-danger');
+                    }
+
+                    if (!isNaN(requiredQty)) {
+                        totalSum += requiredQty;
+                    }
+                    // console.log(`DEBUG: Row - Current Total Sum: ${totalSum}`);
+                });
+
+                // Update Total di Footer
+                // console.log('DEBUG: Final Total Sum Calculated:', totalSum);
+                totalRequiredSumCell.textContent = totalSum.toLocaleString('id-ID', {
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 4
                 });
             }
 
-            // Fungsi untuk menghitung kebutuhan bahan berdasarkan qty_target
-            function calculateRequiredMaterials() {
-                // Parse input yang mungkin dalam format Indonesia (1.234,5678)
-                let targetQty = parseFloat(qtyTargetInput.value.replace(/\./g, '').replace(',', '.')) || 0;
-
-                if (!materialTableBody) return;
-
-                materialTableBody.querySelectorAll('tr[data-material-id]').forEach(row => {
-                    const qtyPerUnitText = row.querySelector('.qty-per-unit')?.textContent?.trim() || '0';
-                    const currentStockText = row.querySelector('.current-stock')?.textContent?.trim() ||
-                        '0';
-
-                    // Parse qty_per_unit dan current_stock dari format Indonesia
-                    const qtyPerUnit = parseFloat(qtyPerUnitText.replace(/\./g, '').replace(',', '.')) || 0;
-                    const currentStock = parseFloat(currentStockText.replace(/\./g, '').replace(',',
-                        '.')) || 0;
-
-                    const requiredQtyCell = row.querySelector('.required-qty');
-
-                    if (requiredQtyCell) {
-                        const requiredQty = qtyPerUnit * targetQty;
-
-                        // Format total dibutuhkan ke format Indonesia
-                        requiredQtyCell.textContent = requiredQty.toLocaleString('id-ID', {
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 4
-                        });
-
-                        // Tandai merah jika kebutuhan melebihi stok
-                        if (requiredQty > currentStock) {
-                            requiredQtyCell.classList.add('text-danger');
-                        } else {
-                            requiredQtyCell.classList.remove('text-danger');
-                        }
-                    }
-                });
-            }
+            // --- Inisialisasi dan Pemasangan Event Listener ---
 
             // Hitung kebutuhan bahan saat halaman dimuat
-            calculateRequiredMaterials();
+            if (materialTableBody && totalRequiredSumCell) {
+                calculateRequiredMaterials();
+            }
 
-            // Event listener untuk perubahan qty_target
-            qtyTargetInput.addEventListener('input', calculateRequiredMaterials);
-            qtyTargetInput.addEventListener('change', calculateRequiredMaterials);
-            qtyTargetInput.addEventListener('blur', function() {
-                formatNumberInput(this);
-            });
-            qtyTargetInput.addEventListener('focus', function() {
-                this.value = this.getAttribute('data-raw-value');
-            });
-        });
+            // Event listener untuk perubahan BATCH input
+            if (batchInput) {
+                batchInput.addEventListener('input', calculateRequiredMaterials);
+                batchInput.addEventListener('change', calculateRequiredMaterials); // Fallback
+            }
+
+        }); // End DOMContentLoaded
     </script>
 @endpush
