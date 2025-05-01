@@ -92,23 +92,11 @@ class BarangController extends Controller implements HasMiddleware
                     return $row->nama_unit_satuan ?? '-';
                 })
                 ->addColumn('stock_barang', function ($row) {
-                    // 1. Konversi ke float (menangani non-numerik -> 0)
-                    $stock = (float) $row->stock_barang;
-                    // 2. Format dengan koma desimal, tanpa pemisah ribuan, maks 4 desimal
-                    $formattedStock = number_format($stock, 4, ',', '');
-                    // 3. Hapus trailing zero
-                    $trimmedZeros = rtrim($formattedStock, '0');
-                    // 4. Hapus trailing koma jika ada (jika semua desimal adalah nol)
-                    $finalStock = rtrim($trimmedZeros, ',');
-
-                    return $finalStock;
+                    return formatAngkaRibuan($row->stock_barang);
                 })
                 ->addColumn('photo_barang', function ($row) {
                     $defaultImg = asset('assets/static/images/faces/2.jpg');
                     $imgUrl = $row->photo_barang ? asset('storage/uploads/photo-barangs/' . $row->photo_barang) : $defaultImg;
-                    // Cek sederhana jika file ada (opsional, bisa memberatkan)
-                    // $path = $row->photo_barang ? storage_path('app/public/uploads/photo-barangs/' . $row->photo_barang) : null;
-                    // if (!$path || !file_exists($path)) $imgUrl = $defaultImg;
                     return $imgUrl;
                 })
                 ->addColumn('action', 'barang.include.action')
@@ -324,7 +312,7 @@ class BarangController extends Controller implements HasMiddleware
      */
     public function exportPdf(Request $request): RedirectResponse|StreamedResponse
     {
-        try {
+        // try {
             $companyId = session('sessionCompany');
             if (!$companyId) return redirect()->route('barang.index')->with('error', '...');
             $activeCompany = Company::find($companyId);
@@ -369,7 +357,7 @@ class BarangController extends Controller implements HasMiddleware
             $pdf = Pdf::loadView('barang.export-pdf', $data)->setPaper('a4', 'portrait')->setOption('isRemoteEnabled', true);
             $filename = 'Data-Barang-' . Str::slug($namaPerusahaanCetak) . '-' . date('YmdHis') . '.pdf';
 
-            try {
+            // try {
                 $pdfOutput = $pdf->output();
                 return response()->stream(
                     function () use ($pdfOutput) {
@@ -381,12 +369,12 @@ class BarangController extends Controller implements HasMiddleware
                         'Content-Disposition' => 'inline; filename="' . $filename . '"',
                     ]
                 );
-            } catch (\Throwable $renderOrOutputError) {
-                return redirect()->route('barang.index')->with('error', 'Gagal generate output PDF Barang.');
-            }
-        } catch (\Throwable $th) {
-            return redirect()->route('barang.index')->with('error', 'Gagal memproses PDF data barang.');
-        }
+            // } catch (\Throwable $renderOrOutputError) {
+            //     return redirect()->route('barang.index')->with('error', 'Gagal generate output PDF Barang.');
+            // }
+        // } catch (\Throwable $th) {
+        //     return redirect()->route('barang.index')->with('error', 'Gagal memproses PDF data barang.');
+        // }
     }
 
     /**

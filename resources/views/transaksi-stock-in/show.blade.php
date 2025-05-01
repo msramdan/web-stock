@@ -72,7 +72,7 @@
                                                                         </tr>
                                                                         <tr>
                                                                             <th>Tanggal</th>
-                                                                            <td>{{ \Carbon\Carbon::parse($transaksi->tanggal)->format('d/m/Y H:i') }}</td>
+                                                                            <td>{{ formatTanggalIndonesia($transaksi->tanggal) }}</td>
                                                                         </tr>
                                                                         <tr>
                                                                             <th>User</th>
@@ -120,7 +120,7 @@
                                                                                     <td>{{ $detail->nama_barang }}</td>
                                                                                     <td>{{ $detail->nama_jenis_material }}</td>
                                                                                     <td>{{ $detail->nama_unit_satuan }}</td>
-                                                                                    <td>{{ $detail->qty }}</td>
+                                                                                    <td>{{ formatAngkaRibuan($detail->qty)  }}</td>
                                                                                 </tr>
                                                                                 @endforeach
                                                                             </tbody>

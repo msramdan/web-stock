@@ -61,7 +61,7 @@ class ProduksiController extends Controller implements HasMiddleware
                     return $row->produkJadi?->kode_barang . ' - ' . $row->produkJadi?->nama_barang;
                 })
                 ->addColumn('tanggal_f', function ($row) {
-                    return \Carbon\Carbon::parse($row->tanggal)->isoFormat('D MMM YYYY, HH:mm');
+                    return formatTanggalIndonesia($row->tanggal);
                 })
                 ->addColumn('action', 'produksi.include.action') // Buat view ini nanti
                 ->toJson();

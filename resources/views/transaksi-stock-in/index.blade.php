@@ -92,21 +92,6 @@
                 {
                     data: 'tanggal',
                     name: 'tanggal',
-                    render: function(data, type, row) {
-                        // Format tanggal jika perlu (misal: dari YYYY-MM-DD HH:MM:SS ke DD/MM/YYYY HH:MM)
-                        if (data) {
-                            // Anda mungkin perlu library seperti moment.js atau format manual
-                            let date = new Date(data);
-                            // Contoh format manual sederhana:
-                            let day = ('0' + date.getDate()).slice(-2);
-                            let month = ('0' + (date.getMonth() + 1)).slice(-2);
-                            let year = date.getFullYear();
-                            let hours = ('0' + date.getHours()).slice(-2);
-                            let minutes = ('0' + date.getMinutes()).slice(-2);
-                            return `${day}/${month}/${year} ${hours}:${minutes}`;
-                        }
-                        return '-';
-                    }
                 },
                 {
                     data: 'type',

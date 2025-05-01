@@ -303,7 +303,7 @@
     </table>
 
     {{-- Info Cetak --}}
-    <div class="creator-info">Dicetak oleh: {{ $namaPembuat }} pada {{ $tanggalCetak }}</div>
+    <div class="creator-info">Dicetak oleh: {{ $namaPembuat }} pada {{ formatTanggalIndonesia(date('Y-m-d H:i:s')) }}</div>
 
     {{-- Judul Dokumen --}}
     <div class="doc-title">
@@ -320,7 +320,7 @@
         </tr>
         <tr>
             <td class="label">Tanggal</td>
-            <td>{{ $transaksi->tanggal ? \Carbon\Carbon::parse($transaksi->tanggal)->format('d/m/Y H:i') : '-' }}</td>
+            <td>{{ formatTanggalIndonesia(date($transaksi->tanggal)) }}</td>
             <td class="label">Tipe</td>
             <td>{{ $transaksi->type ?? '-' }}</td>
         </tr>
@@ -360,7 +360,7 @@
                     <td>{{ $detail->kode_barang ?? '-' }}</td>
                     <td>{{ $detail->nama_jenis_material ?? '-' }}</td>
                     <td>{{ $detail->nama_unit_satuan ?? '-' }}</td>
-                    <td class="text-center">{{ number_format($detail->qty ?? 0, 0, ',', '.') }}</td>
+                    <td class="text-center">{{ formatAngkaRibuan ($detail->qty) }}</td>
                 </tr>
             @empty
                 <tr class="no-border">
@@ -372,7 +372,7 @@
 
     {{-- Bagian Tanda Tangan --}}
     <div class="signature-section">
-        <div class="signature-place-date">Demak, {{ \Carbon\Carbon::parse($tanggalCetak)->translatedFormat('d F Y') }}
+        <div class="signature-place-date">Demak, {{ formatTanggalIndonesia(date('Y-m-d H:i:s')) }}
         </div>
         <span class="signature-line"></span>
         <div class="signature-name">{{ $namaPembuat }}</div>

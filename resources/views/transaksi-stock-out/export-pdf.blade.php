@@ -274,7 +274,7 @@
     </table>
 
     {{-- Info Cetak --}}
-    <div class="creator-info">Dicetak oleh: {{ $namaPembuat }} pada {{ $tanggalCetak }}</div>
+    <div class="creator-info">Dicetak oleh: {{ $namaPembuat }} pada {{ formatTanggalIndonesia(date('Y-m-d H:i:s')) }}</div>
 
     {{-- Judul Dokumen --}}
     <div class="doc-title">
@@ -300,7 +300,7 @@
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ $transaksi->no_surat ?? '-' }}</td>
                     <td class="text-center">
-                        {{ $transaksi->tanggal ? \Carbon\Carbon::parse($transaksi->tanggal)->format('d/m/Y H:i') : '-' }}
+                        {{ formatTanggalIndonesia ($transaksi->tanggal) }}
                     </td>
                     <td class="text-center">{{ $transaksi->type ?? '-' }}</td>
                     <td>{{ $transaksi->keterangan ?? '-' }}</td>
@@ -317,7 +317,7 @@
 
     {{-- Bagian Tanda Tangan --}}
     <div class="signature-section">
-        <div class="signature-place-date">Demak, {{ \Carbon\Carbon::parse($tanggalCetak)->translatedFormat('d F Y') }}
+        <div class="signature-place-date">Demak, {{ formatTanggalIndonesia(date('Y-m-d H:i:s')) }}
         </div>
         <span class="signature-line"></span>
         <div class="signature-name">{{ $namaPembuat }}</div>

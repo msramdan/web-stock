@@ -298,8 +298,8 @@
                     <td>{{ $barang->nama_jenis_material ?? '-' }}</td>
                     <td>{{ $barang->nama_unit_satuan ?? '-' }}</td>
                     <td class="text-center">
-                        {{ rtrim(rtrim(number_format((float) ($barang->stock_barang ?? 0), 4, ',', '.'), '0'), ',') }}
-                    </td> {{-- Format stok --}}
+                        {{ formatAngkaRibuan($barang->stock_barang) }}
+                    </td>
                 </tr>
             @empty
                 <tr class="no-border">
@@ -312,9 +312,10 @@
 
     <!-- Bagian Tanda Tangan -->
     <div class="signature-section">
-        <div class="signature-place-date">Demak, {{ \Carbon\Carbon::parse($tanggalCetak)->translatedFormat('d F Y') }}
+        <div class="signature-place-date">Demak, {{ formatTanggalIndonesia(date('Y-m-d H:i:s')) }}
         </div>
-        <div class="signature-space"> </div>
+
+        <div class="signature-space" style="margin-top: 80px"></div>
         <div class="signature-name">{{ $namaPembuat }}</div>
     </div>
 </body>

@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
-// use App\Models\Transaksi; // Tidak digunakan jika pakai Query Builder
-// use App\Http\Requests\Transaksis\{StoreTransaksiRequest, UpdateTransaksiRequest}; // Tidak digunakan
+use App\Models\Company;
 use Illuminate\Contracts\View\View;
 use Yajra\DataTables\Facades\DataTables;
-use App\Generators\Services\ImageService; // Tetap dipakai jika ada upload lain
 use Illuminate\Http\{JsonResponse, RedirectResponse};
 use Illuminate\Routing\Controllers\{HasMiddleware, Middleware};
 use Illuminate\Support\Facades\DB;
@@ -14,7 +12,6 @@ use Illuminate\Http\Request; // Gunakan Request standar
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use App\Models\SettingAplikasi; // Import SettingAplikasi
 use Barryvdh\DomPDF\Facade\Pdf; // Import PDF
 use Carbon\Carbon; // Import Carbon
 use Illuminate\Support\Facades\Log; // Import Log
@@ -68,7 +65,7 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
                     return $row->user_name ?? '-';
                 })
                 ->addColumn('tanggal', function ($row) {
-                    return Carbon::parse($row->tanggal)->isoFormat('D MMMM YYYY, HH:mm');
+                    return formatTanggalIndonesia($row->tanggal);
                 })
                 ->addColumn('attachment', function ($row) {
                     if (!$row->attachment) {

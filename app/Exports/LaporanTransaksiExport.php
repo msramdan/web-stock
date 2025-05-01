@@ -132,11 +132,7 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
 
     public function map($row): array
     {
-        // Format qty: Hilangkan nol di belakang dan desimal jika bilangan bulat
-        $formattedQty = is_numeric($row->qty)
-            ? rtrim(rtrim(number_format((float)$row->qty, 4, ',', '.'), '0'), ',')
-            : '0';
-
+        $formattedQty = formatAngkaRibuan ($row->qty);
         return [
             $row->sumber_data ?? 'N/A',
             $row->no_dokumen ?? 'N/A',

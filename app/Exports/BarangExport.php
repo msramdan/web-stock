@@ -81,12 +81,7 @@ class BarangExport implements FromCollection, WithHeadings, WithMapping, ShouldA
 
     public function map($row): array
     {
-        // Format data per baris sebelum ditulis ke Excel
-        // Format stok (sama seperti perbaikan sebelumnya)
-        $stock = (float) $row->stock_barang;
-        $formattedStock = number_format($stock, 4, ',', '');
-        $trimmedZeros = rtrim($formattedStock, '0');
-        $finalStock = rtrim($trimmedZeros, ',');
+        $finalStock = formatAngkaRibuan( $row->stock_barang);
 
         // Format tipe barang
         $tipeBarangText = $row->tipe_barang ?? '-';

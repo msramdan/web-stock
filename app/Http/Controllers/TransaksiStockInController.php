@@ -60,8 +60,7 @@ class TransaksiStockInController extends Controller implements HasMiddleware
                     return $row->user_name ?? '-';
                 })
                 ->addColumn('tanggal', function ($row) {
-                    // Format tanggal agar lebih mudah dibaca
-                    return Carbon::parse($row->tanggal)->isoFormat('D MMMM YYYY, HH:mm');
+                    return formatTanggalIndonesia($row->tanggal);
                 })
                 ->addColumn('attachment', function ($row) {
                     if (!$row->attachment) {
@@ -263,16 +262,6 @@ class TransaksiStockInController extends Controller implements HasMiddleware
             'attachmentUrl' => $attachmentUrl, // Kirim URL ke view
         ]);
     }
-
-    // Metode edit() dan update() belum diimplementasikan di kode asli Anda
-    // public function edit(Transaksi $transaksi): View
-    // {
-    //     // Perlu penyesuaian signifikan untuk edit transaksi + detail + stok
-    // }
-    // public function update(UpdateTransaksiRequest $request, Transaksi $transaksi): RedirectResponse
-    // {
-    //     // Perlu penyesuaian signifikan
-    // }
 
 
     public function destroy($id): RedirectResponse
