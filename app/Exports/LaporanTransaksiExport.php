@@ -7,9 +7,11 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use Carbon\Carbon;
 
-class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
+class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithColumnFormatting
 {
     protected $tanggalMulai;
     protected $tanggalSelesai;
@@ -70,7 +72,7 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
                 'p.no_produksi as no_dokumen',
                 'p.tanggal',
                 'pd.type as tipe_pergerakan',
-                DB::raw("'N/A' as user_name"), // Ganti user_name dengan nilai default
+                DB::raw("'N/A' as user_name"),
                 'b.kode_barang',
                 'b.nama_barang',
                 'b.tipe_barang',
@@ -104,12 +106,7 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
             ->orderBy('kode_barang', 'asc')
             ->get();
 
-        // Penanganan data kosong
-        if ($results->isEmpty()) {
-            return collect([]);
-        }
-
-        return $results;
+        return $results ?: collect([]);
     }
 
     public function headings(): array
@@ -132,7 +129,6 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
 
     public function map($row): array
     {
-        $formattedQty = formatAngkaRibuan ($row->qty);
         return [
             $row->sumber_data ?? 'N/A',
             $row->no_dokumen ?? 'N/A',
@@ -145,7 +141,14 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
             $row->deskripsi_barang ?? '-',
             $row->nama_jenis_material ?? '-',
             $row->nama_unit_satuan ?? '-',
-            $formattedQty,
+            (float) $row->qty, // Ensure numeric value for Excel
+        ];
+    }
+
+    public function columnFormats(): array
+    {
+        return [
+            'L' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1, // Format Qty column with thousand separators
         ];
     }
 }

@@ -120,23 +120,12 @@ if (!function_exists('formatTanggalIndonesia')) {
     }
 }
 
-
-if (!function_exists('formatAngkaRibuan')) {
-    /**
-     * Format angka ke format ribuan Indonesia.
-     *
-     * @param float|int|string $angka
-     * @return string
-     */
-    function formatAngkaRibuan($angka)
-    {
-        // Ubah ke float untuk memastikan konsistensi
-        $angka = (float) $angka;
-
-        // Cek berapa digit desimal yang dibutuhkan (maksimal 4)
-        $decimal = strlen(substr(strrchr((string)$angka, "."), 1));
-        $decimal = $decimal > 4 ? 4 : $decimal;
-
-        return number_format($angka, $decimal, ',', '.');
+function formatAngkaRibuan($number) {
+    // Pastikan input adalah angka
+    if (!is_numeric($number)) {
+        return '0.00';
     }
+
+    // Format angka dengan 2 digit desimal dan pemisah ribuan
+    return number_format((float)$number, 2, '.', ',');
 }
