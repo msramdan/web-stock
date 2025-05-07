@@ -7,10 +7,11 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Carbon\Carbon;
-use App\Models\Company; // Import Company model if needed for company name in filename
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use App\Models\Company;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class BarangExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
+class BarangExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithColumnFormatting
 {
     protected $tipeBarang;
     protected $companyId;
@@ -81,8 +82,6 @@ class BarangExport implements FromCollection, WithHeadings, WithMapping, ShouldA
 
     public function map($row): array
     {
-        $finalStock = formatAngkaRibuan( $row->stock_barang);
-
         // Format tipe barang
         $tipeBarangText = $row->tipe_barang ?? '-';
         if ($tipeBarangText == 'Barang Jadi') $tipeBarangText = 'Barang Jadi';
@@ -96,18 +95,14 @@ class BarangExport implements FromCollection, WithHeadings, WithMapping, ShouldA
             $row->deskripsi_barang ?? '-',
             $row->nama_jenis_material ?? '-',
             $row->nama_unit_satuan ?? '-',
-            $finalStock, // Stok yang sudah diformat
+            (float) $row->stock_barang,
         ];
     }
 
-    // Opsional: Jika ingin nama file dinamis (tambahkan WithProperties concern)
-    // public function properties(): array
-    // {
-    //     return [
-    //         'creator'        => auth()->user()->name ?? 'System',
-    //         'title'          => 'Data Barang',
-    //         'description'    => 'Laporan Data Barang Perusahaan ' . ($this->activeCompany->nama_perusahaan ?? 'N/A'),
-    //         'company'        => $this->activeCompany->nama_perusahaan ?? 'N/A',
-    //     ];
-    // }
+    public function columnFormats(): array
+    {
+        return [
+            'G' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
+        ];
+    }
 }
