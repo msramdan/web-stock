@@ -125,7 +125,7 @@
                                                                                         </td>
                                                                                         <td>{{ $detail->nama_unit_satuan }}
                                                                                         </td>
-                                                                                        <td>{{ formatAngkaDesimal($detail->qty, 4) }}
+                                                                                        <td>{{ formatAngkaRibuan($detail->qty, 4) }}
                                                                                         </td>
                                                                                     </tr>
                                                                                 @endforeach
