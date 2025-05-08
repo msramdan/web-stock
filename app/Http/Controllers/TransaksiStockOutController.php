@@ -118,12 +118,16 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
             'cart_items' => 'required|json',
             // Cek barang exists di company ini
             'cart_items.*.id' => 'required|integer|exists:barang,id,company_id,' . $companyId,
-            'cart_items.*.qty' => 'required|integer|min:1',
+            // Perubahan: validasi numeric > 0
+            'cart_items.*.qty' => 'required|numeric|gt:0',
         ], [
             'no_surat.unique' => 'No. Surat sudah pernah digunakan di perusahaan ini.',
             'cart_items.*.id.exists' => 'Salah satu barang yang dipilih tidak valid atau bukan milik perusahaan ini.',
-            'cart_items.*.qty.min' => 'Jumlah barang minimal 1.',
+            // Perubahan: pesan error untuk qty
+            'cart_items.*.qty.numeric' => 'Jumlah barang harus berupa angka.',
+            'cart_items.*.qty.gt' => 'Jumlah barang harus lebih besar dari 0.',
         ]);
+
 
         if ($validator->fails()) {
             return redirect()->back()
@@ -141,26 +145,32 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
 
         // --- Validasi Stok Sebelum Transaksi ---
         $barangIds = array_column($cartItems, 'id');
+        // Ambil stok terkini dari DB (gunakan lockForUpdate jika memungkinkan/perlu)
         $barangStocks = DB::table('barang')
             ->whereIn('id', $barangIds)
             ->where('company_id', $companyId)
+            // ->lockForUpdate() // Aktifkan jika sering terjadi race condition
             ->pluck('stock_barang', 'id');
 
         $stockValidationErrors = [];
         foreach ($cartItems as $item) {
+            // Perubahan: Konversi qty ke float untuk perbandingan
+            $requestedQty = (float) str_replace(',', '.', $item['qty'] ?? 0);
             $barangId = $item['id'];
-            $requestedQty = $item['qty'];
-            $availableStock = $barangStocks[$barangId] ?? 0; // Ambil stok dari hasil query
+            // Perubahan: Konversi stok DB ke float
+            $availableStock = (float) ($barangStocks[$barangId] ?? 0);
 
             if ($availableStock < $requestedQty) {
                 $barangInfo = DB::table('barang')->where('id', $barangId)->value('kode_barang') ?? "ID:{$barangId}";
-                $stockValidationErrors[] = "Stok '{$barangInfo}' tidak mencukupi (tersedia: {$availableStock}, diminta: {$requestedQty}).";
+                // Perubahan: Format angka dalam pesan error menggunakan helper baru
+                $stockValidationErrors[] = "Stok '{$barangInfo}' tidak mencukupi (tersedia: " . formatAngkaDesimal($availableStock, 4) . ", diminta: " . formatAngkaDesimal($requestedQty, 4) . ").";
             }
         }
 
         if (!empty($stockValidationErrors)) {
+            // Gunakan key error berbeda jika diperlukan untuk membedakan dari validasi standar
             return redirect()->back()
-                ->withErrors(['cart_items' => $stockValidationErrors]) // Kirim error spesifik
+                ->withErrors(['cart_items_stock' => $stockValidationErrors])
                 ->withInput()
                 ->with('error', 'Gagal membuat transaksi stock out karena stok tidak mencukupi.');
         }
@@ -175,6 +185,7 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
                 $file = $request->file('attachment');
                 $originalName = $file->getClientOriginalName();
                 $attachmentName = $companyId . '_' . time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+                // Perubahan: Path dengan company ID
                 $file->storeAs('public/uploads/attachments/' . $companyId, $attachmentName);
             }
 
@@ -196,18 +207,24 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
             $stockUpdates = []; // Array untuk menampung [barang_id => qty]
 
             foreach ($cartItems as $item) {
-                // Validasi sudah dilakukan di awal, cukup siapkan data
+                // Perubahan: Konversi qty ke float
+                $itemQty = (float) str_replace(',', '.', $item['qty'] ?? 0);
+
+                if ($itemQty <= 0) { // Double check validasi
+                    throw new \Exception("Jumlah barang dengan ID {$item['id']} tidak valid.");
+                }
+
                 $transaksiDetails[] = [
                     'barang_id' => $item['id'],
-                    'qty' => $item['qty'],
+                    'qty' => $itemQty, // Simpan float
                     'transaksi_id' => $transaksiId,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
                 if (isset($stockUpdates[$item['id']])) {
-                    $stockUpdates[$item['id']] += $item['qty'];
+                    $stockUpdates[$item['id']] += $itemQty;
                 } else {
-                    $stockUpdates[$item['id']] = $item['qty'];
+                    $stockUpdates[$item['id']] = $itemQty;
                 }
             }
 
@@ -222,6 +239,7 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
             // Bulk update stock (DECREMENT stock_barang)
             if (!empty($stockUpdates)) {
                 foreach ($stockUpdates as $barangId => $totalQty) {
+                    // Perubahan: Decrement dengan float
                     DB::table('barang')
                         ->where('id', $barangId)
                         ->where('company_id', $companyId)
@@ -237,6 +255,7 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
             DB::rollBack();
             // Hapus file yang mungkin sudah terupload jika transaksi gagal
             if ($attachmentName && $companyId) {
+                // Perubahan: Path dengan company ID
                 Storage::delete('public/uploads/attachments/' . $companyId . '/' . $attachmentName);
             }
             Log::error('Error storing stock out transaction: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
@@ -333,16 +352,19 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
             // 3. Kembalikan stok barang (karena ini transaksi OUT yang dihapus)
             $stockUpdates = [];
             foreach ($details as $detail) {
+                // Perubahan: Gunakan float
+                $detailQty = (float) $detail->qty;
                 if (isset($stockUpdates[$detail->barang_id])) {
-                    $stockUpdates[$detail->barang_id] += $detail->qty;
+                    $stockUpdates[$detail->barang_id] += $detailQty;
                 } else {
-                    $stockUpdates[$detail->barang_id] = $detail->qty;
+                    $stockUpdates[$detail->barang_id] = $detailQty;
                 }
             }
 
             if (!empty($stockUpdates)) {
                 foreach ($stockUpdates as $barangId => $totalQty) {
                     // Tambah stok (kebalikan dari store)
+                    // Perubahan: Increment dengan float
                     DB::table('barang')
                         ->where('id', $barangId)
                         ->where('company_id', $companyId)
@@ -357,6 +379,7 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
 
             // 5. Hapus file attachment jika ada
             if ($transaksi->attachment) {
+                // Perubahan: Path dengan company ID
                 Storage::delete('public/uploads/attachments/' . $transaksi->company_id . '/' . $transaksi->attachment);
             }
 

@@ -120,7 +120,8 @@ if (!function_exists('formatTanggalIndonesia')) {
     }
 }
 
-function formatAngkaRibuan($number) {
+function formatAngkaRibuan($number)
+{
     // Pastikan input adalah angka
     if (!is_numeric($number)) {
         return '0.00';
@@ -128,4 +129,32 @@ function formatAngkaRibuan($number) {
 
     // Format angka dengan 2 digit desimal dan pemisah ribuan
     return number_format((float)$number, 2, '.', ',');
+}
+
+if (!function_exists('formatAngkaDesimal')) {
+    /**
+     * Format angka dengan desimal dan pemisah ribuan Indonesia,
+     * menghapus trailing zero yang tidak perlu.
+     *
+     * @param float|int|string $number Angka yang akan diformat.
+     * @param int $maxDecimals Jumlah maksimal desimal yang ditampilkan.
+     * @return string Angka yang sudah diformat.
+     */
+    function formatAngkaDesimal($number, $maxDecimals = 4)
+    {
+        if (!is_numeric($number)) {
+            return '0'; // Atau return $number jika ingin menampilkan input asli
+        }
+
+        // Konversi ke float
+        $floatNumber = (float) $number;
+
+        // Format dengan jumlah desimal maksimal dan pemisah Indonesia
+        $formatted = number_format($floatNumber, $maxDecimals, ',', '.');
+
+        // Hapus trailing zero setelah koma, lalu hapus koma jika tidak ada desimal lagi
+        $cleaned = rtrim(rtrim($formatted, '0'), ',');
+
+        return $cleaned;
+    }
 }
