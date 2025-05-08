@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Contracts\View\View;
 use Yajra\DataTables\Facades\DataTables;
-use App\Generators\Services\ImageService;
 use Illuminate\Http\{JsonResponse, RedirectResponse};
 use Illuminate\Routing\Controllers\{HasMiddleware, Middleware};
 use Illuminate\Support\Facades\DB;
@@ -12,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use App\Models\SettingAplikasi;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -100,22 +98,25 @@ class TransaksiStockInController extends Controller implements HasMiddleware
 
     public function store(Request $request): RedirectResponse
     {
-        $companyId = session('sessionCompany'); // Ambil company ID
-        $userId = Auth::id(); // Ambil user ID
+        $companyId = session('sessionCompany');
+        $userId = Auth::id();
 
         // Validate the request data
         $validator = Validator::make($request->all(), [
-            'no_surat' => 'required|string|max:255|unique:transaksi,no_surat,NULL,id,company_id,' . $companyId, // Unique per company
+            'no_surat' => 'required|string|max:255|unique:transaksi,no_surat,NULL,id,company_id,' . $companyId,
             'tanggal' => 'required|date',
             'keterangan' => 'nullable|string',
             'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10048', // Max 10MB
             'cart_items' => 'required|json',
-            'cart_items.*.id' => 'required|integer|exists:barang,id,company_id,' . $companyId, // Pastikan barang ada dan milik company ini
-            'cart_items.*.qty' => 'required|integer|min:1',
+            'cart_items.*.id' => 'required|integer|exists:barang,id,company_id,' . $companyId,
+            // Perubahan: validasi numeric > 0
+            'cart_items.*.qty' => 'required|numeric|gt:0',
         ], [
             'no_surat.unique' => 'No. Surat sudah pernah digunakan di perusahaan ini.',
             'cart_items.*.id.exists' => 'Salah satu barang yang dipilih tidak valid atau bukan milik perusahaan ini.',
-            'cart_items.*.qty.min' => 'Jumlah barang minimal 1.',
+            // Perubahan: pesan error untuk qty
+            'cart_items.*.qty.numeric' => 'Jumlah barang harus berupa angka.',
+            'cart_items.*.qty.gt' => 'Jumlah barang harus lebih besar dari 0.',
         ]);
 
         if ($validator->fails()) {
@@ -164,19 +165,26 @@ class TransaksiStockInController extends Controller implements HasMiddleware
             $stockUpdates = []; // Array untuk menampung [barang_id => qty]
 
             foreach ($cartItems as $item) {
-                // Validasi sudah dilakukan di awal, cukup siapkan data
+                // Perubahan: Konversi qty ke float, ganti koma jika dari JS kirim string
+                // Jika JS sudah mengirim float (dari JSON.stringify), ini aman
+                $itemQty = (float) str_replace(',', '.', $item['qty'] ?? 0);
+
+                if ($itemQty <= 0) { // Double check validasi
+                    throw new \Exception("Jumlah barang dengan ID {$item['id']} harus lebih besar dari 0.");
+                }
+
                 $transaksiDetails[] = [
                     'barang_id' => $item['id'],
-                    'qty' => $item['qty'],
+                    'qty' => $itemQty, // Simpan nilai float/numeric
                     'transaksi_id' => $transaksiId,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
                 // Kumpulkan data untuk update stok
                 if (isset($stockUpdates[$item['id']])) {
-                    $stockUpdates[$item['id']] += $item['qty']; // Tambahkan jika barang sama ada > 1 di cart
+                    $stockUpdates[$item['id']] += $itemQty;
                 } else {
-                    $stockUpdates[$item['id']] = $item['qty'];
+                    $stockUpdates[$item['id']] = $itemQty;
                 }
             }
 
@@ -192,6 +200,7 @@ class TransaksiStockInController extends Controller implements HasMiddleware
             // Bulk update stock (increment stock_barang)
             if (!empty($stockUpdates)) {
                 foreach ($stockUpdates as $barangId => $totalQty) {
+                    // Perubahan: Increment dengan float (increment/decrement support float)
                     DB::table('barang')
                         ->where('id', $barangId)
                         ->where('company_id', $companyId) // Pastikan update stok di company yang benar
@@ -290,16 +299,19 @@ class TransaksiStockInController extends Controller implements HasMiddleware
             // 3. Kembalikan stok barang (karena ini transaksi IN yang dihapus)
             $stockUpdates = [];
             foreach ($details as $detail) {
+                // Perubahan: Gunakan float untuk qty
+                $detailQty = (float) $detail->qty; // Konversi dari DB (mungkin sudah float/decimal)
                 if (isset($stockUpdates[$detail->barang_id])) {
-                    $stockUpdates[$detail->barang_id] += $detail->qty;
+                    $stockUpdates[$detail->barang_id] += $detailQty;
                 } else {
-                    $stockUpdates[$detail->barang_id] = $detail->qty;
+                    $stockUpdates[$detail->barang_id] = $detailQty;
                 }
             }
 
             if (!empty($stockUpdates)) {
                 foreach ($stockUpdates as $barangId => $totalQty) {
                     // Kurangi stok (kebalikan dari store)
+                    // Perubahan: Decrement dengan float
                     DB::table('barang')
                         ->where('id', $barangId)
                         ->where('company_id', $companyId) // Pastikan update di company yang benar
@@ -315,6 +327,7 @@ class TransaksiStockInController extends Controller implements HasMiddleware
 
             // 5. Hapus file attachment jika ada
             if ($transaksi->attachment) {
+                // Perubahan: Gunakan path dengan company ID
                 Storage::delete('public/uploads/attachments/' . $transaksi->company_id . '/' . $transaksi->attachment);
             }
 

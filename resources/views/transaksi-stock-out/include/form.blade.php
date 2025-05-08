@@ -1,4 +1,3 @@
-{{-- resources/views/transaksi-stock-out/include/form.blade.php --}}
 <section class="content">
     <div class="container-fluid">
         <div class="row">
@@ -82,33 +81,29 @@
                     <div class="card-body">
                         <table>
                             <tr>
-                                {{-- 2. Ganti Label "Barang" jadi "Kode Barang" --}}
                                 <td style="vertical-align: top; width:30%;">
                                     <label for="kode_barang">Kode Barang</label>
                                 </td>
                                 <td>
                                     <div class="form-group input-group">
                                         <input type="hidden" id="barang_id">
-                                        <input type="hidden" id="nama_barang_hidden"> {{-- Hidden input nama barang --}}
-                                        <input type="hidden" id="stock">
+                                        <input type="hidden" id="nama_barang_hidden">
+                                        <input type="hidden" id="stock"> {{-- Tetap simpan nilai asli --}}
                                         <input type="hidden" id="jenis_material" readonly>
                                         <input type="hidden" id="unit_satuan" readonly>
-                                        {{-- Input Kode Barang --}}
                                         <input type="text" name="kode_barang_display" id="kode_barang"
                                             class="form-control" readonly placeholder="Pilih Barang...">
-                                        {{-- Tombol Cari --}}
                                         <span class="input-group-text btn btn-success" id="cari_barang"
                                             data-bs-toggle="modal" data-bs-target="#modal-item"
                                             style="cursor: pointer;">
                                             <i class="fa fa-search"></i>
                                         </span>
                                     </div>
-                                    {{-- Display Nama Barang --}}
                                     <div class="mt-1">
                                         <small>Nama Barang: <strong id="nama_barang_display">-</strong></small>
                                         <br>
                                         <small>Stok Tersedia: <strong id="stock_display">-</strong></small>
-                                        {{-- Display Stok --}}
+                                        {{-- Display stok --}}
                                     </div>
                                 </td>
                             </tr>
@@ -118,8 +113,9 @@
                                 </td>
                                 <td>
                                     <div class="form-group">
-                                        <input type="number" id="qty" value="1" min="1"
-                                            class="form-control">
+                                        {{-- Perubahan: type="text", step="any", min="0" --}}
+                                        <input type="text" inputmode="decimal" id="qty" value="1"
+                                            min="0" step="any" class="form-control">
                                     </div>
                                 </td>
                             </tr>
@@ -149,21 +145,19 @@
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            {{-- 3. Samakan kolom tabel cart dengan modal --}}
-                            <table class="table table-bordered table-striped table-sm"> {{-- Tambah table-sm --}}
+                            <table class="table table-bordered table-striped table-sm">
                                 <thead>
                                     <tr>
                                         <th style="width: 5%;">#</th>
                                         <th style="width: 20%;">Kode Barang</th>
-                                        <th style="width: 30%;">Nama Barang</th> {{-- Kolom Baru --}}
+                                        <th style="width: 30%;">Nama Barang</th>
                                         <th style="width: 15%;">Jenis Material</th>
                                         <th style="width: 15%;">Unit Satuan</th>
-                                        <th style="width: 10%;">Qty</th>
+                                        <th style="width: 10%;" class="text-end">Qty</th> {{-- text-end untuk angka --}}
                                         <th style="width: 5%;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="cart_tabel">
-                                    {{-- Isi cart akan dirender oleh JS --}}
                                     <tr>
                                         <td colspan="7" class="text-center text-muted">Keranjang kosong</td>
                                     </tr>
@@ -187,15 +181,14 @@
             </div>
             <div class="modal-body table-responsive">
                 <div class="container-fluid">
-                    {{-- 1. Tambah Kolom Nama Barang di Modal --}}
                     <table class="table table-bordered table-striped" id="modal_table_barang" style="width:100%;">
                         <thead>
                             <tr>
                                 <th>Kode Barang</th>
-                                <th>Nama Barang</th> {{-- Kolom Baru --}}
+                                <th>Nama Barang</th>
                                 <th>Jenis Material</th>
                                 <th>Unit Satuan</th>
-                                <th>Stock</th>
+                                <th class="text-end">Stock</th> {{-- text-end untuk angka --}}
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -221,6 +214,16 @@
         #cari_barang {
             height: calc(1.5em + .75rem + 2px);
         }
+
+        /* Pastikan kolom qty di cart rata kanan */
+        #cart_tabel td:nth-child(6) {
+            text-align: right;
+        }
+
+        /* Pastikan kolom stock di modal rata kanan */
+        #modal_table_barang td:nth-child(5) {
+            text-align: right;
+        }
     </style>
 @endpush
 
@@ -231,24 +234,41 @@
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
     <script>
+        // Helper function to format number for display
+        function formatNumber(num, decimals = 4) {
+            const number = parseFloat(num);
+            if (isNaN(number)) return '0';
+            let formatted = number.toLocaleString('id-ID', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: decimals
+            });
+            return formatted;
+        }
+
+        // Helper function to parse input string to float
+        function parseFloatInput(value) {
+            if (typeof value !== 'string') value = String(value);
+            return parseFloat(value.replace(/\./g, '').replace(',', '.')) || 0;
+        }
+
+
         $(document).ready(function() {
             var modalTable;
 
-            // Inisialisasi DataTable saat modal pertama kali dibuka
             $('#modal-item').one('shown.bs.modal', function() {
                 modalTable = $('#modal_table_barang').DataTable({
                     processing: true,
-                    serverSide: false, // Ubah ke false jika data diambil sekaligus
+                    serverSide: false,
                     ajax: {
-                        url: "{{ route('listDataBarang') }}", // Route untuk ambil data barang
-                        dataSrc: "" // Langsung gunakan array data
+                        url: "{{ route('listDataBarang') }}",
+                        dataSrc: ""
                     },
                     columns: [{
                             data: 'kode_barang'
                         },
                         {
                             data: 'nama_barang'
-                        }, // Kolom baru untuk nama barang
+                        },
                         {
                             data: 'jenis_material'
                         },
@@ -256,62 +276,61 @@
                             data: 'unit_satuan'
                         },
                         {
-                            data: 'stock'
+                            data: 'stock',
+                            render: function(data, type, row) {
+                                // Format stock for display in modal
+                                return formatNumber(data, 4);
+                            }
                         },
                         {
-                            data: null, // Kolom aksi
+                            data: null,
                             orderable: false,
                             searchable: false,
                             render: function(data, type, row) {
-                                // Tambahkan data-nama-barang
                                 return `<button type="button" class="btn btn-sm btn-primary pilih-barang"
-                                            data-id="${row.id}"
-                                            data-kode="${row.kode_barang}"
-                                            data-nama-barang="${row.nama_barang}"
-                                            data-stock="${row.stock}"
-                                            data-jenis-material="${row.jenis_material}"
-                                            data-unit-satuan="${row.unit_satuan}">
-                                            Pilih
-                                        </button>`;
+                                            data-id="${row.id}" data-kode="${row.kode_barang}" data-nama-barang="${row.nama_barang}"
+                                            data-stock="${row.stock}" data-jenis-material="${row.jenis_material}" data-unit-satuan="${row.unit_satuan}">Pilih</button>`;
                             }
                         }
+                    ],
+                    columnDefs: [{
+                            className: "text-end",
+                            targets: 4
+                        } // Rata kanan kolom stock
                     ],
                     language: {
                         url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
                     },
-                    // destroy: true
                 });
             });
 
-            // Jika ingin reload data tiap buka modal
             $('#modal-item').on('show.bs.modal', function() {
                 if ($.fn.dataTable.isDataTable('#modal_table_barang')) {
-                    modalTable.ajax.reload();
+                    modalTable.ajax.reload(null, false);
                 }
             });
-
 
             // --- Tombol Pilih Barang di Modal ---
             $('#modal_table_barang tbody').on('click', '.pilih-barang', function() {
                 let id = $(this).data('id');
                 let kode = $(this).data('kode');
                 let nama_barang = $(this).data('nama-barang');
-                let stock = $(this).data('stock');
+                let stock = $(this).data('stock'); // Nilai asli
                 let jenis_material = $(this).data('jenis-material');
                 let unit_satuan = $(this).data('unit-satuan');
 
-                // Set data ke input form utama
                 $('#barang_id').val(id);
                 $('#kode_barang').val(kode);
                 $('#nama_barang_hidden').val(nama_barang);
                 $('#nama_barang_display').text(nama_barang);
-                $('#stock').val(stock);
-                $('#stock_display').text(stock); // Tampilkan stok
+                $('#stock').val(stock); // Simpan nilai asli
+                $('#stock_display').text(formatNumber(stock, 4)); // Format untuk display
                 $('#jenis_material').val(jenis_material);
                 $('#unit_satuan').val(unit_satuan);
 
                 var modal = bootstrap.Modal.getInstance(document.getElementById('modal-item'));
                 modal.hide();
+                $('#qty').focus();
             });
 
             // --- Logika Keranjang (Cart) ---
@@ -320,11 +339,13 @@
             $('#add_cart').on('click', function() {
                 const id = $('#barang_id').val();
                 const kode = $('#kode_barang').val();
-                const nama_barang = $('#nama_barang_hidden').val(); // Ambil nama dari hidden input
-                const qty = parseInt($('#qty').val());
+                const nama_barang = $('#nama_barang_hidden').val();
+                // Perubahan: Parse float dari input Qty
+                const qty = parseFloatInput($('#qty').val());
                 const jenis_material = $('#jenis_material').val();
                 const unit_satuan = $('#unit_satuan').val();
-                const stock = parseInt($('#stock').val()); // Ambil stok dari hidden input
+                // Perubahan: Parse float dari input Stok (hidden)
+                const stock = parseFloatInput($('#stock').val());
 
                 if (!id || !kode) {
                     alert('Silakan pilih barang terlebih dahulu.');
@@ -334,51 +355,55 @@
                     alert('Nama barang tidak ditemukan. Coba pilih ulang.');
                     return;
                 }
-
-                if (!qty || qty < 1) {
-                    alert('Qty minimal 1.');
+                // Perubahan: Validasi qty harus > 0
+                if (isNaN(qty) || qty <= 0) {
+                    alert('Qty harus berupa angka valid lebih besar dari 0.');
+                    $('#qty').focus();
                     return;
                 }
 
-                // Hitung total qty di cart untuk barang ini (termasuk yang mau ditambah)
+                // --- Validasi Stok ---
                 const existingInCart = cart.find(item => item.id === id);
-                const totalQtyInCart = existingInCart ? existingInCart.qty : 0;
-                const newTotalQty = totalQtyInCart + qty;
+                const totalQtyInCart = existingInCart ? parseFloat(existingInCart.qty) : 0;
+                const newTotalQty = parseFloat((totalQtyInCart + qty).toFixed(
+                    8)); // Jumlahkan sebagai float
 
-                // Validasi stock (PENTING untuk Stock Out)
                 if (newTotalQty > stock) {
-                    const remainingStock = stock - totalQtyInCart;
-                    const message = remainingStock >= 0 ? // >= 0 karena bisa jadi pas
-                        `Stok tidak mencukupi. Stok tersedia: ${stock}, sudah di keranjang: ${totalQtyInCart}. Anda hanya bisa menambah ${remainingStock} lagi.` :
-                        `Stok tidak mencukupi. Stok tersedia: ${stock}, sudah di keranjang: ${totalQtyInCart}.`;
-                    alert(message);
-                    // Reset qty ke max yang bisa ditambahkan jika > 0
-                    if (remainingStock > 0) {
-                        $('#qty').val(remainingStock);
-                    } else {
-                        $('#qty').val(1); // Atau reset ke 1 jika sudah tidak bisa tambah
-                    }
-                    return; // Hentikan penambahan ke keranjang
-                }
+                    const remainingStock = parseFloat((stock - totalQtyInCart).toFixed(8));
+                    const message = remainingStock > 0 ?
+                        `Stok tidak mencukupi. Stok tersedia: ${formatNumber(stock, 4)}, sudah di keranjang: ${formatNumber(totalQtyInCart, 4)}. Anda hanya bisa menambah ${formatNumber(remainingStock, 4)} lagi.` :
+                        `Stok tidak mencukupi. Stok tersedia: ${formatNumber(stock, 4)}, sudah di keranjang: ${formatNumber(totalQtyInCart, 4)}.`;
 
+                    alert(message);
+                    if (remainingStock > 0) {
+                        // Set input qty ke sisa stok, format dengan koma
+                        $('#qty').val(remainingStock.toString().replace('.', ','));
+                    } else {
+                        $('#qty').val('0');
+                    }
+                    return; // Hentikan penambahan
+                }
+                // --- Akhir Validasi Stok ---
 
                 // Update atau tambah item ke cart
                 if (existingInCart) {
-                    existingInCart.qty += qty;
+                    // Perubahan: Penjumlahan float
+                    existingInCart.qty = parseFloat((existingInCart.qty + qty).toFixed(8));
                 } else {
                     cart.push({
                         id,
                         kode,
-                        nama_barang, // Simpan nama barang
+                        nama_barang,
                         jenis_material,
                         unit_satuan,
-                        qty,
-                        stock // Simpan stok awal untuk referensi
+                        qty: qty, // Simpan sebagai float
+                        stock: stock // Simpan stok asli
                     });
                 }
 
                 renderCartTable();
                 clearInput();
+                $('#cari_barang').focus();
             });
 
             function renderCartTable() {
@@ -387,12 +412,13 @@
 
                 if (cart.length === 0) {
                     $tableBody.append(
-                        '<tr><td colspan="7" class="text-center text-muted">Keranjang kosong</td></tr>'
-                        ); // Colspan 7
+                        '<tr><td colspan="7" class="text-center text-muted">Keranjang kosong</td></tr>');
                     return;
                 }
 
                 cart.forEach((item, index) => {
+                    // Perubahan: Format qty untuk tampilan
+                    const formattedQty = formatNumber(item.qty, 4);
                     $tableBody.append(`
                         <tr data-id="${item.id}">
                             <td>${index + 1}</td>
@@ -400,7 +426,8 @@
                             <td>${item.nama_barang}</td>
                             <td>${item.jenis_material}</td>
                             <td>${item.unit_satuan}</td>
-                            <td class="text-center">${item.qty}</td>
+                            {{-- Perubahan: Class text-end dan format qty --}}
+                            <td class="text-end">${formattedQty}</td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-danger btn-sm remove-item" data-id="${item.id}">
                                     <i class="fa fa-trash"></i>
@@ -411,29 +438,27 @@
                 });
             }
 
-            // Hapus item dari cart
             $('#cart_tabel').on('click', '.remove-item', function() {
                 const idToRemove = $(this).data('id');
                 cart = cart.filter(item => item.id !== idToRemove.toString());
                 renderCartTable();
             });
 
-            // Reset input
             function clearInput() {
                 $('#barang_id').val('');
                 $('#kode_barang').val('');
                 $('#nama_barang_hidden').val('');
                 $('#nama_barang_display').text('-');
                 $('#stock').val('');
-                $('#stock_display').text('-'); // Reset display stok
-                $('#qty').val(1);
+                $('#stock_display').text('-');
+                $('#qty').val('1'); // Reset ke 1
                 $('#jenis_material').val('');
                 $('#unit_satuan').val('');
             }
 
-            // Validasi Submit Form (Sama seperti Stock In)
+            // Submit Form
             $('#transactionForm').on('submit', function(e) {
-                if ($('#no_surat').val() === '') {
+                if ($('#no_surat').val().trim() === '') {
                     e.preventDefault();
                     alert('No Surat tidak boleh kosong');
                     $('#no_surat').focus();
@@ -452,13 +477,24 @@
                     return false;
                 }
 
+                // Prepare cart data (send as float)
                 $('input[name="cart_items"]').remove();
-                const cartData = JSON.stringify(cart);
+                const cartDataForSubmit = cart.map(item => ({
+                    ...item,
+                    qty: item.qty // Send as number/float
+                }));
+                const cartJson = JSON.stringify(cartDataForSubmit);
+
                 $('<input>').attr({
                     type: 'hidden',
                     name: 'cart_items',
-                    value: cartData
+                    value: cartJson
                 }).appendTo('#transactionForm');
+
+                // Disable submit button
+                $('#submitBtn').prop('disabled', true).html(
+                    '<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
+
                 return true;
             });
 
