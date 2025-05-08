@@ -114,8 +114,9 @@
                                 <td>
                                     <div class="form-group">
                                         {{-- Perubahan: type="text", step="any", min="0" --}}
-                                        <input type="text" inputmode="decimal" id="qty" value="1"
-                                            min="0" step="any" class="form-control">
+                                        <input type="number" id="qty" value="1" min="0"
+                                            step="any" class="form-control"
+                                            placeholder="Gunakan titik (.) untuk desimal">
                                     </div>
                                 </td>
                             </tr>
@@ -234,10 +235,12 @@
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
     <script>
-        // Helper function to format number for display
+        // Helper function to format number for display (Format Indonesia)
         function formatNumber(num, decimals = 4) {
             const number = parseFloat(num);
-            if (isNaN(number)) return '0';
+            if (isNaN(number)) {
+                return '0';
+            }
             let formatted = number.toLocaleString('id-ID', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: decimals
@@ -245,16 +248,10 @@
             return formatted;
         }
 
-        // Helper function to parse input string to float
-        function parseFloatInput(value) {
-            if (typeof value !== 'string') value = String(value);
-            return parseFloat(value.replace(/\./g, '').replace(',', '.')) || 0;
-        }
-
-
         $(document).ready(function() {
             var modalTable;
 
+            // --- Inisialisasi DataTable Modal ---
             $('#modal-item').one('shown.bs.modal', function() {
                 modalTable = $('#modal_table_barang').DataTable({
                     processing: true,
@@ -263,6 +260,7 @@
                         url: "{{ route('listDataBarang') }}",
                         dataSrc: ""
                     },
+                    deferRender: true,
                     columns: [{
                             data: 'kode_barang'
                         },
@@ -278,7 +276,6 @@
                         {
                             data: 'stock',
                             render: function(data, type, row) {
-                                // Format stock for display in modal
                                 return formatNumber(data, 4);
                             }
                         },
@@ -294,13 +291,16 @@
                         }
                     ],
                     columnDefs: [{
-                            className: "text-end",
-                            targets: 4
-                        } // Rata kanan kolom stock
-                    ],
+                        className: "text-end",
+                        targets: 4
+                    }],
                     language: {
                         url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
                     },
+                    // scrollY: '300px',
+                    // scrollCollapse: true,
+                    // paging: true,
+                    // pageLength: 10
                 });
             });
 
@@ -315,22 +315,22 @@
                 let id = $(this).data('id');
                 let kode = $(this).data('kode');
                 let nama_barang = $(this).data('nama-barang');
-                let stock = $(this).data('stock'); // Nilai asli
+                let stock = $(this).data('stock'); // Ambil nilai asli
                 let jenis_material = $(this).data('jenis-material');
                 let unit_satuan = $(this).data('unit-satuan');
 
                 $('#barang_id').val(id);
-                $('#kode_barang').val(kode);
+                $('#kode_barang').val(kode); // Input display
                 $('#nama_barang_hidden').val(nama_barang);
                 $('#nama_barang_display').text(nama_barang);
                 $('#stock').val(stock); // Simpan nilai asli
-                $('#stock_display').text(formatNumber(stock, 4)); // Format untuk display
+                $('#stock_display').text(formatNumber(stock, 4)); // Format display
                 $('#jenis_material').val(jenis_material);
                 $('#unit_satuan').val(unit_satuan);
 
                 var modal = bootstrap.Modal.getInstance(document.getElementById('modal-item'));
                 modal.hide();
-                $('#qty').focus();
+                $('#qty').focus().select();
             });
 
             // --- Logika Keranjang (Cart) ---
@@ -338,57 +338,63 @@
 
             $('#add_cart').on('click', function() {
                 const id = $('#barang_id').val();
-                const kode = $('#kode_barang').val();
+                const kode = $('#kode_barang').val(); // input display
                 const nama_barang = $('#nama_barang_hidden').val();
-                // Perubahan: Parse float dari input Qty
-                const qty = parseFloatInput($('#qty').val());
+                // Revisi: Langsung parseFloat dari input Qty
+                const qty = parseFloat($('#qty').val());
                 const jenis_material = $('#jenis_material').val();
                 const unit_satuan = $('#unit_satuan').val();
-                // Perubahan: Parse float dari input Stok (hidden)
-                const stock = parseFloatInput($('#stock').val());
+                // Revisi: Langsung parseFloat dari hidden input stok
+                const stock = parseFloat($('#stock').val());
 
+                // Validasi dasar
                 if (!id || !kode) {
                     alert('Silakan pilih barang terlebih dahulu.');
+                    $('#cari_barang').focus();
                     return;
                 }
                 if (!nama_barang) {
-                    alert('Nama barang tidak ditemukan. Coba pilih ulang.');
+                    alert('Nama barang tidak valid. Silakan pilih ulang barang.');
+                    $('#cari_barang').focus();
                     return;
                 }
-                // Perubahan: Validasi qty harus > 0
+                // Validasi Qty
                 if (isNaN(qty) || qty <= 0) {
                     alert('Qty harus berupa angka valid lebih besar dari 0.');
-                    $('#qty').focus();
+                    $('#qty').focus().select();
+                    return;
+                }
+                // Validasi Stok Tersedia
+                if (isNaN(stock)) {
+                    alert('Stok barang tidak valid. Silakan pilih ulang barang.');
+                    clearInputFields();
+                    $('#cari_barang').focus();
                     return;
                 }
 
-                // --- Validasi Stok ---
+                // --- Validasi Stok (Memperhitungkan yg sudah ada di cart) ---
                 const existingInCart = cart.find(item => item.id === id);
                 const totalQtyInCart = existingInCart ? parseFloat(existingInCart.qty) : 0;
-                const newTotalQty = parseFloat((totalQtyInCart + qty).toFixed(
-                    8)); // Jumlahkan sebagai float
+                // Gunakan toFixed untuk mencegah error presisi float saat penjumlahan
+                const newTotalQty = parseFloat((totalQtyInCart + qty).toFixed(8));
 
                 if (newTotalQty > stock) {
                     const remainingStock = parseFloat((stock - totalQtyInCart).toFixed(8));
                     const message = remainingStock > 0 ?
-                        `Stok tidak mencukupi. Stok tersedia: ${formatNumber(stock, 4)}, sudah di keranjang: ${formatNumber(totalQtyInCart, 4)}. Anda hanya bisa menambah ${formatNumber(remainingStock, 4)} lagi.` :
-                        `Stok tidak mencukupi. Stok tersedia: ${formatNumber(stock, 4)}, sudah di keranjang: ${formatNumber(totalQtyInCart, 4)}.`;
+                        `Stok tidak mencukupi! Stok tersedia: ${formatNumber(stock, 4)}, sudah di keranjang: ${formatNumber(totalQtyInCart, 4)}. Anda hanya bisa menambah ${formatNumber(remainingStock, 4)} lagi.` :
+                        `Stok tidak mencukupi! Stok tersedia: ${formatNumber(stock, 4)}, sudah di keranjang: ${formatNumber(totalQtyInCart, 4)}.`;
 
                     alert(message);
-                    if (remainingStock > 0) {
-                        // Set input qty ke sisa stok, format dengan koma
-                        $('#qty').val(remainingStock.toString().replace('.', ','));
-                    } else {
-                        $('#qty').val('0');
-                    }
+                    // Set input qty ke sisa stok (jika > 0), jika tidak 0
+                    $('#qty').val(remainingStock > 0 ? remainingStock : '0');
+                    $('#qty').focus().select(); // Fokus kembali ke qty
                     return; // Hentikan penambahan
                 }
                 // --- Akhir Validasi Stok ---
 
                 // Update atau tambah item ke cart
                 if (existingInCart) {
-                    // Perubahan: Penjumlahan float
-                    existingInCart.qty = parseFloat((existingInCart.qty + qty).toFixed(8));
+                    existingInCart.qty = newTotalQty; // Simpan hasil penjumlahan float
                 } else {
                     cart.push({
                         id,
@@ -397,15 +403,16 @@
                         jenis_material,
                         unit_satuan,
                         qty: qty, // Simpan sebagai float
-                        stock: stock // Simpan stok asli
+                        stock: stock // Simpan stok asli (untuk referensi jika perlu)
                     });
                 }
 
                 renderCartTable();
-                clearInput();
+                clearInputFields();
                 $('#cari_barang').focus();
             });
 
+            // Fungsi untuk merender ulang tabel keranjang
             function renderCartTable() {
                 const $tableBody = $('#cart_tabel');
                 $tableBody.empty();
@@ -417,7 +424,6 @@
                 }
 
                 cart.forEach((item, index) => {
-                    // Perubahan: Format qty untuk tampilan
                     const formattedQty = formatNumber(item.qty, 4);
                     $tableBody.append(`
                         <tr data-id="${item.id}">
@@ -426,10 +432,9 @@
                             <td>${item.nama_barang}</td>
                             <td>${item.jenis_material}</td>
                             <td>${item.unit_satuan}</td>
-                            {{-- Perubahan: Class text-end dan format qty --}}
-                            <td class="text-end">${formattedQty}</td>
+                            <td class="text-end">${formattedQty}</td> {{-- Rata kanan --}}
                             <td class="text-center">
-                                <button type="button" class="btn btn-danger btn-sm remove-item" data-id="${item.id}">
+                                <button type="button" class="btn btn-danger btn-sm remove-item" data-id="${item.id}" title="Hapus Item">
                                     <i class="fa fa-trash"></i>
                                 </button>
                             </td>
@@ -438,26 +443,29 @@
                 });
             }
 
+            // Event listener untuk tombol hapus item di keranjang
             $('#cart_tabel').on('click', '.remove-item', function() {
-                const idToRemove = $(this).data('id');
-                cart = cart.filter(item => item.id !== idToRemove.toString());
+                const idToRemove = $(this).data('id').toString();
+                cart = cart.filter(item => item.id !== idToRemove);
                 renderCartTable();
             });
 
-            function clearInput() {
+            // Fungsi untuk membersihkan input setelah item ditambahkan
+            function clearInputFields() {
                 $('#barang_id').val('');
                 $('#kode_barang').val('');
                 $('#nama_barang_hidden').val('');
                 $('#nama_barang_display').text('-');
                 $('#stock').val('');
                 $('#stock_display').text('-');
-                $('#qty').val('1'); // Reset ke 1
+                $('#qty').val('1');
                 $('#jenis_material').val('');
                 $('#unit_satuan').val('');
             }
 
-            // Submit Form
+            // --- Submit Form Utama ---
             $('#transactionForm').on('submit', function(e) {
+                // Validasi Header
                 if ($('#no_surat').val().trim() === '') {
                     e.preventDefault();
                     alert('No Surat tidak boleh kosong');
@@ -470,6 +478,7 @@
                     $('#tanggal').focus();
                     return false;
                 }
+                // Validasi Keranjang
                 if (cart.length === 0) {
                     e.preventDefault();
                     alert('Minimal 1 item harus dimasukkan ke keranjang');
@@ -477,11 +486,11 @@
                     return false;
                 }
 
-                // Prepare cart data (send as float)
+                // Hapus input cart_items lama jika ada, lalu tambahkan yang baru
                 $('input[name="cart_items"]').remove();
                 const cartDataForSubmit = cart.map(item => ({
                     ...item,
-                    qty: item.qty // Send as number/float
+                    qty: item.qty // Kirim sebagai float
                 }));
                 const cartJson = JSON.stringify(cartDataForSubmit);
 
@@ -491,7 +500,7 @@
                     value: cartJson
                 }).appendTo('#transactionForm');
 
-                // Disable submit button
+                // Disable tombol submit
                 $('#submitBtn').prop('disabled', true).html(
                     '<i class="fas fa-spinner fa-spin"></i> Menyimpan...');
 
