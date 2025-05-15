@@ -183,7 +183,7 @@
                             let imgUrl = data ?
                                 `{{ asset('storage/uploads/photo-barangs/') }}/${data}` :
                                 `{{ asset('assets/static/images/faces/2.jpg') }}`;
-                            return `<div><img src="${imgUrl}" alt="Photo" class="img-thumbnail" style="width:50px; height:50px; object-fit: cover;"></div>`;
+                            return `<img src="${imgUrl}" alt="Photo" style="width:120px;">`;
                         }
                     },
                     {

@@ -97,7 +97,7 @@
                     searchable: false,
                     render: function(data, type, full, meta) {
                         return `<div>
-                            <img src="${data}" alt="Photo Perusahaan" class="img-thumbnail" style="width:60px; height:60px">
+                            <img src="${data}" alt="Photo Perusahaan" style="width:120px;">
                         </div>`;
                     }
                 },

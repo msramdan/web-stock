@@ -95,9 +95,7 @@ class BarangController extends Controller implements HasMiddleware
                     return formatAngkaRibuan($row->stock_barang);
                 })
                 ->addColumn('photo_barang', function ($row) {
-                    $defaultImg = asset('assets/static/images/faces/2.jpg');
-                    $imgUrl = $row->photo_barang ? asset('storage/uploads/photo-barangs/' . $row->photo_barang) : $defaultImg;
-                    return $imgUrl;
+                    return $row->photo_barang ?: null;
                 })
                 ->addColumn('action', 'barang.include.action')
                 ->rawColumns(['tipe_barang', 'photo_barang', 'action'])
