@@ -48,7 +48,7 @@ class CompanyController extends Controller implements HasMiddleware
                     if (!$row->logo_perusahaan) {
                         return 'https://dummyimage.com/150x100/cccccc/000000&text=No+Image';
                     }
-                    return asset('storage/uploads/photo-perusahaans/' . $row->logo_perusahaan);
+                    return asset('storage/uploads/logo-perusahaans/' . $row->logo_perusahaan);
                 })
                 ->addColumn('action', 'company.include.action')
                 ->toJson();

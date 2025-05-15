@@ -26,7 +26,7 @@
                 {{-- Tombol Export PDF Ditambahkan --}}
                 @can('transaksi stock in export pdf')
                     {{-- Opsional: Permission Check --}}
-                    <a href="{{ route('transaksi-stock-in.exportPdf') }}" class="btn btn-success mb-3 me-2" target="_blank">
+                    <a href="{{ route('transaksi-stock-in.exportPdf') }}" class="btn btn-danger mb-3 me-2" target="_blank">
                         <i class="fas fa-file-pdf"></i>
                         {{ __('Export PDF') }}
                     </a>

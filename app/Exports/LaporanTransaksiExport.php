@@ -112,9 +112,9 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
     public function headings(): array
     {
         return [
+            'Tanggal',
             'Sumber Data',
             'No Dokumen',
-            'Tanggal',
             'Tipe Pergerakan',
             'User',
             'Kode Barang',
@@ -130,9 +130,9 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
     public function map($row): array
     {
         return [
+            $row->tanggal ? Carbon::parse($row->tanggal)->format('d/m/Y H:i') : '-',
             $row->sumber_data ?? 'N/A',
             $row->no_dokumen ?? 'N/A',
-            $row->tanggal ? Carbon::parse($row->tanggal)->format('d/m/Y H:i') : '-',
             $row->tipe_pergerakan ?? '-',
             $row->user_name ?? '-',
             $row->kode_barang ?? '-',

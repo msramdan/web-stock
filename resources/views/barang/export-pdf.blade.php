@@ -297,14 +297,13 @@
                     <td>{{ $barang->deskripsi_barang ?? '-' }}</td>
                     <td>{{ $barang->nama_jenis_material ?? '-' }}</td>
                     <td>{{ $barang->nama_unit_satuan ?? '-' }}</td>
-                    <td class="text-center">
+                    <td style="text-align: right;">
                         {{ formatAngkaRibuan($barang->stock_barang) }}
                     </td>
                 </tr>
             @empty
                 <tr class="no-border">
                     <td colspan="8" class="text-center">Tidak ada data barang yang dapat ditampilkan.</td>
-                    {{-- Colspan jadi 8 --}}
                 </tr>
             @endforelse
         </tbody>

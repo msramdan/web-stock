@@ -354,7 +354,7 @@
                     <td>{{ $detail->kode_barang ?? '-' }}</td>
                     <td>{{ $detail->nama_jenis_material ?? '-' }}</td>
                     <td>{{ $detail->nama_unit_satuan ?? '-' }}</td>
-                    <td class="text-center">{{ formatAngkaRibuan ($detail->qty) }}</td>
+                    <td style="text-align: right;">{{ formatAngkaRibuan ($detail->qty) }}</td>
                 </tr>
             @empty
                 <tr class="no-border">

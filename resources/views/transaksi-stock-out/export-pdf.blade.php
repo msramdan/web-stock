@@ -274,7 +274,8 @@
     </table>
 
     {{-- Info Cetak --}}
-    <div class="creator-info">Dicetak oleh: {{ $namaPembuat }} pada {{ formatTanggalIndonesia(date('Y-m-d H:i:s')) }}</div>
+    <div class="creator-info">Dicetak oleh: {{ $namaPembuat }} pada {{ formatTanggalIndonesia(date('Y-m-d H:i:s')) }}
+    </div>
 
     {{-- Judul Dokumen --}}
     <div class="doc-title">
@@ -286,8 +287,8 @@
         <thead>
             <tr>
                 <th>No</th>
-                <th>No Surat</th>
                 <th>Tanggal</th>
+                <th>No Surat</th>
                 <th>Tipe</th>
                 <th>Keterangan</th>
                 {{-- Kolom User dihapus --}}
@@ -298,18 +299,16 @@
             @forelse($transaksis as $index => $transaksi)
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td>{{ $transaksi->no_surat ?? '-' }}</td>
                     <td class="text-center">
-                        {{ formatTanggalIndonesia ($transaksi->tanggal) }}
+                        {{ formatTanggalIndonesia($transaksi->tanggal) }}
                     </td>
+                    <td>{{ $transaksi->no_surat ?? '-' }}</td>
                     <td class="text-center">{{ $transaksi->type ?? '-' }}</td>
                     <td>{{ $transaksi->keterangan ?? '-' }}</td>
-                    {{-- Kolom data User dihapus --}}
                 </tr>
             @empty
                 <tr class="no-border">
                     <td colspan="5" class="text-center">Tidak ada data transaksi keluar yang dapat ditampilkan.</td>
-                    {{-- Colspan 5 --}}
                 </tr>
             @endforelse
         </tbody>

@@ -403,9 +403,8 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
     /**
      * Export data transaksi stock out to PDF.
      */
-    public function exportPdf(): RedirectResponse|StreamedResponse // Tambahkan return type hint
+    public function exportPdf(): RedirectResponse|StreamedResponse
     {
-        // Log::info(...); // Logging dinonaktifkan
         try {
             $companyId = session('sessionCompany');
             if (!$companyId) {
@@ -418,34 +417,28 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
             }
             $namaPerusahaanCetak = $activeCompany->nama_perusahaan;
 
-            // Ambil data transaksi OUT untuk company aktif
+            // Get OUT transactions for active company
             $transaksis = DB::table('transaksi')
                 ->select('transaksi.no_surat', 'transaksi.tanggal', 'transaksi.type', 'transaksi.keterangan', 'users.name as user_name')
                 ->join('users', 'users.id', '=', 'transaksi.user_id')
-                ->where('transaksi.type', 'Out') // <-- Filter type Out
-                ->where('transaksi.company_id', $companyId) // Filter company
+                ->where('transaksi.type', 'Out')
+                ->where('transaksi.company_id', $companyId)
                 ->orderByDesc('transaksi.tanggal')
                 ->get();
 
-            // Panggil helper logo HANYA dengan $activeCompany
             $logoUrl = function_exists('get_company_logo_base64') ? get_company_logo_base64($activeCompany) : null;
-
             $tanggalCetak = Carbon::now()->translatedFormat('d F Y H:i');
             $namaPembuat = auth()->user()?->name ?? 'N/A';
 
-            // Kirim $activeCompany ke view, HAPUS $setting
-            // Ubah nama variabel 'namaPerusahaan' menjadi 'namaPerusahaanCetak' agar konsisten
             $data = compact('transaksis', 'activeCompany', 'logoUrl', 'tanggalCetak', 'namaPembuat', 'namaPerusahaanCetak');
 
-            // PENTING: Pastikan view 'transaksi-stock-out.export-pdf.blade.php' ada dan benar
             $pdf = Pdf::loadView('transaksi-stock-out.export-pdf', $data)
                 ->setPaper('a4', 'portrait')
                 ->setOption('isRemoteEnabled', true);
 
-            // Sesuaikan nama file
-            $filename = 'Laporan-Transaksi-Keluar-' . Str::slug($namaPerusahaanCetak) . '-' . date('YmdHis') . '.pdf';
+            // New filename format: [date_time]-Laporan-Transaksi-Keluar-[company].pdf
+            $filename = date('Y-m-d_H-i') . '-Laporan-Transaksi-Keluar-' . Str::slug($namaPerusahaanCetak) . '.pdf';
 
-            // --- PENDEKATAN MANUAL STREAM ---
             try {
                 $pdfOutput = $pdf->output();
                 return response()->streamDownload(
@@ -456,13 +449,9 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
                     ['Content-Type' => 'application/pdf']
                 );
             } catch (\Throwable $renderOrOutputError) {
-                // Log::error(...); // Logging dinonaktifkan
                 return redirect()->route('transaksi-stock-out.index')->with('error', 'Gagal saat generate output PDF Laporan Transaksi Keluar.');
             }
-            // --- AKHIR PENDEKATAN MANUAL STREAM ---
-
         } catch (\Throwable $th) {
-            // Log::error(...); // Logging dinonaktifkan
             return redirect()->route('transaksi-stock-out.index')->with('error', 'Gagal memproses PDF Laporan Transaksi Keluar.');
         }
     }

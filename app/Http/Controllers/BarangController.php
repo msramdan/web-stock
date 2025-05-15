@@ -312,78 +312,74 @@ class BarangController extends Controller implements HasMiddleware
      */
     public function exportPdf(Request $request): RedirectResponse|StreamedResponse
     {
-        // try {
-            $companyId = session('sessionCompany');
-            if (!$companyId) return redirect()->route('barang.index')->with('error', '...');
-            $activeCompany = Company::find($companyId);
-            if (!$activeCompany) return redirect()->route('barang.index')->with('error', '...');
-            $namaPerusahaanCetak = $activeCompany->nama_perusahaan;
+        $companyId = session('sessionCompany');
+        if (!$companyId) return redirect()->route('barang.index')->with('error', '...');
+        $activeCompany = Company::find($companyId);
+        if (!$activeCompany) return redirect()->route('barang.index')->with('error', '...');
+        $namaPerusahaanCetak = $activeCompany->nama_perusahaan;
 
-            // Query dasar
-            $query = DB::table('barang')
-                ->leftJoin('jenis_material', function ($join) use ($companyId) {
-                    $join->on('barang.jenis_material_id', '=', 'jenis_material.id')
-                        ->where('jenis_material.company_id', '=', $companyId);
-                })
-                ->leftJoin('unit_satuan', function ($join) use ($companyId) {
-                    $join->on('barang.unit_satuan_id', '=', 'unit_satuan.id')
-                        ->where('unit_satuan.company_id', '=', $companyId);
-                })
-                ->where('barang.company_id', $companyId)
-                ->select(
-                    'barang.kode_barang',
-                    'barang.nama_barang',
-                    'barang.tipe_barang',
-                    'barang.deskripsi_barang',
-                    'barang.stock_barang',
-                    'jenis_material.nama_jenis_material',
-                    'unit_satuan.nama_unit_satuan'
-                );
+        // Query dasar
+        $query = DB::table('barang')
+            ->leftJoin('jenis_material', function ($join) use ($companyId) {
+                $join->on('barang.jenis_material_id', '=', 'jenis_material.id')
+                    ->where('jenis_material.company_id', '=', $companyId);
+            })
+            ->leftJoin('unit_satuan', function ($join) use ($companyId) {
+                $join->on('barang.unit_satuan_id', '=', 'unit_satuan.id')
+                    ->where('unit_satuan.company_id', '=', $companyId);
+            })
+            ->where('barang.company_id', $companyId)
+            ->select(
+                'barang.kode_barang',
+                'barang.nama_barang',
+                'barang.tipe_barang',
+                'barang.deskripsi_barang',
+                'barang.stock_barang',
+                'jenis_material.nama_jenis_material',
+                'unit_satuan.nama_unit_satuan'
+            );
 
-            // Terapkan filter tipe barang jika ada
-            if ($request->filled('tipe_barang')) {
-                $query->where('barang.tipe_barang', $request->input('tipe_barang'));
-            }
+        // Terapkan filter tipe barang jika ada
+        if ($request->filled('tipe_barang')) {
+            $query->where('barang.tipe_barang', $request->input('tipe_barang'));
+        }
 
-            $barangs = $query->orderBy('barang.kode_barang')->get();
+        $barangs = $query->orderBy('barang.kode_barang')->get();
 
-            // Persiapan data untuk PDF
-            $logoUrl = function_exists('get_company_logo_base64') ? get_company_logo_base64($activeCompany) : null;
-            $tanggalCetak = Carbon::now()->translatedFormat('d F Y H:i');
-            $namaPembuat = auth()->user()?->name ?? 'N/A';
-            $data = compact('barangs', 'activeCompany', 'logoUrl', 'tanggalCetak', 'namaPembuat', 'namaPerusahaanCetak');
+        // Persiapan data untuk PDF
+        $logoUrl = function_exists('get_company_logo_base64') ? get_company_logo_base64($activeCompany) : null;
+        $tanggalCetak = Carbon::now()->translatedFormat('d F Y H:i');
+        $namaPembuat = auth()->user()?->name ?? 'N/A';
+        $data = compact('barangs', 'activeCompany', 'logoUrl', 'tanggalCetak', 'namaPembuat', 'namaPerusahaanCetak');
 
-            // Generate PDF
-            $pdf = Pdf::loadView('barang.export-pdf', $data)->setPaper('a4', 'portrait')->setOption('isRemoteEnabled', true);
-            $filename = 'Data-Barang-' . Str::slug($namaPerusahaanCetak) . '-' . date('YmdHis') . '.pdf';
+        // Generate PDF dengan format nama file baru
+        $pdf = Pdf::loadView('barang.export-pdf', $data)->setPaper('a4', 'portrait')->setOption('isRemoteEnabled', true);
 
-            // try {
-                $pdfOutput = $pdf->output();
-                return response()->stream(
-                    function () use ($pdfOutput) {
-                        echo $pdfOutput;
-                    },
-                    200,
-                    [
-                        'Content-Type' => 'application/pdf',
-                        'Content-Disposition' => 'inline; filename="' . $filename . '"',
-                    ]
-                );
-            // } catch (\Throwable $renderOrOutputError) {
-            //     return redirect()->route('barang.index')->with('error', 'Gagal generate output PDF Barang.');
-            // }
-        // } catch (\Throwable $th) {
-        //     return redirect()->route('barang.index')->with('error', 'Gagal memproses PDF data barang.');
-        // }
+        // Format nama file baru: tanggal dan jam di awal dengan format Y-m-d_H-i
+        $filename = date('Y-m-d_H-i') . '-Data-Barang-' . Str::slug($namaPerusahaanCetak);
+        if ($request->filled('tipe_barang')) {
+            $filename .= '-' . Str::slug($request->input('tipe_barang'));
+        }
+        $filename .= '.pdf';
+
+        $pdfOutput = $pdf->output();
+        return response()->stream(
+            function () use ($pdfOutput) {
+                echo $pdfOutput;
+            },
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
+            ]
+        );
     }
 
     /**
      * Export data barang to Excel.
      */
-    public function exportExcel(Request $request) // Tambahkan Request $request
+    public function exportExcel(Request $request)
     {
-        // Middleware check (inline atau via route group)
-        // Pastikan user punya permission 'barang export excel'
         if (!auth()->user()->can('barang export excel')) {
             abort(403, 'Anda tidak punya izin untuk ekspor Excel data barang.');
         }
@@ -396,12 +392,12 @@ class BarangController extends Controller implements HasMiddleware
             // Ambil filter tipe barang dari request
             $tipeBarangFilter = $request->input('tipe_barang');
 
-            $filename = 'Data-Barang-' . $namaPerusahaan;
+            // Format tanggal dan jam dengan pemisah dan hanya jam:menit
+            $filename = date('Y-m-d_H-i') . '-Data-Barang-' . $namaPerusahaan;
             if ($tipeBarangFilter) {
                 $filename .= '-' . Str::slug($tipeBarangFilter);
             }
-            $filename .= '-' . date('YmdHis') . '.xlsx';
-
+            $filename .= '.xlsx';
 
             // Panggil export class, lewatkan filter
             return Excel::download(new BarangExport($tipeBarangFilter), $filename);

@@ -351,7 +351,7 @@ class TransaksiStockInController extends Controller implements HasMiddleware
     /**
      * Export data transaksi stock in to PDF.
      */
-    public function exportPdf(): RedirectResponse|StreamedResponse // Tambahkan return type hint
+    public function exportPdf(): RedirectResponse|StreamedResponse
     {
         try {
             $companyId = session('sessionCompany');
@@ -368,28 +368,24 @@ class TransaksiStockInController extends Controller implements HasMiddleware
             // Ambil data transaksi IN untuk company aktif
             $transaksis = DB::table('transaksi')
                 ->join('users', 'users.id', '=', 'transaksi.user_id')
-                ->where('transaksi.type', 'In') // Filter Type
-                ->where('transaksi.company_id', $companyId) // Filter Company
+                ->where('transaksi.type', 'In')
+                ->where('transaksi.company_id', $companyId)
                 ->select('transaksi.no_surat', 'transaksi.tanggal', 'transaksi.type', 'transaksi.keterangan', 'users.name as user_name')
                 ->orderByDesc('transaksi.tanggal')->get();
 
-            // Panggil helper logo HANYA dengan $activeCompany
             $logoUrl = function_exists('get_company_logo_base64') ? get_company_logo_base64($activeCompany) : null;
-
             $tanggalCetak = Carbon::now()->translatedFormat('d F Y H:i');
             $namaPembuat = auth()->user()?->name ?? 'N/A';
 
-            // Kirim $activeCompany ke view, HAPUS $setting
             $data = compact('transaksis', 'activeCompany', 'logoUrl', 'tanggalCetak', 'namaPembuat', 'namaPerusahaanCetak');
 
-            // PENTING: Pastikan view 'transaksi-stock-in.export-pdf.blade.php' ada dan benar
             $pdf = Pdf::loadView('transaksi-stock-in.export-pdf', $data)
                 ->setPaper('a4', 'portrait')
                 ->setOption('isRemoteEnabled', true);
 
-            $filename = 'Laporan-Transaksi-Masuk-' . Str::slug($namaPerusahaanCetak) . '-' . date('YmdHis') . '.pdf';
+            // Format nama file baru: tanggal dan jam di awal dengan format Y-m-d_H-i
+            $filename = date('Y-m-d_H-i') . '-Laporan-Transaksi-Masuk-' . Str::slug($namaPerusahaanCetak) . '.pdf';
 
-            // --- PENDEKATAN MANUAL STREAM ---
             try {
                 $pdfOutput = $pdf->output();
                 return response()->streamDownload(
@@ -400,14 +396,9 @@ class TransaksiStockInController extends Controller implements HasMiddleware
                     ['Content-Type' => 'application/pdf']
                 );
             } catch (\Throwable $renderOrOutputError) {
-                // Log::error(...); // Logging dinonaktifkan sesuai permintaan
                 return redirect()->route('transaksi-stock-in.index')->with('error', 'Gagal saat generate output PDF Laporan Transaksi Masuk.');
             }
-            // --- AKHIR PENDEKATAN MANUAL STREAM ---
-
         } catch (\Throwable $th) {
-            // Log::error(...); // Logging dinonaktifkan sesuai permintaan
-            // Tetap beri tahu user ada masalah
             return redirect()->route('transaksi-stock-in.index')->with('error', 'Gagal memproses PDF Laporan Transaksi Masuk.');
         }
     }

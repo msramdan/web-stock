@@ -297,7 +297,8 @@
     </table>
 
     {{-- Info Cetak --}}
-    <div class="creator-info">Dicetak oleh: {{ $namaPembuat }} pada {{ formatTanggalIndonesia(date('Y-m-d H:i:s')) }}</div>
+    <div class="creator-info">Dicetak oleh: {{ $namaPembuat }} pada {{ formatTanggalIndonesia(date('Y-m-d H:i:s')) }}
+    </div>
 
     {{-- Judul Dokumen --}}
     <div class="doc-title">
@@ -309,8 +310,8 @@
         <thead>
             <tr>
                 <th>No</th>
-                <th>No Surat</th>
                 <th>Tanggal</th>
+                <th>No Surat</th>
                 <th>Tipe</th>
                 <th>Keterangan</th>
                 {{-- Kolom User Dihapus --}}
@@ -320,10 +321,10 @@
             @forelse($transaksis as $index => $transaksi)
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td>{{ $transaksi->no_surat ?? '-' }}</td>
                     <td class="text-center">
                         {{ $transaksi->tanggal ? \Carbon\Carbon::parse($transaksi->tanggal)->format('d/m/Y H:i') : '-' }}
                     </td>
+                    <td>{{ $transaksi->no_surat ?? '-' }}</td>
                     <td class="text-center">{{ $transaksi->type ?? '-' }}</td>
                     <td>{{ $transaksi->keterangan ?? '-' }}</td>
                     {{-- Kolom data User Dihapus --}}

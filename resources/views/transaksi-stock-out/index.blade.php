@@ -25,7 +25,7 @@
             <div class="d-flex justify-content-end">
                 {{-- Tombol Export PDF List --}}
                 @can('transaksi stock out export pdf')
-                    <a href="{{ route('transaksi-stock-out.exportPdf') }}" class="btn btn-success mb-3 me-2" target="_blank">
+                    <a href="{{ route('transaksi-stock-out.exportPdf') }}" class="btn btn-danger mb-3 me-2" target="_blank">
                         <i class="fas fa-file-pdf"></i>
                         {{ __('Export PDF') }}
                     </a>

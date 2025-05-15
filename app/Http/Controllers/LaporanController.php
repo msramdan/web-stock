@@ -30,7 +30,7 @@ class LaporanController extends Controller
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
             'jenis_material_id' => ['nullable', Rule::exists('jenis_material', 'id')->where(fn($q) => $q->where('company_id', $companyId))],
-            'tipe_barang' => ['nullable', 'string', Rule::in(['Bahan Baku', 'Barang Jadi'])], // <-- VALIDASI BARU
+            'tipe_barang' => ['nullable', 'string', Rule::in(['Bahan Baku', 'Barang Jadi'])],
         ], [ /* messages */]);
 
         $validator->after(function ($validator) use ($request, $maxRangeDays) {
@@ -50,13 +50,17 @@ class LaporanController extends Controller
         $tanggalMulai = $request->input('tanggal_mulai');
         $tanggalSelesai = $request->input('tanggal_selesai');
         $jenisMaterialId = $request->input('jenis_material_id');
-        $tipeBarang = $request->input('tipe_barang'); // <-- AMBIL FILTER BARU
+        $tipeBarang = $request->input('tipe_barang');
 
-        // Buat nama file lebih deskriptif
-        $filterDesc = $tipeBarang ? Str::slug($tipeBarang) : ($jenisMaterialId ? 'material_' . $jenisMaterialId : 'semua');
-        $fileName = 'laporan_pergerakan_barang_' . $filterDesc . '_' . $tanggalMulai . '_sd_' . $tanggalSelesai . '.xlsx';
+        // Format dates for filename (YYYY-MM-DD format)
+        $startDate = Carbon::parse($tanggalMulai)->format('Y-m-d');
+        $endDate = Carbon::parse($tanggalSelesai)->format('Y-m-d');
 
-        // Kirim SEMUA filter ke class Export
+        // Create descriptive filename with dates first
+        $filterDesc = $tipeBarang ? Str::slug($tipeBarang) : ($jenisMaterialId ? 'material-' . $jenisMaterialId : 'semua');
+        $fileName = $startDate . '_sd_' . $endDate . '_laporan_pergerakan_barang_' . $filterDesc . '.xlsx';
+
+        // Send ALL filters to Export class
         return Excel::download(new LaporanTransaksiExport($tanggalMulai, $tanggalSelesai, $jenisMaterialId, $tipeBarang), $fileName);
     }
 }
