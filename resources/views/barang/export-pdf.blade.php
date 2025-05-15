@@ -232,7 +232,7 @@
         <tr>
             <td class="logo-cell">
                 @if ($logoUrl)
-                    <img src="{{ $logoUrl }}" alt="Logo" class="logo">
+                    <img src="{{ $logoUrl }}" alt="Logo" style="max-width: 80px; max-height: 40px;">
                 @else
                     <div
                         style="width:80px; height:40px; border:1px dashed #ccc; display:flex; align-items:center; justify-content:center; font-size:9px; color:#999;">

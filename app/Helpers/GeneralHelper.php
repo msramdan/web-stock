@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Models\Company;
+use Illuminate\Support\Facades\Log;
 
 if (!function_exists('is_active_menu')) {
     function is_active_menu(string|array $route): string
@@ -156,5 +158,32 @@ if (!function_exists('formatAngkaDesimal')) {
         $cleaned = rtrim(rtrim($formatted, '0'), ',');
 
         return $cleaned;
+    }
+}
+
+
+function get_company_logo_base64(?Company $activeCompany): ?string
+{
+    if (!$activeCompany?->logo_perusahaan) return null;
+
+    $logoPath = storage_path('app/public/uploads/logo-perusahaans/' . $activeCompany->logo_perusahaan);
+
+    if (!file_exists($logoPath)) {
+        Log::error("Logo file not found: " . $logoPath);
+        return null;
+    }
+
+    try {
+        $mime = mime_content_type($logoPath);
+        $imageData = file_get_contents($logoPath);
+
+        if ($imageData === false) {
+            throw new \Exception("Failed to read file contents");
+        }
+
+        return 'data:' . $mime . ';base64,' . base64_encode($imageData);
+    } catch (\Exception $e) {
+        Log::error("Logo processing error: " . $e->getMessage());
+        return null;
     }
 }

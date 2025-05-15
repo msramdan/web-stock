@@ -345,7 +345,7 @@ class BarangController extends Controller implements HasMiddleware
         $barangs = $query->orderBy('barang.kode_barang')->get();
 
         // Persiapan data untuk PDF
-        $logoUrl = function_exists('get_company_logo_base64') ? get_company_logo_base64($activeCompany) : null;
+        $logoUrl = get_company_logo_base64($activeCompany);
         $tanggalCetak = Carbon::now()->translatedFormat('d F Y H:i');
         $namaPembuat = auth()->user()?->name ?? 'N/A';
         $data = compact('barangs', 'activeCompany', 'logoUrl', 'tanggalCetak', 'namaPembuat', 'namaPerusahaanCetak');
