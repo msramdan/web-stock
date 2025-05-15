@@ -74,61 +74,78 @@ class ProduksiController extends Controller implements HasMiddleware
      * Show the form for creating a new resource.
      * Bisa jadi ini halaman untuk memilih produk jadi dulu.
      */
-    public function create(Request $request): View | RedirectResponse
+
+    public function create(Request $request)
     {
         $companyId = session('sessionCompany');
 
-        // Opsi 1: Tampilkan daftar produk jadi yang punya BoM untuk dipilih
-        if (!$request->has('barang_id')) {
-            $produkJadiList = Barang::where('company_id', $companyId)
-                ->whereHas('boms') // Hanya tampilkan barang yg punya BoM
-                ->orderBy('nama_barang')
-                ->pluck('nama_barang', 'id'); // atau get() jika perlu info lain
+        // Get product list for dropdown
+        $produkJadiList = DB::table('barang')
+            ->where('company_id', $companyId)
+            ->whereExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('bom')
+                    ->whereColumn('bom.barang_id', 'barang.id');
+            })
+            ->orderBy('nama_barang')
+            ->pluck('nama_barang', 'id');
 
-            if ($produkJadiList->isEmpty()) {
-                return redirect()->route('produksi.index')->with('error', 'Tidak ada Produk Jadi dengan BoM yang terdaftar untuk perusahaan ini.');
+        if ($produkJadiList->isEmpty()) {
+            return redirect()->route('produksi.index')->with('error', 'Tidak ada Produk Jadi dengan BoM yang terdaftar.');
+        }
+
+        // If form submitted with both product and BOM
+        if ($request->has('barang_id') && $request->has('bom_id')) {
+            $bomId = $request->input('bom_id');
+            $produkJadi = $request->input('barang_id');
+
+
+            $bom = Bom::where('id', $bomId)
+                ->where('barang_id', $produkJadi)
+                ->where('company_id', $companyId)
+                ->with('details.material.unitSatuan', 'details.unitSatuan')
+                ->first();
+
+            if (!$bom || $bom->details->isEmpty()) {
+                return redirect()->route('produksi.create')->with('error', 'BoM tidak ditemukan atau kosong untuk produk ini.');
             }
 
-            return view('produksi.select_product', compact('produkJadiList')); // View untuk memilih produk
+            $produkJadi = DB::table('barang')
+                ->where('id', $bom->barang_id)
+                ->first();
+
+            $requiredMaterials = [];
+            foreach ($bom->details as $detail) {
+                $requiredMaterials[] = [
+                    'material_id' => $detail->barang_id,
+                    'kode_barang' => $detail->material?->kode_barang ?? 'N/A',
+                    'nama_barang' => $detail->material?->nama_barang ?? 'Material Tidak Ditemukan',
+                    'qty_per_batch' => $detail->jumlah,
+                    'unit_satuan_id' => $detail->unit_satuan_id,
+                    'unit_satuan' => $detail->unitSatuan?->nama_unit_satuan ?? '-',
+                    'stok_saat_ini' => $detail->material?->stock_barang ?? 0,
+                ];
+            }
+
+            return view('produksi.create', [
+                'produkJadi' => $produkJadi,
+                'bom' => $bom,
+                'requiredMaterials' => $requiredMaterials
+            ]);
         }
 
-        // Opsi 2: Form utama setelah produk dipilih (dari request atau langkah sebelumnya)
-        $barangId = $request->input('barang_id');
-        $produkJadi = Barang::with('unitSatuan') // Ambil unit satuan default
-            ->where('company_id', $companyId)
-            ->whereHas('boms')
-            ->find($barangId);
+        // Default view with product selection
+        return view('produksi.select_product', compact('produkJadiList'));
+    }
 
-        if (!$produkJadi) {
-            return redirect()->route('produksi.create')->with('error', 'Produk Jadi tidak valid atau tidak memiliki BoM.');
-        }
+    public function getBomProduksi(Request $request)
+    {
+        $barangId = $request->barang_id;
+        $boms = DB::table('bom')
+            ->where('barang_id', $barangId)
+            ->get(['id', 'deskripsi']);
 
-        // Ambil BoM aktif untuk produk ini (asumsi hanya 1 BoM aktif per produk, atau ambil yg terbaru)
-        $bom = Bom::where('barang_id', $produkJadi->id)
-            ->where('company_id', $companyId) // Pastikan BoM dari company yg sama
-            ->with('details.material.unitSatuan', 'details.unitSatuan') // Eager load BoM details
-            ->latest() // Ambil BoM terbaru jika ada > 1
-            ->first();
-
-        if (!$bom || $bom->details->isEmpty()) {
-            return redirect()->route('produksi.create')->with('error', 'BoM tidak ditemukan atau kosong untuk produk ini.');
-        }
-
-        // Siapkan data untuk ditampilkan di form (kalkulasi awal)
-        $requiredMaterials = [];
-        foreach ($bom->details as $detail) {
-            $requiredMaterials[] = [
-                'material_id' => $detail->barang_id,
-                'kode_barang' => $detail->material?->kode_barang ?? 'N/A',
-                'nama_barang' => $detail->material?->nama_barang ?? 'Material Tidak Ditemukan',
-                'qty_per_batch' => $detail->jumlah,
-                'unit_satuan_id' => $detail->unit_satuan_id,
-                'unit_satuan' => $detail->unitSatuan?->nama_unit_satuan ?? '-',
-                'stok_saat_ini' => $detail->material?->stock_barang ?? 0,
-            ];
-        }
-
-        return view('produksi.create', compact('produkJadi', 'bom', 'requiredMaterials')); // View form utama
+        return response()->json($boms);
     }
 
 

@@ -66,6 +66,8 @@ Route::middleware(['auth', 'web'])->group(function () {
         Route::resource('barang', BarangController::class);
         Route::resource('bom', BomController::class);
         Route::resource('produksi', ProduksiController::class);
+        Route::get('/get-boms-produksi', [ProduksiController::class, 'getBomProduksi'])->name('produksi.getBoms');
+
 
         // Transaksi Spesifik Company
         Route::prefix('transaksi-stock-in')->name('transaksi-stock-in.')->group(function () {

@@ -21,26 +21,23 @@
         </div>
 
         <section class="section">
-            <x-alert></x-alert> {{-- Tampilkan alert jika ada error --}}
+            <x-alert></x-alert>
             <div class="row">
                 <div class="col-md-6 col-12">
                     <div class="card">
                         <div class="card-header">
-                            <h4 class="card-title">Pilih Produk</h4>
+                            <h4 class="card-title">Pilih Produk dan BoM</h4>
                         </div>
                         <div class="card-content">
                             <div class="card-body">
                                 @if ($produkJadiList->isEmpty())
                                     <div class="alert alert-light-warning color-warning">
-                                        <i class="bi bi-exclamation-triangle"></i> Tidak ada Produk Jadi dengan Bill of
-                                        Materials (BoM) yang terdaftar untuk perusahaan ini. Silakan buat BoM terlebih
-                                        dahulu.
+                                        <i class="bi bi-exclamation-triangle"></i> Tidak ada Produk Jadi dengan BoM.
                                     </div>
                                     <a href="{{ route('bom.create') }}" class="btn btn-primary mt-2">Buat BoM Baru</a>
                                 @else
-                                    <form class="form form-horizontal" action="{{ route('produksi.create') }}"
-                                        method="GET">
-                                        {{-- Tidak perlu @csrf karena method GET --}}
+                                    <form id="productionForm" class="form form-horizontal"
+                                        action="{{ route('produksi.create') }}" method="GET">
                                         <div class="form-body">
                                             <div class="row">
                                                 <div class="col-md-4">
@@ -51,13 +48,40 @@
                                                         <option value="" disabled selected>-- Pilih Produk Jadi --
                                                         </option>
                                                         @foreach ($produkJadiList as $id => $nama)
-                                                            <option value="{{ $id }}">{{ $nama }}
-                                                            </option>
+                                                            <option value="{{ $id }}"
+                                                                {{ old('barang_id') == $id ? 'selected' : '' }}>
+                                                                {{ $nama }}</option>
                                                         @endforeach
                                                     </select>
                                                 </div>
+
+                                                <div class="col-md-4">
+                                                    <label for="bom_id">Pilih BoM</label>
+                                                </div>
+                                                <div class="col-md-8 form-group">
+                                                    <select class="form-select" id="bom_id" name="bom_id" required
+                                                        {{ !old('barang_id') ? 'disabled' : '' }}>
+                                                        <option value="" disabled selected>-- Pilih BoM --</option>
+                                                        @if (old('barang_id'))
+                                                            @php
+                                                                $boms = DB::table('bom')
+                                                                    ->where('barang_id', old('barang_id'))
+                                                                    ->where('company_id', session('sessionCompany'))
+                                                                    ->orderBy('nama_bom', 'asc')
+                                                                    ->get(['id', 'nama_bom']);
+                                                            @endphp
+                                                            @foreach ($boms as $bom)
+                                                                <option value="{{ $bom->id }}"
+                                                                    {{ old('bom_id') == $bom->id ? 'selected' : '' }}>
+                                                                    {{ $bom->nama_bom }}</option>
+                                                            @endforeach
+                                                        @endif
+                                                    </select>
+                                                </div>
+
                                                 <div class="col-sm-12 d-flex justify-content-end">
-                                                    <button type="submit" class="btn btn-primary me-1 mb-1">Lanjut</button>
+                                                    <button type="submit" class="btn btn-primary me-1 mb-1" id="submitBtn"
+                                                        {{ !old('bom_id') ? 'disabled' : '' }}>Lanjut</button>
                                                     <a href="{{ route('produksi.index') }}"
                                                         class="btn btn-light-secondary me-1 mb-1">Batal</a>
                                                 </div>
@@ -74,19 +98,68 @@
     </div>
 @endsection
 
-@push('css')
-    {{-- Tambahkan CSS jika perlu, misal untuk Select2 --}}
-    {{-- <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" /> --}}
-@endpush
-
 @push('js')
-    {{-- Tambahkan JS jika perlu --}}
-    {{-- <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function() {
-            $('#barang_id').select2({
-                theme: "bootstrap-5"
+            // Initialize with old input if exists
+            @if (old('barang_id'))
+                loadBoms({{ old('barang_id') }});
+            @endif
+
+            $('#barang_id').change(function() {
+                var barangId = $(this).val();
+                if (barangId) {
+                    loadBoms(barangId);
+                } else {
+                    $('#bom_id').empty().append(
+                            '<option value="" disabled selected>-- Pilih BoM --</option>')
+                        .prop('disabled', true);
+                    $('#submitBtn').prop('disabled', true);
+                }
             });
+
+            $('#bom_id').change(function() {
+                $('#submitBtn').prop('disabled', !$(this).val());
+            });
+
+            function loadBoms(barangId) {
+                $.ajax({
+                    url: '{{ route('produksi.getBoms') }}',
+                    type: 'GET',
+                    data: {
+                        barang_id: barangId
+                    },
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(data) {
+                        $('#bom_id').empty().append(
+                            '<option value="" disabled selected>-- Pilih BoM --</option>');
+                        if (data.length > 0) {
+                            $('#bom_id').prop('disabled', false);
+                            $.each(data, function(key, value) {
+                                $('#bom_id').append($('<option>', {
+                                    value: value.id,
+                                    text: value.deskripsi,
+                                    selected: value.id == {{ old('bom_id', 0) }}
+                                }));
+                            });
+                            // Enable submit if bom_id was previously selected
+                            if ($('#bom_id').val()) {
+                                $('#submitBtn').prop('disabled', false);
+                            }
+                        } else {
+                            $('#bom_id').prop('disabled', true);
+                            $('#submitBtn').prop('disabled', true);
+                            alert('Produk ini tidak memiliki BoM yang tersedia.');
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('Error:', xhr.responseText);
+                        alert('Terjadi kesalahan saat memuat data BoM.');
+                    }
+                });
+            }
         });
-    </script> --}}
+    </script>
 @endpush
