@@ -354,7 +354,7 @@ class BarangController extends Controller implements HasMiddleware
         $pdf = Pdf::loadView('barang.export-pdf', $data)->setPaper('a4', 'portrait')->setOption('isRemoteEnabled', true);
 
         // Format nama file baru: tanggal dan jam di awal dengan format Y-m-d_H-i
-        $filename = date('Y-m-d_H-i') . '-Data-Barang-' . Str::slug($namaPerusahaanCetak);
+        $filename = date('Y-m-d_H-i') . '-Data-Barang-' . str_replace(' ', '-', strtoupper($namaPerusahaanCetak));
         if ($request->filled('tipe_barang')) {
             $filename .= '-' . Str::slug($request->input('tipe_barang'));
         }
@@ -385,7 +385,8 @@ class BarangController extends Controller implements HasMiddleware
         try {
             $companyId = session('sessionCompany');
             $activeCompany = Company::find($companyId);
-            $namaPerusahaan = $activeCompany ? Str::slug($activeCompany->nama_perusahaan) : 'data';
+            $namaPerusahaan = $activeCompany ? str_replace(' ', '-', strtoupper($activeCompany->nama_perusahaan)) : 'DATA';
+
 
             // Ambil filter tipe barang dari request
             $tipeBarangFilter = $request->input('tipe_barang');

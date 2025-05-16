@@ -384,7 +384,7 @@ class TransaksiStockInController extends Controller implements HasMiddleware
                 ->setOption('isRemoteEnabled', true);
 
             // Format nama file baru: tanggal dan jam di awal dengan format Y-m-d_H-i
-            $filename = date('Y-m-d_H-i') . '-Laporan-Transaksi-Masuk-' . Str::slug($namaPerusahaanCetak) . '.pdf';
+            $filename = date('Y-m-d_H-i') . '-Laporan-Transaksi-Masuk-' . str_replace(' ', '-', strtoupper($namaPerusahaanCetak)) . '.pdf';
 
             try {
                 $pdfOutput = $pdf->output();
@@ -466,7 +466,9 @@ class TransaksiStockInController extends Controller implements HasMiddleware
                 ->setPaper('a4', 'portrait')
                 ->setOption('isRemoteEnabled', true);
 
-            $filename = 'Detail-Transaksi-Masuk-' . Str::slug($namaPerusahaanCetak) . '-' . ($transaksi->no_surat ?? $id) . '.pdf';
+            $namaPerusahaan = str_replace(' ', '-', strtoupper($namaPerusahaanCetak));
+            $filename = 'Detail-Transaksi-Masuk-' . $namaPerusahaan . '-' . ($transaksi->no_surat ?? $id) . '.pdf';
+
 
             // --- PENDEKATAN MANUAL STREAM ---
             try {
