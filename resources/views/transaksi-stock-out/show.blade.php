@@ -51,14 +51,15 @@
                         <div class="card-body">
                             @extends('layouts.app')
 
-                            @section('content')
+                        @section('content')
                             <section class="content">
                                 <div class="container-fluid">
                                     <div class="row">
                                         <div class="col-md-12">
                                             <div class="card">
                                                 <div class="card-header">
-                                                    <h3 class="card-title">Detail Transaksi {{ $transaksi->type == 'In' ? 'Masuk' : 'Keluar' }}</h3>
+                                                    <h3 class="card-title">Detail Transaksi
+                                                        {{ $transaksi->type == 'In' ? 'Masuk' : 'Keluar' }}</h3>
                                                 </div>
                                                 <div class="card-body">
                                                     <div class="row">
@@ -72,7 +73,8 @@
                                                                         </tr>
                                                                         <tr>
                                                                             <th>Tanggal</th>
-                                                                            <td>{{ formatTanggalIndonesia($transaksi->tanggal) }}</td>
+                                                                            <td>{{ formatTanggalIndonesia($transaksi->tanggal) }}
+                                                                            </td>
                                                                         </tr>
                                                                         <tr>
                                                                             <th>User</th>
@@ -82,15 +84,35 @@
                                                                             <th>Keterangan</th>
                                                                             <td>{{ $transaksi->keterangan ?? '-' }}</td>
                                                                         </tr>
-                                                                        @if($transaksi->attachment)
-                                                                        <tr>
-                                                                            <th>Attachment</th>
-                                                                            <td>
-                                                                                <a href="{{ asset('storage/'.$transaksi->attachment) }}" target="_blank">
-                                                                                    Lihat Lampiran
-                                                                                </a>
-                                                                            </td>
-                                                                        </tr>
+                                                                        @if ($transaksi->attachment)
+                                                                            <tr>
+                                                                                <th>Attachment</th>
+                                                                                <td>
+                                                                                    @php
+                                                                                        $companyId = session(
+                                                                                            'sessionCompany',
+                                                                                        );
+                                                                                        $filePath =
+                                                                                            'uploads/attachments/' .
+                                                                                            $companyId .
+                                                                                            '/' .
+                                                                                            $transaksi->attachment;
+                                                                                    @endphp
+
+                                                                                    @if (Storage::exists('public/' . $filePath))
+                                                                                        <a href="{{ Storage::url($filePath) }}"
+                                                                                            target="_blank"
+                                                                                            class="text-primary">
+                                                                                            <i
+                                                                                                class="bi bi-file-earmark-arrow-down"></i>
+                                                                                            Lihat Lampiran
+                                                                                        </a>
+                                                                                    @else
+                                                                                        <span class="text-danger">File tidak
+                                                                                            ditemukan</span>
+                                                                                    @endif
+                                                                                </td>
+                                                                            </tr>
                                                                         @endif
                                                                     </table>
                                                                 </div>
@@ -113,15 +135,18 @@
                                                                                 </tr>
                                                                             </thead>
                                                                             <tbody>
-                                                                                @foreach($details as $index => $detail)
-                                                                                <tr>
-                                                                                    <td>{{ $index + 1 }}</td>
-                                                                                    <td>{{ $detail->kode_barang }}</td>
-                                                                                    <td>{{ $detail->nama_barang }}</td>
-                                                                                    <td>{{ $detail->nama_jenis_material }}</td>
-                                                                                    <td>{{ $detail->nama_unit_satuan }}</td>
-                                                                                    <td>{{ formatAngkaRibuan($detail->qty)  }}</td>
-                                                                                </tr>
+                                                                                @foreach ($details as $index => $detail)
+                                                                                    <tr>
+                                                                                        <td>{{ $index + 1 }}</td>
+                                                                                        <td>{{ $detail->kode_barang }}</td>
+                                                                                        <td>{{ $detail->nama_barang }}</td>
+                                                                                        <td>{{ $detail->nama_jenis_material }}
+                                                                                        </td>
+                                                                                        <td>{{ $detail->nama_unit_satuan }}
+                                                                                        </td>
+                                                                                        <td>{{ formatAngkaRibuan($detail->qty) }}
+                                                                                        </td>
+                                                                                    </tr>
                                                                                 @endforeach
                                                                             </tbody>
                                                                         </table>
@@ -132,7 +157,8 @@
                                                     </div>
                                                 </div>
                                                 <div class="card-footer">
-                                                    <a href="{{ route('transaksi-stock-out.index') }}" class="btn btn-secondary">
+                                                    <a href="{{ route('transaksi-stock-out.index') }}"
+                                                        class="btn btn-secondary">
                                                         <i class="fas fa-arrow-left"></i> Kembali
                                                     </a>
                                                 </div>
@@ -141,11 +167,11 @@
                                     </div>
                                 </div>
                             </section>
-                            @endsection
-                        </div>
+                        @endsection
                     </div>
                 </div>
             </div>
-        </section>
-    </div>
+        </div>
+    </section>
+</div>
 @endsection

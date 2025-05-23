@@ -58,7 +58,7 @@ class TransaksiStockInController extends Controller implements HasMiddleware
                 ->addColumn('tanggal', function ($row) {
                     return formatTanggalIndonesia($row->tanggal);
                 })
-                ->addColumn('attachment', function ($row) use ($companyId) { // Tambahkan use ($companyId)
+                ->addColumn('attachment', function ($row) use ($companyId) {
                     if (!$row->attachment) {
                         return '<span class="text-muted">-</span>';
                     }

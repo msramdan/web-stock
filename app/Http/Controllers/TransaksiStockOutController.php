@@ -67,21 +67,38 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
                 ->addColumn('tanggal', function ($row) {
                     return formatTanggalIndonesia($row->tanggal);
                 })
-                ->addColumn('attachment', function ($row) {
+                ->addColumn('attachment', function ($row) use ($companyId) {
                     if (!$row->attachment) {
                         return '<span class="text-muted">-</span>';
                     }
-                    // Gunakan nama file yang disimpan, dari folder company
-                    $url = Storage::url('uploads/attachments/' . $row->company_id . '/' . $row->attachment);
-                    $icon = 'bi-file-earmark-arrow-down';
-                    $extension = pathinfo($row->attachment, PATHINFO_EXTENSION);
-                    if (in_array(strtolower($extension), ['jpg', 'jpeg', 'png', 'gif'])) $icon = 'bi-file-earmark-image';
-                    elseif (strtolower($extension) === 'pdf') $icon = 'bi-file-earmark-pdf';
-                    elseif (in_array(strtolower($extension), ['doc', 'docx'])) $icon = 'bi-file-earmark-word';
 
-                    return '<a href="' . $url . '" target="_blank" class="btn btn-sm btn-outline-primary" title="Download ' . e($row->attachment) . '">
-                                <i class="bi ' . $icon . '"></i>
-                            </a>';
+                    // Pastikan path sesuai dengan struktur penyimpanan
+                    $filePath = 'uploads/attachments/' . $companyId . '/' . $row->attachment;
+
+                    // Verifikasi file exist
+                    if (!Storage::exists('public/' . $filePath)) {
+                        return '<span class="text-danger">File missing</span>';
+                    }
+
+                    $url = Storage::url($filePath);
+                    $icon = 'bi-file-earmark-arrow-down';
+                    $extension = strtolower(pathinfo($row->attachment, PATHINFO_EXTENSION));
+
+                    $iconMap = [
+                        'jpg' => 'bi-file-earmark-image',
+                        'jpeg' => 'bi-file-earmark-image',
+                        'png' => 'bi-file-earmark-image',
+                        'gif' => 'bi-file-earmark-image',
+                        'pdf' => 'bi-file-earmark-pdf',
+                        'doc' => 'bi-file-earmark-word',
+                        'docx' => 'bi-file-earmark-word'
+                    ];
+
+                    $icon = $iconMap[$extension] ?? $icon;
+
+                    return '<a href="' . $url . '" target="_blank" class="btn btn-sm btn-outline-primary" title="' . e($row->attachment) . '">
+                        <i class="bi ' . $icon . '"></i>
+                    </a>';
                 })
                 ->addColumn('action', 'transaksi-stock-out.include.action')
                 ->rawColumns(['attachment', 'action'])
