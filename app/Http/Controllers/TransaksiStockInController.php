@@ -20,10 +20,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TransaksiStockInController extends Controller implements HasMiddleware
 {
-    // Constructor tidak perlu ImageService jika hanya untuk attachment
-    public function __construct(/*public ImageService $imageService,*/public string $attachmentPath = '')
+    public function __construct(public string $attachmentPath = '')
     {
-        $this->attachmentPath = storage_path('app/public/uploads/attachments/'); // Path lengkap
+        $this->attachmentPath = storage_path('app/public/uploads/attachments/');
     }
 
     public static function middleware(): array
@@ -32,21 +31,20 @@ class TransaksiStockInController extends Controller implements HasMiddleware
             'auth',
             new Middleware('permission:transaksi stock in view', only: ['index', 'show']),
             new Middleware('permission:transaksi stock in create', only: ['create', 'store']),
-            new Middleware('permission:transaksi stock in edit', only: ['edit', 'update']), // Edit/Update belum diimplementasi
+            new Middleware('permission:transaksi stock in edit', only: ['edit', 'update']),
             new Middleware('permission:transaksi stock in delete', only: ['destroy']),
-            new Middleware('permission:transaksi stock in export pdf', only: ['exportPdf', 'exportItemPdf']), // Tambahkan exportItemPdf
+            new Middleware('permission:transaksi stock in export pdf', only: ['exportPdf', 'exportItemPdf']),
         ];
     }
 
     public function index(): View|JsonResponse
     {
         if (request()->ajax()) {
-            $companyId = session('sessionCompany'); // Ambil company ID
+            $companyId = session('sessionCompany');
             $transaksi = DB::table('transaksi')
                 ->select('transaksi.*', 'users.name as user_name')
                 ->join('users', 'users.id', '=', 'transaksi.user_id')
                 ->where('transaksi.type', 'In')
-                // Filter berdasarkan company_id dari session
                 ->where('transaksi.company_id', $companyId)
                 ->orderByDesc('transaksi.tanggal');
 
@@ -60,30 +58,41 @@ class TransaksiStockInController extends Controller implements HasMiddleware
                 ->addColumn('tanggal', function ($row) {
                     return formatTanggalIndonesia($row->tanggal);
                 })
-                ->addColumn('attachment', function ($row) {
+                ->addColumn('attachment', function ($row) use ($companyId) { // Tambahkan use ($companyId)
                     if (!$row->attachment) {
                         return '<span class="text-muted">-</span>';
                     }
-                    // Gunakan nama file yang disimpan, bukan path lengkap
-                    $url = Storage::url('uploads/attachments/' . $row->attachment);
 
-                    // Tampilkan ikon berdasarkan tipe file (opsional)
-                    $icon = 'bi-file-earmark-arrow-down'; // Default icon
-                    $extension = pathinfo($row->attachment, PATHINFO_EXTENSION);
-                    if (in_array(strtolower($extension), ['jpg', 'jpeg', 'png', 'gif'])) {
-                        $icon = 'bi-file-earmark-image';
-                    } elseif (strtolower($extension) === 'pdf') {
-                        $icon = 'bi-file-earmark-pdf';
-                    } elseif (in_array(strtolower($extension), ['doc', 'docx'])) {
-                        $icon = 'bi-file-earmark-word';
+                    // Pastikan path sesuai dengan struktur penyimpanan
+                    $filePath = 'uploads/attachments/' . $companyId . '/' . $row->attachment;
+
+                    // Verifikasi file exist
+                    if (!Storage::exists('public/' . $filePath)) {
+                        return '<span class="text-danger">File missing</span>';
                     }
 
-                    return '<a href="' . $url . '" target="_blank" class="btn btn-sm btn-outline-primary" title="Download ' . e($row->attachment) . '">
-                                <i class="bi ' . $icon . '"></i>
-                            </a>';
+                    $url = Storage::url($filePath);
+                    $icon = 'bi-file-earmark-arrow-down';
+                    $extension = strtolower(pathinfo($row->attachment, PATHINFO_EXTENSION));
+
+                    $iconMap = [
+                        'jpg' => 'bi-file-earmark-image',
+                        'jpeg' => 'bi-file-earmark-image',
+                        'png' => 'bi-file-earmark-image',
+                        'gif' => 'bi-file-earmark-image',
+                        'pdf' => 'bi-file-earmark-pdf',
+                        'doc' => 'bi-file-earmark-word',
+                        'docx' => 'bi-file-earmark-word'
+                    ];
+
+                    $icon = $iconMap[$extension] ?? $icon;
+
+                    return '<a href="' . $url . '" target="_blank" class="btn btn-sm btn-outline-primary" title="' . e($row->attachment) . '">
+                        <i class="bi ' . $icon . '"></i>
+                    </a>';
                 })
                 ->addColumn('action', 'transaksi-stock-in.include.action')
-                ->rawColumns(['attachment', 'action']) // Biarkan attachment di rawColumns
+                ->rawColumns(['attachment', 'action'])
                 ->toJson();
         }
 
@@ -92,7 +101,6 @@ class TransaksiStockInController extends Controller implements HasMiddleware
 
     public function create(): View
     {
-        // Tidak perlu mengirim data barang ke view create jika menggunakan AJAX search
         return view('transaksi-stock-in.create');
     }
 
@@ -101,7 +109,6 @@ class TransaksiStockInController extends Controller implements HasMiddleware
         $companyId = session('sessionCompany');
         $userId = Auth::id();
 
-        // Validate the request data
         $validator = Validator::make($request->all(), [
             'no_surat' => 'required|string|max:255|unique:transaksi,no_surat,NULL,id,company_id,' . $companyId,
             'tanggal' => 'required|date',
@@ -109,12 +116,10 @@ class TransaksiStockInController extends Controller implements HasMiddleware
             'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10048', // Max 10MB
             'cart_items' => 'required|json',
             'cart_items.*.id' => 'required|integer|exists:barang,id,company_id,' . $companyId,
-            // Perubahan: validasi numeric > 0
             'cart_items.*.qty' => 'required|numeric|gt:0',
         ], [
             'no_surat.unique' => 'No. Surat sudah pernah digunakan di perusahaan ini.',
             'cart_items.*.id.exists' => 'Salah satu barang yang dipilih tidak valid atau bukan milik perusahaan ini.',
-            // Perubahan: pesan error untuk qty
             'cart_items.*.qty.numeric' => 'Jumlah barang harus berupa angka.',
             'cart_items.*.qty.gt' => 'Jumlah barang harus lebih besar dari 0.',
         ]);
@@ -135,16 +140,12 @@ class TransaksiStockInController extends Controller implements HasMiddleware
         DB::beginTransaction();
 
         try {
-            // Handle file upload
             $attachmentName = null;
             if ($request->hasFile('attachment')) {
                 $file = $request->file('attachment');
                 $originalName = $file->getClientOriginalName();
-                // Buat nama unik: companyId_timestamp_namaAsli
                 $attachmentName = $companyId . '_' . time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
-                // Simpan file ke storage/app/public/uploads/attachments/{companyId}/
                 $file->storeAs('public/uploads/attachments/' . $companyId, $attachmentName);
-                // Simpan nama file saja di DB
             }
 
             // Create transaction using Query Builder

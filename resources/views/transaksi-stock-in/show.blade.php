@@ -88,10 +88,29 @@
                                                                             <tr>
                                                                                 <th>Attachment</th>
                                                                                 <td>
-                                                                                    <a href="{{ asset('storage/' . $transaksi->attachment) }}"
-                                                                                        target="_blank">
-                                                                                        Lihat Lampiran
-                                                                                    </a>
+                                                                                    @php
+                                                                                        $companyId = session(
+                                                                                            'sessionCompany',
+                                                                                        );
+                                                                                        $filePath =
+                                                                                            'uploads/attachments/' .
+                                                                                            $companyId .
+                                                                                            '/' .
+                                                                                            $transaksi->attachment;
+                                                                                    @endphp
+
+                                                                                    @if (Storage::exists('public/' . $filePath))
+                                                                                        <a href="{{ Storage::url($filePath) }}"
+                                                                                            target="_blank"
+                                                                                            class="text-primary">
+                                                                                            <i
+                                                                                                class="bi bi-file-earmark-arrow-down"></i>
+                                                                                            Lihat Lampiran
+                                                                                        </a>
+                                                                                    @else
+                                                                                        <span class="text-danger">File tidak
+                                                                                            ditemukan</span>
+                                                                                    @endif
                                                                                 </td>
                                                                             </tr>
                                                                         @endif
