@@ -64,7 +64,7 @@ class TransaksiStockInController extends Controller implements HasMiddleware
                     }
 
                     // Pastikan path sesuai dengan struktur penyimpanan
-                    $filePath = 'uploads/attachments/' . $companyId . '/' . $row->attachment;
+                    $filePath = 'uploads/attachments/' . $row->attachment;
 
                     // Verifikasi file exist
                     if (!Storage::exists('public/' . $filePath)) {
@@ -145,7 +145,7 @@ class TransaksiStockInController extends Controller implements HasMiddleware
                 $file = $request->file('attachment');
                 $originalName = $file->getClientOriginalName();
                 $attachmentName = $companyId . '_' . time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
-                $file->storeAs('public/uploads/attachments/' . $companyId, $attachmentName);
+                $file->storeAs('public/uploads/attachments/' . $attachmentName);
             }
 
             // Create transaction using Query Builder
@@ -329,7 +329,7 @@ class TransaksiStockInController extends Controller implements HasMiddleware
             // 5. Hapus file attachment jika ada
             if ($transaksi->attachment) {
                 // Perubahan: Gunakan path dengan company ID
-                Storage::delete('public/uploads/attachments/' . $transaksi->company_id . '/' . $transaksi->attachment);
+                Storage::delete('public/uploads/attachments/' . $transaksi->attachment);
             }
 
             // 6. Hapus transaksi utama

@@ -94,8 +94,6 @@
                                                                                         );
                                                                                         $filePath =
                                                                                             'uploads/attachments/' .
-                                                                                            $companyId .
-                                                                                            '/' .
                                                                                             $transaksi->attachment;
                                                                                     @endphp
 

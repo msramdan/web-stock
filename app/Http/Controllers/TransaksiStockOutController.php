@@ -73,7 +73,7 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
                     }
 
                     // Pastikan path sesuai dengan struktur penyimpanan
-                    $filePath = 'uploads/attachments/' . $companyId . '/' . $row->attachment;
+                    $filePath = 'uploads/attachments/' . $row->attachment;
 
                     // Verifikasi file exist
                     if (!Storage::exists('public/' . $filePath)) {
@@ -203,7 +203,7 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
                 $originalName = $file->getClientOriginalName();
                 $attachmentName = $companyId . '_' . time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
                 // Perubahan: Path dengan company ID
-                $file->storeAs('public/uploads/attachments/' . $companyId, $attachmentName);
+                $file->storeAs('public/uploads/attachments/' . $attachmentName);
             }
 
             // Create transaction using Query Builder
@@ -330,16 +330,6 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
         ]);
     }
 
-    // Metode edit() dan update() belum diimplementasikan
-    // public function edit(Transaksi $transaksi): View
-    // {
-    //     // ...
-    // }
-    // public function update(UpdateTransaksiRequest $request, Transaksi $transaksi): RedirectResponse
-    // {
-    //      // ...
-    // }
-
     /**
      * Remove the specified resource from storage.
      */
@@ -397,7 +387,7 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
             // 5. Hapus file attachment jika ada
             if ($transaksi->attachment) {
                 // Perubahan: Path dengan company ID
-                Storage::delete('public/uploads/attachments/' . $transaksi->company_id . '/' . $transaksi->attachment);
+                Storage::delete('public/uploads/attachments/' . $transaksi->attachment);
             }
 
             // 6. Hapus transaksi utama
