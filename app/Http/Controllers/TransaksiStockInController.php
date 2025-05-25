@@ -407,10 +407,9 @@ class TransaksiStockInController extends Controller implements HasMiddleware
     /**
      * Export detail data transaksi stock in to PDF.
      */
-    public function exportItemPdf($id): RedirectResponse|StreamedResponse // Tambahkan return type hint
+    public function exportItemPdf($id): RedirectResponse|StreamedResponse
     {
-        // Log::info(...); // Logging dinonaktifkan
-        try {
+        // try {
             $companyId = session('sessionCompany');
             if (!$companyId) { // Cek company ID juga di sini
                 return redirect()->route('transaksi-stock-in.index')->with('error', 'Gagal export PDF: Silakan pilih perusahaan.');
@@ -432,7 +431,6 @@ class TransaksiStockInController extends Controller implements HasMiddleware
                 ->first();
 
             if (!$transaksi) {
-                // Log::error(...); // Logging dinonaktifkan
                 return redirect()->route('transaksi-stock-in.index')->with('error', 'Transaksi masuk tidak ditemukan atau tidak sesuai.');
             }
 
@@ -472,7 +470,7 @@ class TransaksiStockInController extends Controller implements HasMiddleware
 
 
             // --- PENDEKATAN MANUAL STREAM ---
-            try {
+            // try {
                 $pdfOutput = $pdf->output();
                 return response()->streamDownload(
                     function () use ($pdfOutput) {
@@ -481,15 +479,12 @@ class TransaksiStockInController extends Controller implements HasMiddleware
                     $filename,
                     ['Content-Type' => 'application/pdf']
                 );
-            } catch (\Throwable $renderOrOutputError) {
-                // Log::error(...); // Logging dinonaktifkan
-                return redirect()->route('transaksi-stock-in.index')->with('error', 'Gagal saat generate output PDF Detail Transaksi Masuk.');
-            }
-            // --- AKHIR PENDEKATAN MANUAL STREAM ---
+            // } catch (\Throwable $renderOrOutputError) {
+            //     return redirect()->route('transaksi-stock-in.index')->with('error', 'Gagal saat generate output PDF Detail Transaksi Masuk.');
+            // }
 
-        } catch (\Throwable $th) {
-            // Log::error(...); // Logging dinonaktifkan
-            return redirect()->route('transaksi-stock-in.index')->with('error', 'Gagal memproses PDF Detail Transaksi Masuk.');
-        }
+        // } catch (\Throwable $th) {
+        //     return redirect()->route('transaksi-stock-in.index')->with('error', 'Gagal memproses PDF Detail Transaksi Masuk.');
+        // }
     }
 }

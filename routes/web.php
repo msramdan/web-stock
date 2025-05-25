@@ -99,9 +99,6 @@ Route::middleware(['auth', 'web'])->group(function () {
             Route::get('/', [LaporanController::class, 'index'])->name('index')->middleware('permission:laporan view');
             Route::post('/export', [LaporanController::class, 'exportExcel'])->name('exportExcel')->middleware('permission:laporan export excel');
         });
-    }); // --- Akhir Grup Route Company Access ---
+    });
 
-}); // --- Akhir Grup Route Auth ---
-
-// Route untuk otentikasi (Fortify/Laravel UI/Breeze/Jetstream)
-// require __DIR__.'/auth.php'; // Aktifkan jika menggunakan starter kit
+});
