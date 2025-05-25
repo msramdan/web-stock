@@ -530,8 +530,9 @@ class TransaksiStockOutController extends Controller implements HasMiddleware
                 ->setOption('isRemoteEnabled', true);
 
             // Sesuaikan nama file
+            $noSurat = str_replace(['/', '\\'], '-', $transaksi->no_surat ?? $id);
             $namaPerusahaan = str_replace(' ', '-', strtoupper($namaPerusahaanCetak));
-            $filename = 'Detail-Transaksi-Keluar-' . $namaPerusahaan . '-' . ($transaksi->no_surat ?? $id) . '.pdf';
+            $filename = 'Detail-Transaksi-Masuk-' . $namaPerusahaan . '-' . $noSurat . '.pdf';
 
             // --- PENDEKATAN MANUAL STREAM ---
             try {
