@@ -98,7 +98,7 @@ Route::middleware(['auth', 'web'])->group(function () {
         Route::prefix('laporan')->name('laporan.')->group(function () {
             Route::get('/', [LaporanController::class, 'index'])->name('index')->middleware('permission:laporan view');
             Route::post('/export', [LaporanController::class, 'exportExcel'])->name('exportExcel')->middleware('permission:laporan export excel');
-            Route::get('/get-barang-options', [LaporanController::class, 'getBarangOptions'])->name('getBarangOptions');
+            //Route::get('/get-barang-options', [LaporanController::class, 'getBarangOptions'])->name('getBarangOptions');
         });
     });
 });
