@@ -16,6 +16,7 @@ use App\Http\Controllers\{
     BomController,
     CompanyController,
     ProduksiController,
+    PermintaanBarangController
 };
 
 /*
@@ -58,6 +59,9 @@ Route::middleware(['auth', 'web'])->group(function () {
         Route::get('/listDataBarang', [BarangController::class, 'listDataBarang'])->name('listDataBarang');
         Route::get('/barang/export-pdf', [BarangController::class, 'exportPdf'])->name('barang.exportPdf');
         Route::get('/barang/export-excel', [BarangController::class, 'exportExcel'])->name('barang.exportExcel');
+        Route::get('permintaan-barang/print-blank-form', [PermintaanBarangController::class, 'printBlankForm'])->name('permintaan-barang.printBlankForm');
+        Route::get('permintaan-barang/{permintaan_barang}/print', [PermintaanBarangController::class, 'printSpecificForm'])->name('permintaan-barang.printSpecific');
+        Route::get('permintaan-barang/{permintaan_barang}/export-excel', [PermintaanBarangController::class, 'exportItemExcel'])->name('permintaan-barang.exportItemExcel');
 
 
         // Master Data Spesifik Company
@@ -67,6 +71,7 @@ Route::middleware(['auth', 'web'])->group(function () {
         Route::resource('bom', BomController::class);
         Route::resource('produksi', ProduksiController::class);
         Route::get('/get-boms-produksi', [ProduksiController::class, 'getBomProduksi'])->name('produksi.getBoms');
+        Route::resource('permintaan-barang', PermintaanBarangController::class);
 
 
         // Transaksi Spesifik Company
@@ -98,7 +103,6 @@ Route::middleware(['auth', 'web'])->group(function () {
         Route::prefix('laporan')->name('laporan.')->group(function () {
             Route::get('/', [LaporanController::class, 'index'])->name('index')->middleware('permission:laporan view');
             Route::post('/export', [LaporanController::class, 'exportExcel'])->name('exportExcel')->middleware('permission:laporan export excel');
-            //Route::get('/get-barang-options', [LaporanController::class, 'getBarangOptions'])->name('getBarangOptions');
         });
     });
 });

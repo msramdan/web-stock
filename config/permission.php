@@ -217,5 +217,7 @@ return [
         ['group' => 'produksi', 'access' => ['produksi view', 'produksi create', 'produksi edit', 'produksi delete']],
         ['group' => 'produksi details', 'access' => ['produksi details view', 'produksi details create', 'produksi details edit', 'produksi details delete']],
         ['group' => 'company', 'access' => ['company view', 'company create', 'company edit', 'company delete']],
+        ['group' => 'permintaan barang', 'access' => ['permintaan barang view', 'permintaan barang create', 'permintaan barang edit', 'permintaan barang delete', 'permintaan barang export pdf', 'permintaan barang export excel']],
+
     ],
 ];

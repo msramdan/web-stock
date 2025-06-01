@@ -83,4 +83,9 @@ class Company extends Model
     {
         return $this->hasMany(Bom::class, 'company_id');
     }
+
+    public function permintaan()
+    {
+        return $this->hasMany(Permintaan::class);
+    }
 }
