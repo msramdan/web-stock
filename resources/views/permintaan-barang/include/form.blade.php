@@ -269,7 +269,6 @@
 </div>
 
 @push('scripts_vendor')
-    <script src="{{ asset('mazer/extensions/jquery/jquery.min.js') }}"></script>
     <script src="{{ asset('mazer/extensions/choices.js/public/assets/scripts/choices.min.js') }}"></script>
 @endpush
 

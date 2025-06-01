@@ -84,8 +84,9 @@ class PermintaanBarangController extends Controller implements HasMiddleware
     {
         $companyId = session('sessionCompany');
         $barangs = Barang::where('company_id', $companyId)
+            ->with('unitSatuan')
             ->orderBy('nama_barang', 'asc')
-            ->get(['id', 'nama_barang']); // Ambil id dan nama_barang
+            ->get(['id', 'nama_barang', 'stock_barang', 'unit_satuan_id']);
 
         // Ambil UnitSatuan berdasarkan company_id jika relevan, atau semua jika global
         $unitSatuans = UnitSatuan::where('company_id', $companyId)
@@ -178,8 +179,10 @@ class PermintaanBarangController extends Controller implements HasMiddleware
         $companyId = session('sessionCompany');
 
         $barangs = Barang::where('company_id', $companyId)
+            ->with('unitSatuan')
             ->orderBy('nama_barang', 'asc')
-            ->get(['id', 'nama_barang']); // Ambil id dan nama_barang
+            ->get(['id', 'nama_barang', 'stock_barang', 'unit_satuan_id']);
+
         $unitSatuans = UnitSatuan::where('company_id', $companyId)
             ->orderBy('nama_unit_satuan')
             ->get(['id', 'nama_unit_satuan']);
