@@ -6,17 +6,19 @@ use App\Models\Permintaan;
 use App\Models\DetailPermintaan;
 use App\Models\Barang;
 use App\Models\UnitSatuan;
-use App\Models\Company; // Pastikan model Company ada dan benar
+use App\Models\Company;
 use App\Http\Requests\PermintaanBarang\StorePermintaanBarangRequest;
 use App\Http\Requests\PermintaanBarang\UpdatePermintaanBarangRequest;
-use Barryvdh\DomPDF\Facade\Pdf as FacadePdf;
+use Barryvdh\DomPDF\Facade\Pdf as DomPDF;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use PDF; // Untuk Barryvdh\DomPDF
+use Illuminate\Support\Facades\Log;
 use Illuminate\Routing\Controllers\{HasMiddleware, Middleware};
-use App\Exports\PermintaanBarangExport; // Tambahkan ini
-use Maatwebsite\Excel\Facades\Excel; // Tambahkan ini
+use App\Exports\PermintaanBarangExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class PermintaanBarangController extends Controller implements HasMiddleware
 {
@@ -26,17 +28,19 @@ class PermintaanBarangController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            'auth', // Memastikan user terautentikasi untuk semua action
-            // Middleware company.access sudah diterapkan di web.php, jadi tidak perlu di sini lagi
-            // new Middleware(\App\Http\Middleware\CheckCompanyAccess::class),
-
+            'auth',
             new Middleware('permission:permintaan barang view', only: ['index', 'show']),
             new Middleware('permission:permintaan barang create', only: ['create', 'store']),
             new Middleware('permission:permintaan barang edit', only: ['edit', 'update']),
             new Middleware('permission:permintaan barang delete', only: ['destroy']),
-            // Menggunakan 'permintaan barang export pdf' untuk aksi cetak PDF
             new Middleware('permission:permintaan barang export pdf', only: ['printBlankForm', 'printSpecificForm']),
+            new Middleware('permission:permintaan barang export excel', only: ['exportItemExcel']), // Tambahkan permission check untuk export excel per item
         ];
+    }
+
+    private function getCompanyId()
+    {
+        return session('sessionCompany');
     }
 
     /**
@@ -44,30 +48,31 @@ class PermintaanBarangController extends Controller implements HasMiddleware
      */
     public function index(Request $request)
     {
-        $companyId = session('sessionCompany');
+        $companyId = $this->getCompanyId();
 
         if ($request->query('export') === 'excel') {
-            if (!Auth::user()->can('permintaan barang export excel')) {
+            if (!Auth::user()->can('permintaan barang export excel')) { // Pastikan permission ini ada
                 return redirect()->route('permintaan-barang.index')->with('error', __('Anda tidak memiliki izin untuk mengekspor data ini.'));
             }
             $fileName = 'daftar_permintaan_barang_' . date('YmdHis') . '.xlsx';
-            return Excel::download(new PermintaanBarangExport($request), $fileName);
+            return Excel::download(new PermintaanBarangExport($request), $fileName); // Request sudah mengandung companyId jika diperlukan di Export class
         }
 
         if ($request->ajax()) {
             $query = Permintaan::where('company_id', $companyId)
-                ->with('user')
-                ->select('permintaan.*');
+                ->with('user') // Eager load user
+                ->select('permintaan.*'); // Select semua kolom dari permintaan
 
             return datatables()->of($query)
                 ->addIndexColumn()
                 ->addColumn('user_name', function ($row) {
-                    return $row->user ? $row->user->name : 'N/A';
+                    return $row->user?->name ?? 'N/A'; // Menggunakan optional chaining
                 })
                 ->addColumn('tgl_pengajuan_formatted', function ($row) {
                     return \Carbon\Carbon::parse($row->tgl_pengajuan)->format('d-m-Y H:i');
                 })
                 ->addColumn('total_pesanan_formatted', function ($row) {
+                    // Menggunakan helper jika ada, atau format langsung
                     return 'Rp ' . number_format($row->total_pesanan, 0, ',', '.');
                 })
                 ->addColumn('action', 'permintaan-barang.include.action')
@@ -82,16 +87,16 @@ class PermintaanBarangController extends Controller implements HasMiddleware
      */
     public function create()
     {
-        $companyId = session('sessionCompany');
+        $companyId = $this->getCompanyId();
         $barangs = Barang::where('company_id', $companyId)
-            ->with('unitSatuan')
+            ->with('unitSatuan') // Eager load unitSatuan
             ->orderBy('nama_barang', 'asc')
-            ->get(['id', 'nama_barang', 'stock_barang', 'unit_satuan_id']);
+            ->get(['id', 'nama_barang', 'stock_barang', 'unit_satuan_id']); // Ambil stock_barang juga
 
-        // Ambil UnitSatuan berdasarkan company_id jika relevan, atau semua jika global
         $unitSatuans = UnitSatuan::where('company_id', $companyId)
-            ->orderBy('nama_unit_satuan')
+            ->orderBy('nama_unit_satuan', 'asc')
             ->get(['id', 'nama_unit_satuan']);
+
         return view('permintaan-barang.create', compact('barangs', 'unitSatuans'));
     }
 
@@ -101,18 +106,17 @@ class PermintaanBarangController extends Controller implements HasMiddleware
     public function store(StorePermintaanBarangRequest $request)
     {
         $validated = $request->validated();
-        $companyId =  session('sessionCompany');
+        $companyId = $this->getCompanyId();
 
         DB::beginTransaction();
         try {
             $subTotalPesanan = 0;
             foreach ($validated['details'] as $detail) {
-                $subTotalPesanan += $detail['jumlah_pesanan'] * $detail['harga_per_satuan'];
+                $subTotalPesanan += ($detail['jumlah_pesanan'] * $detail['harga_per_satuan']);
             }
 
             $nominalPpn = 0;
-            if (isset($validated['include_ppn']) && $validated['include_ppn'] === 'yes') {
-                // Asumsi PPN 11% dari subtotal
+            if (($validated['include_ppn'] ?? 'no') === 'yes') {
                 $nominalPpn = $subTotalPesanan * 0.11;
             }
             $totalPesanan = $subTotalPesanan + $nominalPpn;
@@ -133,38 +137,46 @@ class PermintaanBarangController extends Controller implements HasMiddleware
                 'company_id' => $companyId,
             ]);
 
+            $detailPermintaans = [];
             foreach ($validated['details'] as $detailData) {
-                $barang = Barang::find($detailData['barang_id']);
-                DetailPermintaan::create([
+                $barang = Barang::where('id', $detailData['barang_id'])->where('company_id', $companyId)->first(); // Pastikan barang milik company yg benar
+                if (!$barang) {
+                    // Seharusnya tidak terjadi jika validasi di request sudah benar
+                    throw new \Exception("Barang dengan ID {$detailData['barang_id']} tidak ditemukan untuk perusahaan ini.");
+                }
+                $detailPermintaans[] = [
                     'permintaan_id' => $permintaan->id,
                     'barang_id' => $detailData['barang_id'],
-                    'stok_terakhir' => $barang ? $barang->stock : 0,
+                    'stok_terakhir' => $barang->stock_barang, // Ambil stock_barang
                     'jumlah_pesanan' => $detailData['jumlah_pesanan'],
-                    'satuan' => $detailData['satuan'],
+                    'satuan' => $detailData['satuan'], // Pastikan ini nama satuan, bukan ID
                     'harga_per_satuan' => $detailData['harga_per_satuan'],
-                    'total_harga' => $detailData['jumlah_pesanan'] * $detailData['harga_per_satuan'],
-                ]);
+                    'total_harga' => ($detailData['jumlah_pesanan'] * $detailData['harga_per_satuan']),
+                    // 'created_at' & 'updated_at' akan diisi otomatis oleh Eloquent jika menggunakan model
+                ];
             }
+            DetailPermintaan::insert($detailPermintaans); // Bulk insert lebih efisien
 
             DB::commit();
             return redirect()->route('permintaan-barang.index')->with('success', 'Permintaan barang berhasil ditambahkan.');
         } catch (\Exception $e) {
             DB::rollBack();
-            // Tambahkan logging error jika perlu: Log::error($e->getMessage());
-            return redirect()->back()->withInput()->with('error', 'Gagal menambahkan permintaan barang: ' . $e->getMessage());
+            Log::error("Error storing Permintaan Barang: {$e->getMessage()} at {$e->getFile()}:{$e->getLine()}");
+            return redirect()->back()->withInput()->with('error', 'Gagal menambahkan permintaan barang: Terjadi kesalahan sistem.');
         }
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Permintaan $permintaanBarang) // Route model binding
+    public function show(Permintaan $permintaanBarang)
     {
-        if ($permintaanBarang->company_id != session('sessionCompany')) {
+        $companyId = $this->getCompanyId();
+        if ($permintaanBarang->company_id != $companyId) {
             abort(403, 'Anda tidak memiliki akses ke dokumen permintaan ini.');
         }
 
-        $permintaanBarang->load('details.barang', 'user', 'company');
+        $permintaanBarang->load(['details.barang.unitSatuan', 'user', 'company']); // Eager load lebih dalam
         return view('permintaan-barang.show', compact('permintaanBarang'));
     }
 
@@ -173,20 +185,21 @@ class PermintaanBarangController extends Controller implements HasMiddleware
      */
     public function edit(Permintaan $permintaanBarang)
     {
-        if ($permintaanBarang->company_id != session('sessionCompany')) {
+        $companyId = $this->getCompanyId();
+        if ($permintaanBarang->company_id != $companyId) {
             abort(403, 'Anda tidak memiliki akses ke dokumen permintaan ini.');
         }
-        $companyId = session('sessionCompany');
 
         $barangs = Barang::where('company_id', $companyId)
             ->with('unitSatuan')
             ->orderBy('nama_barang', 'asc')
-            ->get(['id', 'nama_barang', 'stock_barang', 'unit_satuan_id']);
+            ->get(['id', 'nama_barang', 'kode_barang', 'stock_barang', 'unit_satuan_id']); // Tambah kode_barang
 
         $unitSatuans = UnitSatuan::where('company_id', $companyId)
-            ->orderBy('nama_unit_satuan')
+            ->orderBy('nama_unit_satuan', 'asc')
             ->get(['id', 'nama_unit_satuan']);
-        $permintaanBarang->load('details');
+
+        $permintaanBarang->load('details.barang'); // Eager load details dan barang terkait
         return view('permintaan-barang.edit', compact('permintaanBarang', 'barangs', 'unitSatuans'));
     }
 
@@ -195,8 +208,8 @@ class PermintaanBarangController extends Controller implements HasMiddleware
      */
     public function update(UpdatePermintaanBarangRequest $request, Permintaan $permintaanBarang)
     {
-
-        if ($permintaanBarang->company_id != session('sessionCompany')) {
+        $companyId = $this->getCompanyId();
+        if ($permintaanBarang->company_id != $companyId) {
             abort(403, 'Anda tidak memiliki akses ke dokumen permintaan ini.');
         }
 
@@ -205,11 +218,11 @@ class PermintaanBarangController extends Controller implements HasMiddleware
         try {
             $subTotalPesanan = 0;
             foreach ($validated['details'] as $detail) {
-                $subTotalPesanan += $detail['jumlah_pesanan'] * $detail['harga_per_satuan'];
+                $subTotalPesanan += ($detail['jumlah_pesanan'] * $detail['harga_per_satuan']);
             }
 
             $nominalPpn = 0;
-            if (isset($validated['include_ppn']) && $validated['include_ppn'] === 'yes') {
+            if (($validated['include_ppn'] ?? 'no') === 'yes') {
                 $nominalPpn = $subTotalPesanan * 0.11;
             }
             $totalPesanan = $subTotalPesanan + $nominalPpn;
@@ -226,28 +239,40 @@ class PermintaanBarangController extends Controller implements HasMiddleware
                 'nominal_ppn' => $nominalPpn,
                 'sub_total_pesanan' => $subTotalPesanan,
                 'total_pesanan' => $totalPesanan,
+                // user_id tidak diupdate di sini, diasumsikan user penginput awal tetap
             ]);
 
-            // Hapus detail lama dan tambahkan yang baru
+            // Hapus detail lama
             $permintaanBarang->details()->delete();
+
+            // Tambahkan detail yang baru
+            $detailPermintaans = [];
             foreach ($validated['details'] as $detailData) {
-                $barang = Barang::find($detailData['barang_id']);
-                DetailPermintaan::create([
+                $barang = Barang::where('id', $detailData['barang_id'])->where('company_id', $companyId)->first();
+                if (!$barang) {
+                    throw new \Exception("Barang dengan ID {$detailData['barang_id']} tidak ditemukan untuk perusahaan ini.");
+                }
+                $detailPermintaans[] = [
                     'permintaan_id' => $permintaanBarang->id,
                     'barang_id' => $detailData['barang_id'],
-                    'stok_terakhir' => $barang ? $barang->stock : 0,
+                    'stok_terakhir' => $barang->stock_barang, // Ambil stock_barang
                     'jumlah_pesanan' => $detailData['jumlah_pesanan'],
                     'satuan' => $detailData['satuan'],
                     'harga_per_satuan' => $detailData['harga_per_satuan'],
-                    'total_harga' => $detailData['jumlah_pesanan'] * $detailData['harga_per_satuan'],
-                ]);
+                    'total_harga' => ($detailData['jumlah_pesanan'] * $detailData['harga_per_satuan']),
+                ];
             }
+            if (!empty($detailPermintaans)) {
+                DetailPermintaan::insert($detailPermintaans);
+            }
+
 
             DB::commit();
             return redirect()->route('permintaan-barang.index')->with('success', 'Permintaan barang berhasil diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui permintaan barang: ' . $e->getMessage());
+            Log::error("Error updating Permintaan Barang ID {$permintaanBarang->id}: {$e->getMessage()} at {$e->getFile()}:{$e->getLine()}");
+            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui permintaan barang: Terjadi kesalahan sistem.');
         }
     }
 
@@ -256,20 +281,21 @@ class PermintaanBarangController extends Controller implements HasMiddleware
      */
     public function destroy(Permintaan $permintaanBarang)
     {
-        if ($permintaanBarang->company_id != session('sessionCompany')) {
+        $companyId = $this->getCompanyId();
+        if ($permintaanBarang->company_id != $companyId) {
             abort(403, 'Anda tidak memiliki akses ke dokumen permintaan ini.');
         }
 
+        DB::beginTransaction();
         try {
-            DB::beginTransaction();
-            // Hapus detail dulu karena ada foreign key constraint
-            $permintaanBarang->details()->delete();
-            $permintaanBarang->delete(); // Hapus master
+            $permintaanBarang->details()->delete(); // Hapus detail dulu
+            $permintaanBarang->delete();
             DB::commit();
             return redirect()->route('permintaan-barang.index')->with('success', 'Permintaan barang berhasil dihapus.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->route('permintaan-barang.index')->with('error', 'Gagal menghapus permintaan barang: ' . $e->getMessage());
+            Log::error("Error deleting Permintaan Barang ID {$permintaanBarang->id}: {$e->getMessage()}");
+            return redirect()->route('permintaan-barang.index')->with('error', 'Gagal menghapus permintaan barang: Terjadi kesalahan sistem.');
         }
     }
 
@@ -278,24 +304,27 @@ class PermintaanBarangController extends Controller implements HasMiddleware
      */
     public function printBlankForm()
     {
-        $companyId = session('sessionCompany');
+        $companyId = $this->getCompanyId();
         $company = Company::find($companyId);
+        if (!$company) {
+            return redirect()->back()->with('error', 'Perusahaan aktif tidak ditemukan.');
+        }
 
         $data = [
             'title' => 'Formulir Permintaan Barang',
-            'company' => $company, // Kirim data perusahaan ke view PDF
-            'pemohon' => Auth::user()->name,
-            // Data dummy lainnya bisa ditambahkan jika perlu untuk template kosong
+            'company' => $company,
+            'pemohon' => Auth::user()?->name ?? 'N/A',
             'no_permintaan_barang' => '_________________',
             'tgl_pengajuan' => '___ / ___ / ______',
             'nama_supplier' => '_________________',
-            'details' => [],
+            'details' => [], // array kosong untuk template
             'keterangan' => '',
             'sub_total_pesanan' => 0,
             'nominal_ppn' => 0,
             'total_pesanan' => 0,
         ];
-        $pdf = PDF::loadView('permintaan-barang.pdf.form_permintaan_template', $data);
+        // Menggunakan alias DomPDF yang sudah diimpor
+        $pdf = DomPDF::loadView('permintaan-barang.pdf.form_permintaan_template', $data);
         return $pdf->stream('form_permintaan_barang_kosong.pdf');
     }
 
@@ -303,45 +332,45 @@ class PermintaanBarangController extends Controller implements HasMiddleware
      * Print specific form.
      * @param int $id (atau Permintaan $permintaanBarang dengan route model binding)
      */
-    public function printSpecificForm(Permintaan $permintaanBarang) // Menggunakan Route Model Binding
+    public function printSpecificForm(Permintaan $permintaanBarang)
     {
-        if ($permintaanBarang->company_id != session('sessionCompany')) {
+        $companyId = $this->getCompanyId();
+        if ($permintaanBarang->company_id != $companyId) {
             abort(403, 'Anda tidak memiliki akses ke dokumen permintaan ini.');
         }
 
-        $permintaanBarang->load('details.barang', 'user', 'company');
+        $permintaanBarang->load(['details.barang.unitSatuan', 'user', 'company']);
 
         $data = [
             'title' => 'Form Permintaan Barang',
             'permintaan' => $permintaanBarang,
             'company' => $permintaanBarang->company,
         ];
-        $pdf = FacadePdf::loadView('permintaan-barang.pdf.form_permintaan_template', $data);
-        return $pdf->stream('permintaan_barang_' . $permintaanBarang->no_permintaan_barang . '.pdf');
+        $pdf = DomPDF::loadView('permintaan-barang.pdf.form_permintaan_template', $data);
+
+        // PERBAIKAN NAMA FILE PDF
+        $safeNoPermintaan = Str::slug($permintaanBarang->no_permintaan_barang, '-'); // Mengganti '/' dengan '-' atau karakter aman lainnya
+        $fileName = 'permintaan_barang_' . $safeNoPermintaan . '.pdf';
+
+        return $pdf->stream($fileName);
     }
 
     /**
      * Export specific Permintaan Barang to Excel.
-     *
-     * @param  \App\Models\Permintaan  $permintaanBarang
-     * @param  \Illuminate\Http\Request $request
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
      */
     public function exportItemExcel(Request $request, Permintaan $permintaanBarang)
     {
-        if (!Auth::user()->can('permintaan barang export excel')) {
-            return redirect()->route('permintaan-barang.index')->with('error', __('Anda tidak memiliki izin untuk mengekspor data ini.'));
-        }
-
-        $companyId = session('sessionCompany');
+        $companyId = $this->getCompanyId();
         if ($permintaanBarang->company_id != $companyId) {
             abort(403, 'Anda tidak memiliki akses ke dokumen permintaan ini.');
         }
 
-        // Mengirimkan ID spesifik ke class Export. Class Export perlu dimodifikasi untuk menangani ini.
-        $request->merge(['id_permintaan_specific' => $permintaanBarang->id]);
+        $request->merge(['id_permintaan_specific' => $permintaanBarang->id, 'company_id_filter' => $companyId]);
 
-        $fileName = 'permintaan_barang_' . $permintaanBarang->no_permintaan_barang . '_' . date('YmdHis') . '.xlsx';
+        // PERBAIKAN NAMA FILE EXCEL
+        $safeNoPermintaan = Str::slug($permintaanBarang->no_permintaan_barang, '-');
+        $fileName = 'permintaan_barang_' . $safeNoPermintaan . '_' . date('YmdHis') . '.xlsx';
+
         return Excel::download(new PermintaanBarangExport($request), $fileName);
     }
 }

@@ -96,71 +96,87 @@
     <table class="table table-bordered" id="detailPermintaanTable">
         <thead>
             <tr>
-                <th style="width: 30%;">Barang <span class="text-danger">*</span></th>
-                <th style="width: 10%;">Stok Akhir</th>
-                <th style="width: 15%;">Jumlah Pesanan <span class="text-danger">*</span></th>
-                <th style="width: 15%;">Satuan <span class="text-danger">*</span></th>
-                <th style="width: 15%;">Harga/Satuan <span class="text-danger">*</span></th>
+                {{-- UBAH BAGIAN INI: Lebar disesuaikan --}}
+                <th style="width: 35%;">Barang <span class="text-danger">*</span></th>
+                <th style="width: 10%;">Stok Terakhir</th>
+                <th style="width: 15%;">Jumlah Pesanan<span class="text-danger">*</span></th>
+                <th style="width: 12%;">Satuan<span class="text-danger">*</span></th>
+                <th style="width: 13%;">Harga/Satuan <span class="text-danger">*</span></th>
                 <th style="width: 15%;">Total Harga</th>
                 <th style="width: 5%;">Aksi</th>
             </tr>
         </thead>
         <tbody id="detail_permintaan_body">
-            @if (old('details', isset($permintaanBarang) ? $permintaanBarang->details : []))
-                @foreach (old('details', isset($permintaanBarang) ? $permintaanBarang->details->toArray() : []) as $index => $detail)
-                    <tr class="detail-row">
+            @php
+                $detailsData = old(
+                    'details',
+                    isset($permintaanBarang)
+                        ? $permintaanBarang->details
+                            ->map(function ($detail) {
+                                return [
+                                    'barang_id' => $detail->barang_id,
+                                    'nama_barang_selected' => $detail->barang->nama_barang ?? '', // Untuk display awal
+                                    'kode_barang_selected' => $detail->barang->kode_barang ?? '', // Untuk display awal
+                                    'stok_terakhir' => $detail->stok_terakhir, // Ini akan jadi stok saat ini
+                                    'jumlah_pesanan' => $detail->jumlah_pesanan,
+                                    'satuan' => $detail->satuan,
+                                    'harga_per_satuan' => $detail->harga_per_satuan,
+                                    'total_harga' => $detail->total_harga,
+                                ];
+                            })
+                            ->toArray()
+                        : [],
+                );
+            @endphp
+
+            @if (!empty($detailsData))
+                @foreach ($detailsData as $index => $detail)
+                    <tr class="detail-row" data-row-index="{{ $index }}">
                         <td>
-                            <select name="details[{{ $index }}][barang_id]"
-                                class="form-select form-select-sm select-barang @error('details.' . $index . '.barang_id') is-invalid @enderror"
-                                required>
-                                <option value="">Pilih Barang</option>
-                                @foreach ($barangs as $barang)
-                                    <option value="{{ $barang->id }}" data-stock="{{ $barang->stock }}"
-                                        data-satuan="{{ $barang->unitSatuan->nama_unit_satuan ?? '' }}"
-                                        {{ (isset($detail['barang_id']) && $detail['barang_id'] == $barang->id) || (isset($detail->barang_id) && $detail->barang_id == $barang->id) ? 'selected' : '' }}>
-                                        {{ $barang->nama_barang }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            {{-- UBAH BAGIAN INI: Input untuk display barang dan tombol cari --}}
+                            <div class="input-group">
+                                <input type="hidden" name="details[{{ $index }}][barang_id]"
+                                    class="barang-id-input" value="{{ $detail['barang_id'] ?? '' }}">
+                                <input type="text" class="form-control form-control-sm nama-barang-display"
+                                    value="{{ $detail['kode_barang_selected'] ?? '' }} - {{ $detail['nama_barang_selected'] ?? '' }}"
+                                    readonly placeholder="Pilih Barang...">
+                                <button type="button" class="btn btn-success btn-sm search-barang-button"
+                                    data-bs-toggle="modal" data-bs-target="#modal-item-permintaan"
+                                    title="Cari Barang">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
                             @error('details.' . $index . '.barang_id')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </td>
                         <td>
+                            {{-- Stok akan diisi oleh JS --}}
                             <input type="text" name="details[{{ $index }}][stok_terakhir]"
                                 class="form-control form-control-sm stok-terakhir"
-                                value="{{ $detail['stok_terakhir'] ?? ($detail->barang->stock ?? 0) }}" readonly>
+                                value="{{ formatAngkaDesimal($detail['stok_terakhir'] ?? 0) }}" readonly>
                         </td>
                         <td>
                             <input type="number" name="details[{{ $index }}][jumlah_pesanan]"
                                 class="form-control form-control-sm jumlah-pesanan @error('details.' . $index . '.jumlah_pesanan') is-invalid @enderror"
-                                value="{{ $detail['jumlah_pesanan'] ?? ($detail->jumlah_pesanan ?? '') }}"
-                                step="any" min="0.01" required>
+                                value="{{ $detail['jumlah_pesanan'] ?? '' }}" step="any" min="0.0001"
+                                required> {{-- Ubah min jika perlu --}}
                             @error('details.' . $index . '.jumlah_pesanan')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </td>
-                        <td>
-                            <select name="details[{{ $index }}][satuan]"
-                                class="form-select form-select-sm satuan-barang @error('details.' . $index . '.satuan') is-invalid @enderror"
-                                required>
-                                <option value="">Pilih Satuan</option>
-                                @foreach ($unitSatuans as $satuan)
-                                    <option value="{{ $satuan->nama_unit_satuan }}"
-                                        {{ (isset($detail['satuan']) && $detail['satuan'] == $satuan->nama_unit_satuan) || (isset($detail->satuan) && $detail->satuan == $satuan->nama_unit_satuan) ? 'selected' : '' }}>
-                                        {{ $satuan->nama_unit_satuan }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('details.' . $index . '.satuan')
+                        <td> <input type="text" name="details[{{ $index }}][satuan]"
+                                class="form-control form-control-sm satuan-barang-display @error('details.' . $index . '.satuan') is-invalid @enderror"
+                                value="{{ $detail['satuan'] ?? '' }}" readonly required> @error('details.' . $index .
+                                '.satuan')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </td>
                         <td>
                             <input type="number" name="details[{{ $index }}][harga_per_satuan]"
                                 class="form-control form-control-sm harga-satuan @error('details.' . $index . '.harga_per_satuan') is-invalid @enderror"
-                                value="{{ $detail['harga_per_satuan'] ?? ($detail->harga_per_satuan ?? '') }}"
-                                step="any" min="0" required>
+                                value="{{ $detail['harga_per_satuan'] ?? '' }}" step="any" min="0"
+                                required>
                             @error('details.' . $index . '.harga_per_satuan')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
@@ -168,7 +184,8 @@
                         <td>
                             <input type="text" name="details[{{ $index }}][total_harga]"
                                 class="form-control form-control-sm total-harga-detail"
-                                value="{{ $detail['total_harga'] ?? ($detail->total_harga ?? 0) }}" readonly>
+                                value="{{ number_format((float) ($detail['total_harga'] ?? 0), 0, ',', '.') }}"
+                                readonly>
                         </td>
                         <td>
                             <button type="button" class="btn btn-danger btn-sm remove-detail-row"><i
@@ -177,17 +194,19 @@
                     </tr>
                 @endforeach
             @else
-                <tr class="detail-row">
+                {{-- Baris Detail Default (jika tidak ada old input atau data edit) --}}
+                <tr class="detail-row" data-row-index="0">
                     <td>
-                        <select name="details[0][barang_id]" class="form-select form-select-sm select-barang"
-                            required>
-                            <option value="">Pilih Barang</option>
-                            @foreach ($barangs as $barang)
-                                <option value="{{ $barang->id }}" data-stock="{{ $barang->stock }}"
-                                    data-satuan="{{ $barang->unitSatuan->nama_unit_satuan ?? '' }}">
-                                    {{ $barang->nama_barang }}</option>
-                            @endforeach
-                        </select>
+                        {{-- UBAH BAGIAN INI: Input untuk display barang dan tombol cari --}}
+                        <div class="input-group">
+                            <input type="hidden" name="details[0][barang_id]" class="barang-id-input">
+                            <input type="text" class="form-control form-control-sm nama-barang-display" readonly
+                                placeholder="Pilih Barang...">
+                            <button type="button" class="btn btn-success btn-sm search-barang-button"
+                                data-bs-toggle="modal" data-bs-target="#modal-item-permintaan" title="Cari Barang">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
                     </td>
                     <td>
                         <input type="text" name="details[0][stok_terakhir]"
@@ -195,18 +214,11 @@
                     </td>
                     <td>
                         <input type="number" name="details[0][jumlah_pesanan]"
-                            class="form-control form-control-sm jumlah-pesanan" step="any" min="0.01"
+                            class="form-control form-control-sm jumlah-pesanan" step="any" min="1"
                             required>
                     </td>
-                    <td>
-                        <select name="details[0][satuan]" class="form-select form-select-sm satuan-barang" required>
-                            <option value="">Pilih Satuan</option>
-                            @foreach ($unitSatuans as $satuan)
-                                <option value="{{ $satuan->nama_unit_satuan }}">{{ $satuan->nama_unit_satuan }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </td>
+                    <td> <input type="text" name="details[0][satuan]"
+                            class="form-control form-control-sm satuan-barang-display" readonly required> </td>
                     <td>
                         <input type="number" name="details[0][harga_per_satuan]"
                             class="form-control form-control-sm harga-satuan" step="any" min="0" required>
@@ -268,191 +280,70 @@
     </div>
 </div>
 
-@push('scripts_vendor')
-    <script src="{{ asset('mazer/extensions/choices.js/public/assets/scripts/choices.min.js') }}"></script>
-@endpush
+<div class="modal fade" id="modal-item-permintaan">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Pilih Barang untuk Permintaan</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body table-responsive">
+                <div class="container-fluid">
+                    <table class="table table-bordered table-striped" id="modal_table_barang_permintaan"
+                        style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>Kode Barang</th>
+                                <th>Nama Barang</th>
+                                <th>Jenis Material</th>
+                                <th>Unit Satuan</th>
+                                <th>Stok Terakhir</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{-- Isi tabel modal akan dirender oleh JS --}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-@push('scripts_custom_form')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            let detailRowIndex =
-                {{ old('details', isset($permintaanBarang) ? $permintaanBarang->details->count() : 0) ?: 1 }};
+@push('css')
+    {{-- TAMBAHKAN BAGIAN INI: CSS untuk DataTable jika belum ada di layout utama atau create.blade.php --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/dt-1.12.0/datatables.min.css" />
+    <style>
+        /* Style tambahan jika diperlukan */
+        #modal_table_barang_permintaan th,
+        #modal_table_barang_permintaan td {
+            white-space: nowrap;
+        }
 
-            function initializeChoices(element) {
-                if (element && !element.classList.contains('choices__input')) {
-                    new Choices(element, {
-                        searchEnabled: true,
-                        shouldSort: false,
-                        itemSelectText: 'Tekan enter untuk memilih',
-                    });
-                }
-            }
+        .search-barang-button {
+            /* Penyesuaian tinggi tombol search */
+            height: calc(1.5em + .5rem + 2px);
+            /* Sesuaikan dengan form-control-sm */
+        }
 
-            function initializeSelectBarang(row) {
-                const selectBarangElement = row.querySelector('.select-barang');
-                if (selectBarangElement) {
-                    initializeChoices(selectBarangElement);
-                    selectBarangElement.addEventListener('change', function() {
-                        updateRowData(this.closest('tr'));
-                    });
-                }
-            }
+        /* Pastikan kolom qty di cart rata kanan */
+        #detailPermintaanTable td.text-end,
+        #detailPermintaanTable input.total-harga-detail,
+        #detailPermintaanTable input.harga-satuan,
+        #detailPermintaanTable input.jumlah-pesanan {
+            text-align: right;
+        }
 
-            document.querySelectorAll('.select-barang').forEach(function(select) {
-                initializeChoices(select);
-                select.addEventListener('change', function() {
-                    updateRowData(this.closest('tr'));
-                });
-            });
-            document.querySelectorAll('.satuan-barang').forEach(function(select) {
-                initializeChoices(select);
-            });
+        #detailPermintaanTable input.stok-terakhir {
+            text-align: right;
+        }
 
-
-            function updateRowData(row) {
-                const selectedOption = row.querySelector('.select-barang option:checked');
-                const stokInput = row.querySelector('.stok-terakhir');
-                const satuanSelect = row.querySelector('.satuan-barang');
-
-                if (selectedOption && selectedOption.value) {
-                    const stock = selectedOption.dataset.stock || '0';
-                    const satuan = selectedOption.dataset.satuan || '';
-                    stokInput.value = parseFloat(stock).toLocaleString('id-ID');
-
-                    // Set satuan dan re-initialize Choices jika ada
-                    if (satuanSelect) {
-                        const choicesInstance = satuanSelect.choices;
-                        if (choicesInstance) {
-                            choicesInstance.setChoiceByValue(satuan);
-                        } else {
-                            // Fallback jika Choices belum terinisialisasi
-                            satuanSelect.value = satuan;
-                        }
-                    }
-                } else {
-                    stokInput.value = '';
-                    if (satuanSelect) {
-                        const choicesInstance = satuanSelect.choices;
-                        if (choicesInstance) {
-                            choicesInstance.setChoiceByValue('');
-                        } else {
-                            satuanSelect.value = '';
-                        }
-                    }
-                }
-                calculateRowTotal(row);
-            }
-
-
-            $('#detail_permintaan_body').on('click', '.remove-detail-row', function() {
-                $(this).closest('tr').remove();
-                calculateTotals();
-                updateRowIndexes();
-            });
-
-            $('#add_detail_row').on('click', function() {
-                let newRow = $($('#detailPermintaanTable tbody tr:first').clone(true,
-                    true)); // Deep clone with event handlers
-                newRow.find('input, select').each(function() {
-                    let name = $(this).attr('name');
-                    if (name) {
-                        name = name.replace(/\[\d+\]/, '[' + detailRowIndex + ']');
-                        $(this).attr('name', name).attr('id', name); // Set ID juga jika perlu
-                    }
-                    if ($(this).is('select.select-barang') || $(this).is('select.satuan-barang')) {
-                        // Hancurkan instance Choices lama jika ada
-                        if (this.choices) {
-                            this.choices.destroy();
-                        }
-                        $(this).val(''); // Reset value
-                    } else {
-                        $(this).val(''); // Reset value untuk input lain
-                    }
-
-                    // Hapus kelas is-invalid jika ada
-                    $(this).removeClass('is-invalid');
-                    $(this).closest('td').find('.invalid-feedback').remove();
-                });
-                newRow.find('.stok-terakhir').val('');
-                newRow.find('.total-harga-detail').val('0');
-                $('#detail_permintaan_body').append(newRow);
-
-                // Inisialisasi Choices untuk select baru
-                initializeSelectBarang(newRow[0]);
-                const newSatuanSelect = newRow[0].querySelector('.satuan-barang');
-                if (newSatuanSelect) initializeChoices(newSatuanSelect);
-
-                detailRowIndex++;
-                updateRowIndexes();
-            });
-
-            $('#detail_permintaan_body').on('input', '.jumlah-pesanan, .harga-satuan', function() {
-                calculateRowTotal($(this).closest('tr'));
-            });
-
-            $('#include_ppn_checkbox').on('change', function() {
-                $('#include_ppn_hidden').val(this.checked ? 'yes' : 'no');
-                calculateTotals();
-            });
-
-            function calculateRowTotal(row) {
-                const jumlah = parseFloat($(row).find('.jumlah-pesanan').val()) || 0;
-                const harga = parseFloat($(row).find('.harga-satuan').val()) || 0;
-                const total = jumlah * harga;
-                $(row).find('.total-harga-detail').val(total.toLocaleString('id-ID', {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                }));
-                calculateTotals();
-            }
-
-            function calculateTotals() {
-                let subTotal = 0;
-                $('.total-harga-detail').each(function() {
-                    subTotal += parseFloat($(this).val().replace(/\./g, '').replace(/,/g, '.')) || 0;
-                });
-                $('#sub_total_pesanan_display').val('Rp ' + subTotal.toLocaleString('id-ID', {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                }));
-                $('#sub_total_pesanan_hidden').val(subTotal);
-
-                let nominalPpn = 0;
-                if ($('#include_ppn_checkbox').is(':checked')) {
-                    nominalPpn = subTotal * 0.11; // PPN 11%
-                }
-                $('#nominal_ppn_display').val('Rp ' + nominalPpn.toLocaleString('id-ID', {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                }));
-                $('#nominal_ppn_hidden').val(nominalPpn);
-
-                const totalPesanan = subTotal + nominalPpn;
-                $('#total_pesanan_display').val('Rp ' + totalPesanan.toLocaleString('id-ID', {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                }));
-                $('#total_pesanan_hidden').val(totalPesanan);
-            }
-
-            function updateRowIndexes() {
-                $('#detail_permintaan_body tr').each(function(index) {
-                    $(this).find('input, select').each(function() {
-                        let name = $(this).attr('name');
-                        if (name) {
-                            name = name.replace(/\[\d+\]/, '[' + index + ']');
-                            $(this).attr('name', name);
-                        }
-                    });
-                });
-            }
-
-            // Initial calculation
-            $('.detail-row').each(function() {
-                updateRowData(this); // Panggil untuk mengisi stok dan satuan saat edit
-                calculateRowTotal(this);
-            });
-            calculateTotals(); // Hitung total keseluruhan saat load
-        });
-    </script>
+        /* Pastikan kolom stock di modal rata kanan */
+        #modal_table_barang_permintaan td:nth-child(5) {
+            /* Kolom stok */
+            text-align: right;
+        }
+    </style>
 @endpush

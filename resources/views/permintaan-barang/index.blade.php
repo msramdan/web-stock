@@ -22,25 +22,26 @@
                     </div>
                 </div>
             </div>
-            {{-- BARIS TOMBOL AKSI UTAMA (Mengikuti gaya /produksi untuk penempatan & gaya tombol Buat) --}}
             <div class="row mt-3 mb-2">
                 <div class="col-12 d-flex justify-content-md-end justify-content-start align-items-center flex-wrap gap-2">
                     @can('permintaan barang export pdf')
                         <a href="{{ route('permintaan-barang.printBlankForm') }}" id="printBlankFormLink"
-                            class="btn btn-sm btn-outline-primary" target="_blank" title="{{ __('Cetak Form Kosong') }}">
-                            <i class="fas fa-print"></i> {{-- __('Form PDF') --}}
+                            class="btn btn-danger btn-sm" target="_blank" title="{{ __('Cetak Form Kosong') }}">
+                            <i class="fas fa-print"></i>
+                            {{ __('Cetak Form Kosong') }}
                         </a>
                     @endcan
                     @can('permintaan barang export excel')
                         <a href="{{ route('permintaan-barang.index') }}?export=excel" id="exportExcelLinkList"
-                            class="btn btn-sm btn-outline-primary" target="_blank" title="{{ __('Export Daftar ke Excel') }}">
-                            <i class="fas fa-file-excel"></i> {{-- __('Daftar Excel') --}}
+                            class="btn btn-success btn-sm" target="_blank" title="{{ __('Export Daftar ke Excel') }}">
+                            <i class="fas fa-file-excel"></i>
+                            {{ __('Daftar Excel') }}
                         </a>
                     @endcan
                     @can('permintaan barang create')
                         {{-- Tombol Buat Permintaan Barang dengan warna biru dan ikon dari /produksi --}}
                         <a href="{{ route('permintaan-barang.create') }}" class="btn icon icon-left btn-primary">
-                            <i class="bi bi-plus-circle"></i> {{ __('Buat Permintaan Barang') }}
+                            <i class="fas fa-plus"></i> {{ __('Buat Permintaan Barang') }}
                         </a>
                     @endcan
                 </div>

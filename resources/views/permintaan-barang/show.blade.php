@@ -62,7 +62,7 @@
                             </div>
                             <div class="mb-2 row">
                                 <strong class="col-sm-5">Perusahaan:</strong>
-                                <div class="col-sm-7">{{ $permintaanBarang->company->nama_company ?? 'N/A' }}</div>
+                                <div class="col-sm-7">{{ $permintaanBarang->company->nama_perusahaan ?? 'N/A' }}</div>
                             </div>
                         </div>
                         <div class="col-md-6">
