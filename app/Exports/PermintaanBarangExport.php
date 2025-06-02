@@ -9,9 +9,12 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class PermintaanBarangExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize
+class PermintaanBarangExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithColumnFormatting
 {
+
     protected $request;
 
     public function __construct(Request $request)
@@ -19,32 +22,37 @@ class PermintaanBarangExport implements FromQuery, WithHeadings, WithMapping, Sh
         $this->request = $request;
     }
 
+    public function columnFormats(): array
+    {
+        return [
+            'I' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1, // Format #,##0
+            'J' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1, // Sub Total
+            'K' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1, // Total
+        ];
+    }
+
     /**
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function query()
     {
-        $companyId = Auth::user()->company_id ?? session('company_id');
+        // Ambil company_id_filter yang di-pass dari controller
+        $companyId = $this->request->input('company_id_filter', session('sessionCompany'));
 
-        // Cek apakah ada ID spesifik untuk export satu item
-        if ($this->request->filled('id_permintaan_specific')) {
-            $query = Permintaan::where('id', $this->request->input('id_permintaan_specific'))
-                ->where('company_id', $companyId) // Tetap pastikan company scope
-                ->with('user');
-        } else {
-            // Query untuk list (jika tidak ada ID spesifik, berarti export daftar)
-            $query = Permintaan::where('company_id', $companyId)
-                ->with('user')
-                ->select('permintaan.*') // select.* mungkin tidak perlu jika mapping lengkap
-                ->orderBy('tgl_pengajuan', 'desc');
-
-            // Terapkan filter lain dari request jika ada (untuk export daftar yang mungkin masih difilter di backend)
-            // Filter UI sudah dihapus, tapi bisa ada filter lain dari query string jika diperlukan
-            if ($this->request->filled('no_permintaan_param')) { // contoh parameter filter backend
-                $query->where('no_permintaan_barang', 'like', '%' . $this->request->input('no_permintaan_param') . '%');
-            }
-            // Tambahkan filter lain jika perlu
+        if (!$companyId) {
+            return Permintaan::query()->whereRaw('1 = 0'); // Kembalikan query kosong
         }
+
+        // Query untuk list (jika tidak ada ID spesifik, berarti export daftar)
+        $query = Permintaan::where('company_id', $companyId)
+            ->with('user:id,name') // Eager load user untuk daftar
+            ->orderBy('tgl_pengajuan', 'desc');
+
+        // Jika ada filter lain yang ingin diterapkan dari $this->request, tambahkan di sini
+        // Misalnya, jika Anda punya filter tanggal di request:
+        // if ($this->request->filled('tanggal_mulai') && $this->request->filled('tanggal_selesai')) {
+        //    $query->whereBetween('tgl_pengajuan', [$this->request->input('tanggal_mulai'), $this->request->input('tanggal_selesai')]);
+        // }
 
         return $query;
     }
@@ -80,9 +88,9 @@ class PermintaanBarangExport implements FromQuery, WithHeadings, WithMapping, Sh
             $permintaan->account_number_supplier,
             $permintaan->keterangan,
             $permintaan->include_ppn == 'yes' ? 'Ya' : 'Tidak',
-            number_format($permintaan->nominal_ppn, 0, ',', '.'),
-            number_format($permintaan->sub_total_pesanan, 0, ',', '.'),
-            number_format($permintaan->total_pesanan, 0, ',', '.'),
+            $permintaan->nominal_ppn,
+            $permintaan->sub_total_pesanan,
+            $permintaan->total_pesanan,
             $permintaan->user ? $permintaan->user->name : 'N/A',
             \Carbon\Carbon::parse($permintaan->created_at)->format('d-m-Y H:i'),
         ];

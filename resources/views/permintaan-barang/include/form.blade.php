@@ -159,8 +159,8 @@
                         <td>
                             <input type="number" name="details[{{ $index }}][jumlah_pesanan]"
                                 class="form-control form-control-sm jumlah-pesanan @error('details.' . $index . '.jumlah_pesanan') is-invalid @enderror"
-                                value="{{ $detail['jumlah_pesanan'] ?? '' }}" step="any" min="0.0001"
-                                required> {{-- Ubah min jika perlu --}}
+                                value="{{ formatAngkaDesimal($detail['jumlah_pesanan'] ?? 0) ?? ($detail['jumlah_pesanan'] ?? '') }}"
+                                step="any" min="1" required> {{-- Ubah min jika perlu --}}
                             @error('details.' . $index . '.jumlah_pesanan')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
@@ -175,8 +175,8 @@
                         <td>
                             <input type="number" name="details[{{ $index }}][harga_per_satuan]"
                                 class="form-control form-control-sm harga-satuan @error('details.' . $index . '.harga_per_satuan') is-invalid @enderror"
-                                value="{{ $detail['harga_per_satuan'] ?? '' }}" step="any" min="0"
-                                required>
+                                value="{{ formatAngkaDesimal($detail['harga_per_satuan'] ?? 0) ?? ($detail['harga_per_satuan'] ?? '') }}"
+                                step="any" min="0" required>
                             @error('details.' . $index . '.harga_per_satuan')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror

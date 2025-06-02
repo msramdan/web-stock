@@ -19,12 +19,10 @@ use App\Exports\PermintaanBarangExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use App\Exports\PermintaanBarangDetailExport;
 
 class PermintaanBarangController extends Controller implements HasMiddleware
 {
-    /**
-     * Mendefinisikan middleware untuk controller ini.
-     */
     public static function middleware(): array
     {
         return [
@@ -34,7 +32,7 @@ class PermintaanBarangController extends Controller implements HasMiddleware
             new Middleware('permission:permintaan barang edit', only: ['edit', 'update']),
             new Middleware('permission:permintaan barang delete', only: ['destroy']),
             new Middleware('permission:permintaan barang export pdf', only: ['printBlankForm', 'printSpecificForm']),
-            new Middleware('permission:permintaan barang export excel', only: ['exportItemExcel']), // Tambahkan permission check untuk export excel per item
+            new Middleware('permission:permintaan barang export excel', only: ['exportItemExcel']),
         ];
     }
 
@@ -51,28 +49,31 @@ class PermintaanBarangController extends Controller implements HasMiddleware
         $companyId = $this->getCompanyId();
 
         if ($request->query('export') === 'excel') {
-            if (!Auth::user()->can('permintaan barang export excel')) { // Pastikan permission ini ada
+            if (!Auth::user()->can('permintaan barang export excel')) {
                 return redirect()->route('permintaan-barang.index')->with('error', __('Anda tidak memiliki izin untuk mengekspor data ini.'));
             }
+            // Jika PermintaanBarangExport memerlukan companyId, pastikan itu dilewatkan atau diakses di dalam Export class
+            $requestToExport = $request->duplicate(); // Duplikasi request untuk dimodifikasi
+            $requestToExport->mergeIfMissing(['company_id_filter' => $companyId]);
+
             $fileName = 'daftar_permintaan_barang_' . date('YmdHis') . '.xlsx';
-            return Excel::download(new PermintaanBarangExport($request), $fileName); // Request sudah mengandung companyId jika diperlukan di Export class
+            return Excel::download(new PermintaanBarangExport($requestToExport), $fileName);
         }
 
         if ($request->ajax()) {
             $query = Permintaan::where('company_id', $companyId)
-                ->with('user') // Eager load user
-                ->select('permintaan.*'); // Select semua kolom dari permintaan
+                ->with('user:id,name')
+                ->select('permintaan.*');
 
             return datatables()->of($query)
                 ->addIndexColumn()
                 ->addColumn('user_name', function ($row) {
-                    return $row->user?->name ?? 'N/A'; // Menggunakan optional chaining
+                    return $row->user?->name ?? 'N/A';
                 })
                 ->addColumn('tgl_pengajuan_formatted', function ($row) {
-                    return \Carbon\Carbon::parse($row->tgl_pengajuan)->format('d-m-Y H:i');
+                    return Carbon::parse($row->tgl_pengajuan)->format('d-m-Y H:i');
                 })
                 ->addColumn('total_pesanan_formatted', function ($row) {
-                    // Menggunakan helper jika ada, atau format langsung
                     return 'Rp ' . number_format($row->total_pesanan, 0, ',', '.');
                 })
                 ->addColumn('action', 'permintaan-barang.include.action')
@@ -100,19 +101,19 @@ class PermintaanBarangController extends Controller implements HasMiddleware
         return view('permintaan-barang.create', compact('barangs', 'unitSatuans'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StorePermintaanBarangRequest $request)
     {
         $validated = $request->validated();
         $companyId = $this->getCompanyId();
+        if (!$companyId) {
+            return redirect()->back()->withInput()->with('error', 'Sesi perusahaan tidak valid. Silakan pilih perusahaan.');
+        }
 
         DB::beginTransaction();
         try {
             $subTotalPesanan = 0;
             foreach ($validated['details'] as $detail) {
-                $subTotalPesanan += ($detail['jumlah_pesanan'] * $detail['harga_per_satuan']);
+                $subTotalPesanan += ((float)$detail['jumlah_pesanan'] * (float)$detail['harga_per_satuan']);
             }
 
             $nominalPpn = 0;
@@ -137,38 +138,34 @@ class PermintaanBarangController extends Controller implements HasMiddleware
                 'company_id' => $companyId,
             ]);
 
-            $detailPermintaans = [];
             foreach ($validated['details'] as $detailData) {
-                $barang = Barang::where('id', $detailData['barang_id'])->where('company_id', $companyId)->first(); // Pastikan barang milik company yg benar
+                $barang = Barang::where('id', $detailData['barang_id'])
+                    ->where('company_id', $companyId)
+                    ->first();
                 if (!$barang) {
-                    // Seharusnya tidak terjadi jika validasi di request sudah benar
-                    throw new \Exception("Barang dengan ID {$detailData['barang_id']} tidak ditemukan untuk perusahaan ini.");
+                    throw new \Exception("Barang dengan ID {$detailData['barang_id']} tidak valid atau tidak ditemukan untuk perusahaan ini.");
                 }
-                $detailPermintaans[] = [
+
+                DetailPermintaan::create([
                     'permintaan_id' => $permintaan->id,
                     'barang_id' => $detailData['barang_id'],
-                    'stok_terakhir' => $barang->stock_barang, // Ambil stock_barang
+                    'stok_terakhir' => $barang->stock_barang,
                     'jumlah_pesanan' => $detailData['jumlah_pesanan'],
-                    'satuan' => $detailData['satuan'], // Pastikan ini nama satuan, bukan ID
+                    'satuan' => $detailData['satuan'],
                     'harga_per_satuan' => $detailData['harga_per_satuan'],
-                    'total_harga' => ($detailData['jumlah_pesanan'] * $detailData['harga_per_satuan']),
-                    // 'created_at' & 'updated_at' akan diisi otomatis oleh Eloquent jika menggunakan model
-                ];
+                    'total_harga' => ((float)$detailData['jumlah_pesanan'] * (float)$detailData['harga_per_satuan']),
+                ]);
             }
-            DetailPermintaan::insert($detailPermintaans); // Bulk insert lebih efisien
 
             DB::commit();
             return redirect()->route('permintaan-barang.index')->with('success', 'Permintaan barang berhasil ditambahkan.');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error storing Permintaan Barang: {$e->getMessage()} at {$e->getFile()}:{$e->getLine()}");
-            return redirect()->back()->withInput()->with('error', 'Gagal menambahkan permintaan barang: Terjadi kesalahan sistem.');
+            Log::error("Error storing Permintaan Barang: " . $e->getMessage() . "\nStack trace:\n" . $e->getTraceAsString());
+            return redirect()->back()->withInput()->with('error', 'Gagal menambahkan permintaan barang: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Permintaan $permintaanBarang)
     {
         $companyId = $this->getCompanyId();
@@ -176,36 +173,24 @@ class PermintaanBarangController extends Controller implements HasMiddleware
             abort(403, 'Anda tidak memiliki akses ke dokumen permintaan ini.');
         }
 
-        $permintaanBarang->load(['details.barang.unitSatuan', 'user', 'company']); // Eager load lebih dalam
+        $permintaanBarang->load(['details.barang.unitSatuan', 'user:id,name', 'company']);
         return view('permintaan-barang.show', compact('permintaanBarang'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Permintaan $permintaanBarang)
     {
         $companyId = $this->getCompanyId();
         if ($permintaanBarang->company_id != $companyId) {
             abort(403, 'Anda tidak memiliki akses ke dokumen permintaan ini.');
         }
-
-        $barangs = Barang::where('company_id', $companyId)
-            ->with('unitSatuan')
-            ->orderBy('nama_barang', 'asc')
-            ->get(['id', 'nama_barang', 'kode_barang', 'stock_barang', 'unit_satuan_id']); // Tambah kode_barang
-
-        $unitSatuans = UnitSatuan::where('company_id', $companyId)
-            ->orderBy('nama_unit_satuan', 'asc')
-            ->get(['id', 'nama_unit_satuan']);
-
-        $permintaanBarang->load('details.barang'); // Eager load details dan barang terkait
-        return view('permintaan-barang.edit', compact('permintaanBarang', 'barangs', 'unitSatuans'));
+        if (!$companyId) {
+            return redirect()->route('dashboard')->with('error', 'Silakan pilih perusahaan untuk mengedit permintaan barang.');
+        }
+        $permintaanBarang->load('details.barang');
+        // $barangs dan $unitSatuans tidak lagi dipass ke view ini
+        return view('permintaan-barang.edit', compact('permintaanBarang'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(UpdatePermintaanBarangRequest $request, Permintaan $permintaanBarang)
     {
         $companyId = $this->getCompanyId();
@@ -218,7 +203,7 @@ class PermintaanBarangController extends Controller implements HasMiddleware
         try {
             $subTotalPesanan = 0;
             foreach ($validated['details'] as $detail) {
-                $subTotalPesanan += ($detail['jumlah_pesanan'] * $detail['harga_per_satuan']);
+                $subTotalPesanan += ((float)$detail['jumlah_pesanan'] * (float)$detail['harga_per_satuan']);
             }
 
             $nominalPpn = 0;
@@ -239,46 +224,37 @@ class PermintaanBarangController extends Controller implements HasMiddleware
                 'nominal_ppn' => $nominalPpn,
                 'sub_total_pesanan' => $subTotalPesanan,
                 'total_pesanan' => $totalPesanan,
-                // user_id tidak diupdate di sini, diasumsikan user penginput awal tetap
             ]);
 
-            // Hapus detail lama
             $permintaanBarang->details()->delete();
 
-            // Tambahkan detail yang baru
-            $detailPermintaans = [];
             foreach ($validated['details'] as $detailData) {
-                $barang = Barang::where('id', $detailData['barang_id'])->where('company_id', $companyId)->first();
+                $barang = Barang::where('id', $detailData['barang_id'])
+                    ->where('company_id', $companyId)
+                    ->first();
                 if (!$barang) {
-                    throw new \Exception("Barang dengan ID {$detailData['barang_id']} tidak ditemukan untuk perusahaan ini.");
+                    throw new \Exception("Barang dengan ID {$detailData['barang_id']} tidak valid atau tidak ditemukan untuk perusahaan ini.");
                 }
-                $detailPermintaans[] = [
+                DetailPermintaan::create([
                     'permintaan_id' => $permintaanBarang->id,
                     'barang_id' => $detailData['barang_id'],
-                    'stok_terakhir' => $barang->stock_barang, // Ambil stock_barang
+                    'stok_terakhir' => $barang->stock_barang,
                     'jumlah_pesanan' => $detailData['jumlah_pesanan'],
                     'satuan' => $detailData['satuan'],
                     'harga_per_satuan' => $detailData['harga_per_satuan'],
-                    'total_harga' => ($detailData['jumlah_pesanan'] * $detailData['harga_per_satuan']),
-                ];
+                    'total_harga' => ((float)$detailData['jumlah_pesanan'] * (float)$detailData['harga_per_satuan']),
+                ]);
             }
-            if (!empty($detailPermintaans)) {
-                DetailPermintaan::insert($detailPermintaans);
-            }
-
 
             DB::commit();
             return redirect()->route('permintaan-barang.index')->with('success', 'Permintaan barang berhasil diperbarui.');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error updating Permintaan Barang ID {$permintaanBarang->id}: {$e->getMessage()} at {$e->getFile()}:{$e->getLine()}");
-            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui permintaan barang: Terjadi kesalahan sistem.');
+            Log::error("Error updating Permintaan Barang ID {$permintaanBarang->id}: " . $e->getMessage() . "\nStack trace:\n" . $e->getTraceAsString());
+            return redirect()->back()->withInput()->with('error', 'Gagal memperbarui permintaan barang: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Permintaan $permintaanBarang)
     {
         $companyId = $this->getCompanyId();
@@ -288,26 +264,23 @@ class PermintaanBarangController extends Controller implements HasMiddleware
 
         DB::beginTransaction();
         try {
-            $permintaanBarang->details()->delete(); // Hapus detail dulu
+            $permintaanBarang->details()->delete();
             $permintaanBarang->delete();
             DB::commit();
             return redirect()->route('permintaan-barang.index')->with('success', 'Permintaan barang berhasil dihapus.');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error deleting Permintaan Barang ID {$permintaanBarang->id}: {$e->getMessage()}");
-            return redirect()->route('permintaan-barang.index')->with('error', 'Gagal menghapus permintaan barang: Terjadi kesalahan sistem.');
+            Log::error("Error deleting Permintaan Barang ID {$permintaanBarang->id}: " . $e->getMessage());
+            return redirect()->route('permintaan-barang.index')->with('error', 'Gagal menghapus permintaan barang: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Print blank form.
-     */
     public function printBlankForm()
     {
         $companyId = $this->getCompanyId();
         $company = Company::find($companyId);
         if (!$company) {
-            return redirect()->back()->with('error', 'Perusahaan aktif tidak ditemukan.');
+            return redirect()->back()->with('error', 'Data perusahaan tidak ditemukan. Silakan pilih perusahaan yang valid.');
         }
 
         $data = [
@@ -315,23 +288,18 @@ class PermintaanBarangController extends Controller implements HasMiddleware
             'company' => $company,
             'pemohon' => Auth::user()?->name ?? 'N/A',
             'no_permintaan_barang' => '_________________',
-            'tgl_pengajuan' => '___ / ___ / ______',
+            'tgl_pengajuan' => '___ / ___ / ______ __:__',
             'nama_supplier' => '_________________',
-            'details' => [], // array kosong untuk template
+            'details' => [],
             'keterangan' => '',
             'sub_total_pesanan' => 0,
             'nominal_ppn' => 0,
             'total_pesanan' => 0,
         ];
-        // Menggunakan alias DomPDF yang sudah diimpor
         $pdf = DomPDF::loadView('permintaan-barang.pdf.form_permintaan_template', $data);
         return $pdf->stream('form_permintaan_barang_kosong.pdf');
     }
 
-    /**
-     * Print specific form.
-     * @param int $id (atau Permintaan $permintaanBarang dengan route model binding)
-     */
     public function printSpecificForm(Permintaan $permintaanBarang)
     {
         $companyId = $this->getCompanyId();
@@ -339,7 +307,7 @@ class PermintaanBarangController extends Controller implements HasMiddleware
             abort(403, 'Anda tidak memiliki akses ke dokumen permintaan ini.');
         }
 
-        $permintaanBarang->load(['details.barang.unitSatuan', 'user', 'company']);
+        $permintaanBarang->load(['details.barang.unitSatuan', 'user:id,name', 'company']);
 
         $data = [
             'title' => 'Form Permintaan Barang',
@@ -348,29 +316,34 @@ class PermintaanBarangController extends Controller implements HasMiddleware
         ];
         $pdf = DomPDF::loadView('permintaan-barang.pdf.form_permintaan_template', $data);
 
-        // PERBAIKAN NAMA FILE PDF
-        $safeNoPermintaan = Str::slug($permintaanBarang->no_permintaan_barang, '-'); // Mengganti '/' dengan '-' atau karakter aman lainnya
+        // PERBAIKAN NAMA FILE PDF dari karakter ilegal
+        $safeNoPermintaan = Str::slug($permintaanBarang->no_permintaan_barang, '_'); // Mengganti '/' dan spasi dengan '_'
         $fileName = 'permintaan_barang_' . $safeNoPermintaan . '.pdf';
 
         return $pdf->stream($fileName);
     }
 
-    /**
-     * Export specific Permintaan Barang to Excel.
-     */
     public function exportItemExcel(Request $request, Permintaan $permintaanBarang)
     {
         $companyId = $this->getCompanyId();
         if ($permintaanBarang->company_id != $companyId) {
             abort(403, 'Anda tidak memiliki akses ke dokumen permintaan ini.');
         }
+        if (!Auth::user()->can('permintaan barang export excel')) {
+            return redirect()->route('permintaan-barang.index')->with('error', __('Anda tidak memiliki izin untuk mengekspor data ini.'));
+        }
 
-        $request->merge(['id_permintaan_specific' => $permintaanBarang->id, 'company_id_filter' => $companyId]);
+        $safeNoPermintaan = Str::slug($permintaanBarang->no_permintaan_barang, '_');
+        // Nama file bisa dibedakan sedikit jika perlu, atau disamakan jika kontennya memang satu baris juga
+        $fileName = 'permintaan_barang_item_' . $safeNoPermintaan . '_' . date('YmdHis') . '.xlsx';
 
-        // PERBAIKAN NAMA FILE EXCEL
-        $safeNoPermintaan = Str::slug($permintaanBarang->no_permintaan_barang, '-');
-        $fileName = 'permintaan_barang_' . $safeNoPermintaan . '_' . date('YmdHis') . '.xlsx';
+        // Buat instance request baru untuk dikirim ke PermintaanBarangExport
+        $exportRequest = new Request();
+        $exportRequest->merge([
+            'id_permintaan_specific' => $permintaanBarang->id,
+            'company_id_filter'      => $companyId // Pastikan company_id_filter juga terkirim
+        ]);
 
-        return Excel::download(new PermintaanBarangExport($request), $fileName);
+        return Excel::download(new PermintaanBarangExport($exportRequest), $fileName);
     }
 }
