@@ -25,7 +25,7 @@ class Produksi extends Model
         'attachment',
         'keterangan',
         // 'status', // Jika Anda tambahkan kembali kolom status
-        // 'user_id' // Jika Anda tambahkan kembali kolom user
+        'user_id' // Jika Anda tambahkan kembali kolom user
     ];
 
     // Tipe casting untuk kolom tertentu
@@ -65,10 +65,10 @@ class Produksi extends Model
      * Relasi ke User (Pembuat/Penanggung Jawab).
      * Uncomment jika Anda menambahkan kembali kolom user_id.
      */
-    // public function user(): BelongsTo
-    // {
-    //     return $this->belongsTo(User::class);
-    // }
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
     /**
      * Relasi ke Detail Produksi.

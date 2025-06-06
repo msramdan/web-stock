@@ -51,7 +51,7 @@ class ProduksiController extends Controller implements HasMiddleware
         $companyId = session('sessionCompany');
 
         if ($request->ajax()) {
-            $produksi = Produksi::with('produkJadi:id,kode_barang,nama_barang') // Eager load produk jadi
+            $produksi = Produksi::with('produkJadi:id,kode_barang,nama_barang', 'user:id,name') // Eager load produk jadi
                 ->where('company_id', $companyId)
                 ->select('produksi.*') // Pilih semua kolom dari produksi
                 ->orderBy('tanggal', 'desc'); // Urutkan terbaru
@@ -62,6 +62,9 @@ class ProduksiController extends Controller implements HasMiddleware
                 })
                 ->addColumn('tanggal_f', function ($row) {
                     return formatTanggalIndonesia($row->tanggal);
+                })
+                ->addColumn('dibuat_oleh', function ($row) {
+                    return $row->user?->name ?? 'N/A';
                 })
                 ->addColumn('action', 'produksi.include.action') // Buat view ini nanti
                 ->toJson();
@@ -230,6 +233,7 @@ class ProduksiController extends Controller implements HasMiddleware
             $produksi = Produksi::create([
                 'company_id' => $companyId,
                 'no_produksi' => $validated['no_produksi'],
+                'user_id' => $userId,
                 'batch' => $batchCount,
                 'tanggal' => $validated['tanggal'],
                 'barang_id' => $validated['barang_id'],

@@ -24,7 +24,6 @@
 
             @can('produksi create')
                 <div class="d-flex justify-content-end">
-                    {{-- Arahkan ke halaman pemilihan produk dulu --}}
                     <a href="{{ route('produksi.create') }}" class="btn btn-primary mb-3">
                         <i class="fas fa-plus"></i>
                         {{ __('Buat Produksi Baru') }}
@@ -44,9 +43,7 @@
                                             <th>{{ __('Batch') }}</th>
                                             <th>{{ __('Tanggal') }}</th>
                                             <th>{{ __('Produk Jadi') }}</th>
-                                            {{-- <th>{{ __('Target Qty') }}</th> <-- HAPUS KOLOM INI --}}
-                                            {{-- Tambahkan kolom Status jika ada --}}
-                                            {{-- <th>{{ __('Status') }}</th> --}}
+                                            <th>{{ __('Dibuat Oleh') }}</th>
                                             <th>{{ __('Action') }}</th>
                                         </tr>
                                     </thead>
@@ -76,13 +73,13 @@
         $('#data-table').DataTable({
             processing: true,
             serverSide: true,
-            ajax: "{{ route('produksi.index') }}", // Route untuk ambil data produksi
+            ajax: "{{ route('produksi.index') }}",
             columns: [{
                     data: 'no_produksi',
                     name: 'no_produksi'
                 },
                 {
-                    data: 'batch', // Tampilkan kolom batch
+                    data: 'batch',
                     name: 'batch'
                 },
                 {
@@ -94,6 +91,10 @@
                     name: 'produkJadi.nama_barang'
                 },
                 {
+                    data: 'dibuat_oleh',
+                    name: 'user.name'
+                },
+                {
                     data: 'action',
                     name: 'action',
                     orderable: false,
@@ -101,7 +102,7 @@
                 }
             ],
             order: [
-                [2, 'desc'] // Urutkan berdasarkan tanggal (indeks 2 sekarang setelah menghapus qty_target)
+                [2, 'desc']
             ]
         });
     </script>

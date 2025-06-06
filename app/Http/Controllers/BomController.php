@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 // Import model dan request yang diperlukan
-use App\Models\{Bom, BomDetail, Barang, UnitSatuan, Company}; // Tambahkan Company
+use App\Models\{Bom, BomDetail, Barang, JenisMaterial, UnitSatuan, Company}; // Tambahkan Company
 use App\Http\Requests\Boms\{StoreBomRequest, UpdateBomRequest}; // Pastikan request ini ada
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
@@ -78,24 +78,26 @@ class BomController extends Controller implements HasMiddleware
      */
     public function create(): View
     {
-        // Filter barang berdasarkan company saat mengambil data untuk dropdown
         $companyId = session('sessionCompany');
-        $barangOptions = Barang::with('unitSatuan') // Eager load unit satuan default
+
+
+        $produkJadi = Barang::where('company_id', $companyId)
+            ->where('tipe_barang', 'Barang Jadi')
+            ->orderBy('nama_barang')
+            ->get();
+
+        $barangMaterials = Barang::with('unitSatuan')
             ->where('company_id', $companyId)
             ->orderBy('nama_barang')->get();
 
-        // Pisahkan? Tidak perlu jika view bisa handle
-        // $barangMaterials = $barangOptions;
-        // $produkJadi = $barangOptions;
 
-        // Ambil semua unit satuan dari company ini untuk dropdown di baris detail
         $unitSatuans = UnitSatuan::where('company_id', $companyId)
             ->orderBy('nama_unit_satuan')
             ->pluck('nama_unit_satuan', 'id');
 
-
-        return view('bom.create', compact('barangOptions', 'unitSatuans')); // Kirim barangOptions & unitSatuans
+        return view('bom.create', compact('produkJadi', 'barangMaterials', 'unitSatuans'));
     }
+
 
     /**
      * Store a newly created resource in storage.
@@ -224,27 +226,31 @@ class BomController extends Controller implements HasMiddleware
     public function edit(Bom $bom): View
     {
         $companyId = session('sessionCompany');
-        // Validasi company
         if ($bom->company_id != $companyId) {
             abort(403, 'Unauthorized action.');
         }
 
-        // Eager load relasi yang dibutuhkan
         $bom->load([
-            'barang', // Produk jadi
-            'details.material.unitSatuan', // Detail->material->unit defaultnya
-            'details.unitSatuan' // Detail->unit pilihan user
+            'barang',
+            'details.material.unitSatuan',
+            'details.unitSatuan'
         ]);
 
-        // Ambil data barang & unit satuan untuk pilihan dropdown (HANYA dari company ini)
-        $barangOptions = Barang::with('unitSatuan')
+
+        $produkJadi = Barang::where('company_id', $companyId)
+            ->where('tipe_barang', 'Barang Jadi')
+            ->orderBy('nama_barang')
+            ->get();
+
+        $barangMaterials = Barang::with('unitSatuan')
             ->where('company_id', $companyId)
             ->orderBy('nama_barang')->get();
+
         $unitSatuans = UnitSatuan::where('company_id', $companyId)
             ->orderBy('nama_unit_satuan')
             ->pluck('nama_unit_satuan', 'id');
 
-        return view('bom.edit', compact('bom', 'barangOptions', 'unitSatuans'));
+        return view('bom.edit', compact('bom', 'produkJadi', 'barangMaterials', 'unitSatuans'));
     }
 
     /**
