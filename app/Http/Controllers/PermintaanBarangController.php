@@ -278,41 +278,41 @@ class PermintaanBarangController extends Controller implements HasMiddleware
         }
     }
 
-    public function printBlankForm()
-    {
-        $companyId = $this->getCompanyId();
-        $company = Company::find($companyId);
-        if (!$company) {
-            return redirect()->back()->with('error', 'Data perusahaan tidak ditemukan. Silakan pilih perusahaan yang valid.');
-        }
+    // public function printBlankForm()
+    // {
+    //     $companyId = $this->getCompanyId();
+    //     $company = Company::find($companyId);
+    //     if (!$company) {
+    //         return redirect()->back()->with('error', 'Data perusahaan tidak ditemukan. Silakan pilih perusahaan yang valid.');
+    //     }
 
-        $logoUrl = null;
-        if ($company && $company->logo_perusahaan) {
-            $logoPath = storage_path('app/public/uploads/logo-perusahaans/' . $company->logo_perusahaan);
+    //     $logoUrl = null;
+    //     if ($company && $company->logo_perusahaan) {
+    //         $logoPath = storage_path('app/public/uploads/logo-perusahaans/' . $company->logo_perusahaan);
 
-            if (File::exists($logoPath)) {
-                $fileType = File::mimeType($logoPath);
-                $logoUrl = 'data:' . $fileType . ';base64,' . base64_encode(File::get($logoPath));
-            }
-        }
+    //         if (File::exists($logoPath)) {
+    //             $fileType = File::mimeType($logoPath);
+    //             $logoUrl = 'data:' . $fileType . ';base64,' . base64_encode(File::get($logoPath));
+    //         }
+    //     }
 
-        $data = [
-            'title' => 'Formulir Permintaan Barang',
-            'company' => $company,
-            'pemohon' => Auth::user()?->name ?? 'N/A',
-            'no_permintaan_barang' => '_________________',
-            'tgl_pengajuan' => '___ / ___ / ______ __:__',
-            'nama_supplier' => '_________________',
-            'details' => [],
-            'keterangan' => '',
-            'sub_total_pesanan' => 0,
-            'nominal_ppn' => 0,
-            'total_pesanan' => 0,
-            'logoUrl' => $logoUrl,
-        ];
-        $pdf = DomPDF::loadView('permintaan-barang.pdf.form_permintaan_template', $data);
-        return $pdf->stream('form_permintaan_barang_kosong.pdf');
-    }
+    //     $data = [
+    //         'title' => 'Formulir Permintaan Barang',
+    //         'company' => $company,
+    //         'pemohon' => Auth::user()?->name ?? 'N/A',
+    //         'no_permintaan_barang' => '_________________',
+    //         'tgl_pengajuan' => '___ / ___ / ______ __:__',
+    //         'nama_supplier' => '_________________',
+    //         'details' => [],
+    //         'keterangan' => '',
+    //         'sub_total_pesanan' => 0,
+    //         'nominal_ppn' => 0,
+    //         'total_pesanan' => 0,
+    //         'logoUrl' => $logoUrl,
+    //     ];
+    //     $pdf = DomPDF::loadView('permintaan-barang.pdf.form_permintaan_template', $data);
+    //     return $pdf->stream('form_permintaan_barang_kosong.pdf');
+    // }
 
     public function printSpecificForm(Permintaan $permintaanBarang)
     {
