@@ -20,6 +20,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use App\Exports\PermintaanBarangDetailExport;
+use Illuminate\Support\Facades\File;
 
 class PermintaanBarangController extends Controller implements HasMiddleware
 {
@@ -124,6 +125,7 @@ class PermintaanBarangController extends Controller implements HasMiddleware
 
             $permintaan = Permintaan::create([
                 'tgl_pengajuan' => $validated['tgl_pengajuan'],
+                'mengetahui' => $validated['mengetahui'] ?? null,
                 'no_permintaan_barang' => $validated['no_permintaan_barang'],
                 'nama_supplier' => $validated['nama_supplier'],
                 'nama_bank' => $validated['nama_bank'] ?? null,
@@ -214,6 +216,7 @@ class PermintaanBarangController extends Controller implements HasMiddleware
 
             $permintaanBarang->update([
                 'tgl_pengajuan' => $validated['tgl_pengajuan'],
+                'mengetahui' => $validated['mengetahui'] ?? null,
                 'no_permintaan_barang' => $validated['no_permintaan_barang'],
                 'nama_supplier' => $validated['nama_supplier'],
                 'nama_bank' => $validated['nama_bank'] ?? null,
@@ -283,6 +286,16 @@ class PermintaanBarangController extends Controller implements HasMiddleware
             return redirect()->back()->with('error', 'Data perusahaan tidak ditemukan. Silakan pilih perusahaan yang valid.');
         }
 
+        $logoUrl = null;
+        if ($company && $company->logo_perusahaan) {
+            $logoPath = storage_path('app/public/uploads/logo-perusahaans/' . $company->logo_perusahaan);
+
+            if (File::exists($logoPath)) {
+                $fileType = File::mimeType($logoPath);
+                $logoUrl = 'data:' . $fileType . ';base64,' . base64_encode(File::get($logoPath));
+            }
+        }
+
         $data = [
             'title' => 'Formulir Permintaan Barang',
             'company' => $company,
@@ -295,6 +308,7 @@ class PermintaanBarangController extends Controller implements HasMiddleware
             'sub_total_pesanan' => 0,
             'nominal_ppn' => 0,
             'total_pesanan' => 0,
+            'logoUrl' => $logoUrl,
         ];
         $pdf = DomPDF::loadView('permintaan-barang.pdf.form_permintaan_template', $data);
         return $pdf->stream('form_permintaan_barang_kosong.pdf');
@@ -308,15 +322,27 @@ class PermintaanBarangController extends Controller implements HasMiddleware
         }
 
         $permintaanBarang->load(['details.barang.unitSatuan', 'user:id,name', 'company']);
+        $company = $permintaanBarang->company;
+        $logoUrl = null;
+        if ($company && $company->logo_perusahaan) {
+            // Path lengkap ke file logo di dalam folder storage
+            $logoPath = storage_path('app/public/uploads/logo-perusahaans/' . $company->logo_perusahaan);
 
+            // Periksa apakah file benar-benar ada
+            if (File::exists($logoPath)) {
+                // Baca file dan encode ke Base64
+                $fileType = File::mimeType($logoPath);
+                $logoUrl = 'data:' . $fileType . ';base64,' . base64_encode(File::get($logoPath));
+            }
+        }
         $data = [
             'title' => 'Form Permintaan Barang',
             'permintaan' => $permintaanBarang,
             'company' => $permintaanBarang->company,
+            'logoUrl' => $logoUrl,
         ];
         $pdf = DomPDF::loadView('permintaan-barang.pdf.form_permintaan_template', $data);
 
-        // PERBAIKAN NAMA FILE PDF dari karakter ilegal
         $safeNoPermintaan = Str::slug($permintaanBarang->no_permintaan_barang, '_'); // Mengganti '/' dan spasi dengan '_'
         $fileName = 'permintaan_barang_' . $safeNoPermintaan . '.pdf';
 

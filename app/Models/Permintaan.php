@@ -13,6 +13,7 @@ class Permintaan extends Model
 
     protected $fillable = [
         'tgl_pengajuan',
+        'mengetahui',
         'no_permintaan_barang',
         'nama_supplier',
         'nama_bank',
