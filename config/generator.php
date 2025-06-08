@@ -227,6 +227,22 @@ return [
             ]
         ],
         [
+            'header' => 'Permintaan Barang',
+            'permissions' => [
+                'permintaan barang view',
+            ],
+            'menus' => [
+                [
+                    'title' => 'Permintaan Barang',
+                    'icon' => '<i class="bi bi-list-ul"></i>',
+                    'route' => '/permintaan-barang',
+                    'permission' => 'permintaan barang view',
+                    'permissions' => [],
+                    'submenus' => []
+                ]
+            ]
+        ],
+        [
             'header' => 'Laporan',
             'permissions' => [
                 'laporan view'

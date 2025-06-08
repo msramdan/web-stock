@@ -102,4 +102,9 @@ class Barang extends Model
     {
         return $this->hasMany(BomDetail::class, 'barang_id');
     }
+
+    public function permintaanDetails(): HasMany
+    {
+        return $this->hasMany(DetailPermintaan::class, 'barang_id');
+    }
 }
