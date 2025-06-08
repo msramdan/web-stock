@@ -17,14 +17,16 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
     protected $tanggalSelesai;
     protected $jenisMaterialId;
     protected $tipeBarang;
+    protected $barangId;
     protected $companyId;
 
-    public function __construct(string $tanggalMulai, string $tanggalSelesai, $jenisMaterialId, $tipeBarang)
+    public function __construct(string $tanggalMulai, string $tanggalSelesai, $jenisMaterialId, $tipeBarang, $barangId = null)
     {
         $this->tanggalMulai = $tanggalMulai;
         $this->tanggalSelesai = $tanggalSelesai;
         $this->jenisMaterialId = $jenisMaterialId;
         $this->tipeBarang = $tipeBarang;
+        $this->barangId = $barangId;
         $this->companyId = session('sessionCompany');
     }
 
@@ -62,7 +64,12 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
             $transaksiQuery->where('b.jenis_material_id', $this->jenisMaterialId);
         }
         if (!empty($this->tipeBarang)) {
-            $transaksiQuery->where('b.tipe_barang', $this->tipeBarang);
+            // Map user-facing filter values to database values
+            $tipeBarangDb = $this->tipeBarang; // Use the same value as in the form (Bahan Baku or Barang Jadi)
+            $transaksiQuery->where('b.tipe_barang', $tipeBarangDb);
+        }
+        if (!empty($this->barangId)) {
+            $transaksiQuery->where('td.barang_id', $this->barangId);
         }
 
         // Query Produksi
@@ -72,7 +79,7 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
                 'p.no_produksi as no_dokumen',
                 'p.tanggal',
                 'pd.type as tipe_pergerakan',
-                DB::raw("'N/A' as user_name"),
+                DB::raw("'-' as user_name"),
                 'b.kode_barang',
                 'b.nama_barang',
                 'b.tipe_barang',
@@ -92,13 +99,16 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
             $produksiQuery->where('b.jenis_material_id', $this->jenisMaterialId);
         }
         if (!empty($this->tipeBarang)) {
-            $produksiQuery->where('b.tipe_barang', $this->tipeBarang);
+            // Map user-facing filter values to database values
+            $tipeBarangDb = $this->tipeBarang; // Use the same value as in the form (Bahan Baku or Barang Jadi)
+            $produksiQuery->where('b.tipe_barang', $tipeBarangDb);
+        }
+        if (!empty($this->barangId)) {
+            $produksiQuery->where('pd.barang_id', $this->barangId);
         }
 
-        // Gabungkan Query dengan UNION ALL
         $transaksiQuery->unionAll($produksiQuery);
 
-        // Eksekusi dan Urutkan hasil gabungan
         $results = DB::query()->fromSub($transaksiQuery, 'combined_data')
             ->orderBy('tanggal', 'asc')
             ->orderBy('no_dokumen', 'asc')
@@ -141,14 +151,14 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
             $row->deskripsi_barang ?? '-',
             $row->nama_jenis_material ?? '-',
             $row->nama_unit_satuan ?? '-',
-            (float) $row->qty, // Ensure numeric value for Excel
+            (float) $row->qty,
         ];
     }
 
     public function columnFormats(): array
     {
         return [
-            'L' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1, // Format Qty column with thousand separators
+            'L' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
         ];
     }
 }
