@@ -20,31 +20,43 @@
             padding: 15px;
         }
 
-        .header {
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5px;
+        }
+
+        .logo {
+            width: 150px;
+            height: auto;
+        }
+
+        .header-table .header-text-cell {
             text-align: center;
-            margin-bottom: 20px;
+            vertical-align: middle;
         }
 
-        .header h1 {
-            margin: 0;
-            font-size: 18px;
+        .header-table .company-name {
+            font-size: 16px;
+            font-weight: bold;
             text-transform: uppercase;
-        }
-
-        .company-info {
-            text-align: left;
-            margin-bottom: 15px;
-        }
-
-        .company-info h2 {
-            margin: 0 0 5px 0;
-            font-size: 14px;
-            text-transform: uppercase;
-        }
-
-        .company-info p {
             margin: 0;
+        }
+
+        .header-table .company-address {
             font-size: 10px;
+            margin: 2px 0;
+        }
+
+        .header-table .company-contact {
+            font-size: 10px;
+            margin: 0;
+        }
+
+        hr.header-line {
+            border: none;
+            border-top: 1px solid #000;
+            margin: 0 0 15px 0;
         }
 
         .form-info {
@@ -194,23 +206,24 @@
 
 <body>
     <div class="container">
-        @php
-            $currentCompany = $permintaan->company ?? ($company ?? null);
-        @endphp
-
-        @if (isset($currentCompany) && $currentCompany)
-            <div class="company-info">
-                <h2>{{ $currentCompany->nama_perusahaan }}</h2>
-                <p>{{ $currentCompany->alamat ?: '-' }}</p>
-                <p>Telp: {{ $currentCompany->no_telepon ?: '-' }} | Email: {{ $currentCompany->email ?: '-' }}</p>
-            </div>
-        @else
-            <div class="company-info">
-                <h2>NAMA PERUSAHAAN BELUM DISET</h2>
-                <p>Alamat Perusahaan</p>
-                <p>Telp: - | Email: -</p>
-            </div>
-        @endif
+        <table class="header-table">
+            <tr>
+                <td class="logo-cell" style="width: 20%; text-align: right; padding-right: 10px;">
+                    @if ($logoUrl)
+                        <img src="{{ $logoUrl }}" alt="Logo" class="logo">
+                    @endif
+                </td>
+                <td class="header-text-cell" style="width: 60%;">
+                    <div class="company-name">{{ $company?->nama_perusahaan ?? 'NAMA PERUSAHAAN' }}</div>
+                    <p class="company-address">{{ $company?->alamat ?? 'Alamat Perusahaan' }}</p>
+                    <p class="company-contact">
+                        Telp: {{ $company?->no_telepon ?? '-' }} | Email: {{ $company?->email ?? '-' }}
+                    </p>
+                </td>
+                <td style="width: 20%;"></td>
+            </tr>
+        </table>
+        <hr class="header-line">
 
         <div class="header">
             <h1>{{ $title ?? 'Form Permintaan Barang' }}</h1>
@@ -345,15 +358,12 @@
                         <div class="signature-block">
                             <div class="signature-label">Mengetahui,</div>
                             <div class="signature-space"></div>
-                            <div class="name">(_________________)</div>
-                            <div class="title-org">Jabatan</div>
+                            <div class="name">({{ $permintaan->mengetahui ?? '_________________' }})</div>
                         </div>
                     </td>
                 </tr>
-                {{-- Anda bisa menambahkan baris <tr> lain di sini jika perlu lebih banyak tanda tangan di masa depan --}}
             </table>
         </div>
-        {{-- AKHIR MODIFIKASI BAGIAN TANDA TANGAN --}}
 
     </div>
 </body>

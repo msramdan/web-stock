@@ -13,13 +13,11 @@
     </div>
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label for="no_permintaan_barang" class="form-label">No. Permintaan Barang <span
-                    class="text-danger">*</span></label>
-            <input type="text" class="form-control @error('no_permintaan_barang') is-invalid @enderror"
-                id="no_permintaan_barang" name="no_permintaan_barang"
-                value="{{ old('no_permintaan_barang', $permintaanBarang->no_permintaan_barang ?? '') }}" maxlength="50"
-                required>
-            @error('no_permintaan_barang')
+            <label for="mengetahui" class="form-label">Mengetahui</label>
+            <input type="text" class="form-control @error('mengetahui') is-invalid @enderror" id="mengetahui"
+                name="mengetahui" value="{{ old('mengetahui', $permintaanBarang->mengetahui ?? '') }}" maxlength="150"
+                placeholder="Nama yang mengetahui/menyetujui">
+            @error('mengetahui')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
         </div>
@@ -27,12 +25,25 @@
 </div>
 
 <div class="row">
-    <div class="col-md-12">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label for="no_permintaan_barang" class="form-label">No. Permintaan Barang <span
+                    class="text-danger">*</span></label>
+            <input type="text" class="form-control @error('no_permintaan_barang') is-invalid @enderror"
+                id="no_permintaan_barang" name="no_permintaan_barang"
+                value="{{ old('no_permintaan_barang', $permintaanBarang->no_permintaan_barang ?? '') }}" maxlength="50"
+                placeholder="No. Permintaan Barang" required>
+            @error('no_permintaan_barang')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+    </div>
+    <div class="col-md-6">
         <div class="form-group mb-3">
             <label for="nama_supplier" class="form-label">Nama Supplier <span class="text-danger">*</span></label>
             <input type="text" class="form-control @error('nama_supplier') is-invalid @enderror" id="nama_supplier"
                 name="nama_supplier" value="{{ old('nama_supplier', $permintaanBarang->nama_supplier ?? '') }}"
-                maxlength="150" required>
+                maxlength="150" placeholder="Nama Supplier" required>
             @error('nama_supplier')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
@@ -45,7 +56,8 @@
         <div class="form-group mb-3">
             <label for="nama_bank" class="form-label">Nama Bank</label>
             <input type="text" class="form-control @error('nama_bank') is-invalid @enderror" id="nama_bank"
-                name="nama_bank" value="{{ old('nama_bank', $permintaanBarang->nama_bank ?? '') }}" maxlength="100">
+                name="nama_bank" value="{{ old('nama_bank', $permintaanBarang->nama_bank ?? '') }}" maxlength="100"
+                placeholder="Nama Bank">
             @error('nama_bank')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
@@ -57,7 +69,7 @@
             <input type="text" class="form-control @error('account_name_supplier') is-invalid @enderror"
                 id="account_name_supplier" name="account_name_supplier"
                 value="{{ old('account_name_supplier', $permintaanBarang->account_name_supplier ?? '') }}"
-                maxlength="150">
+                maxlength="150" placeholder="Nama Akun Supplier">
             @error('account_name_supplier')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
@@ -69,7 +81,7 @@
             <input type="text" class="form-control @error('account_number_supplier') is-invalid @enderror"
                 id="account_number_supplier" name="account_number_supplier"
                 value="{{ old('account_number_supplier', $permintaanBarang->account_number_supplier ?? '') }}"
-                maxlength="25">
+                maxlength="25" placeholder="No. Rekening Supplier">
             @error('account_number_supplier')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
@@ -77,14 +89,6 @@
     </div>
 </div>
 
-<div class="form-group mb-3">
-    <label for="keterangan" class="form-label">Keterangan</label>
-    <textarea class="form-control @error('keterangan') is-invalid @enderror" id="keterangan" name="keterangan"
-        rows="3">{{ old('keterangan', $permintaanBarang->keterangan ?? '') }}</textarea>
-    @error('keterangan')
-        <div class="invalid-feedback">{{ $message }}</div>
-    @enderror
-</div>
 
 <hr>
 <h5 class="mb-3">Detail Barang Permintaan</h5>
@@ -133,7 +137,6 @@
                 @foreach ($detailsData as $index => $detail)
                     <tr class="detail-row" data-row-index="{{ $index }}">
                         <td>
-                            {{-- UBAH BAGIAN INI: Input untuk display barang dan tombol cari --}}
                             <div class="input-group">
                                 <input type="hidden" name="details[{{ $index }}][barang_id]"
                                     class="barang-id-input" value="{{ $detail['barang_id'] ?? '' }}">
@@ -240,110 +243,91 @@
     Barang</button>
 
 <hr class="mt-4">
-<div class="row justify-content-end">
-    <div class="col-md-5">
-        <div class="form-group row mb-2">
-            <label for="sub_total_pesanan" class="col-sm-5 col-form-label">Sub Total Pesanan</label>
-            <div class="col-sm-7">
-                <input type="text" class="form-control-plaintext text-end" id="sub_total_pesanan_display"
-                    value="Rp 0" readonly>
-                <input type="hidden" name="sub_total_pesanan" id="sub_total_pesanan_hidden" value="0">
-            </div>
-        </div>
-        <div class="form-group row mb-2 align-items-center">
-            <div class="col-sm-5">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="include_ppn_checkbox"
-                        id="include_ppn_checkbox" value="yes"
-                        {{ old('include_ppn', $permintaanBarang->include_ppn ?? 'no') == 'yes' ? 'checked' : '' }}>
-                    <label class="form-check-label" for="include_ppn_checkbox">
-                        PPN (11%)
-                    </label>
-                    <input type="hidden" name="include_ppn" id="include_ppn_hidden"
-                        value="{{ old('include_ppn', $permintaanBarang->include_ppn ?? 'no') }}">
-                </div>
-            </div>
-            <div class="col-sm-7">
-                <input type="text" class="form-control-plaintext text-end" id="nominal_ppn_display"
-                    value="Rp 0" readonly>
-                <input type="hidden" name="nominal_ppn" id="nominal_ppn_hidden" value="0">
-            </div>
-        </div>
-        <div class="form-group row mb-2">
-            <label for="total_pesanan" class="col-sm-5 col-form-label fw-bold">Total Pesanan</label>
-            <div class="col-sm-7">
-                <input type="text" class="form-control-plaintext text-end fw-bold" id="total_pesanan_display"
-                    value="Rp 0" readonly>
-                <input type="hidden" name="total_pesanan" id="total_pesanan_hidden" value="0">
-            </div>
+
+{{-- Perubahan: Tata letak Keterangan dan Total --}}
+<div class="row mt-4 align-items-start">
+    {{-- Kolom Keterangan di Kiri --}}
+    <div class="col-lg-6">
+        <div class="form-group">
+            <label for="keterangan" class="form-label">Keterangan</label>
+            <textarea class="form-control @error('keterangan') is-invalid @enderror" id="keterangan" name="keterangan"
+                rows="5">{{ old('keterangan', $permintaanBarang->keterangan ?? '') }}</textarea>
+            @error('keterangan')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
     </div>
-</div>
 
-<div class="modal fade" id="modal-item-permintaan">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title">Pilih Barang untuk Permintaan</h4>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body table-responsive">
-                <div class="container-fluid">
-                    <table class="table table-bordered table-striped" id="modal_table_barang_permintaan"
-                        style="width:100%;">
-                        <thead>
-                            <tr>
-                                <th>Kode Barang</th>
-                                <th>Nama Barang</th>
-                                <th>Jenis Material</th>
-                                <th>Unit Satuan</th>
-                                <th>Stok Terakhir</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{-- Isi tabel modal akan dirender oleh JS --}}
-                        </tbody>
-                    </table>
+    {{-- Kolom Total di Kanan --}}
+    <div class="col-lg-6">
+        <div class="row justify-content-end">
+            <div class="col-md-10">
+                <div class="form-group row mb-2">
+                    <label for="sub_total_pesanan" class="col-sm-5 col-form-label">Sub Total Pesanan</label>
+                    <div class="col-sm-7">
+                        <input type="text" class="form-control-plaintext text-end" id="sub_total_pesanan_display"
+                            value="Rp 0" readonly>
+                        <input type="hidden" name="sub_total_pesanan" id="sub_total_pesanan_hidden" value="0">
+                    </div>
+                </div>
+                <div class="form-group row mb-2 align-items-center">
+                    <div class="col-sm-5">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="include_ppn_checkbox"
+                                id="include_ppn_checkbox" value="yes"
+                                {{ old('include_ppn', $permintaanBarang->include_ppn ?? 'no') == 'yes' ? 'checked' : '' }}>
+                            <label class="form-check-label" for="include_ppn_checkbox">
+                                PPN (11%)
+                            </label>
+                            <input type="hidden" name="include_ppn" id="include_ppn_hidden"
+                                value="{{ old('include_ppn', $permintaanBarang->include_ppn ?? 'no') }}">
+                        </div>
+                    </div>
+                    <div class="col-sm-7">
+                        <input type="text" class="form-control-plaintext text-end" id="nominal_ppn_display"
+                            value="Rp 0" readonly>
+                        <input type="hidden" name="nominal_ppn" id="nominal_ppn_hidden" value="0">
+                    </div>
+                </div>
+                <div class="form-group row mb-2">
+                    <label for="total_pesanan" class="col-sm-5 col-form-label fw-bold">Total Pesanan</label>
+                    <div class="col-sm-7">
+                        <input type="text" class="form-control-plaintext text-end fw-bold"
+                            id="total_pesanan_display" value="Rp 0" readonly>
+                        <input type="hidden" name="total_pesanan" id="total_pesanan_hidden" value="0">
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-@push('css')
-    {{-- TAMBAHKAN BAGIAN INI: CSS untuk DataTable jika belum ada di layout utama atau create.blade.php --}}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/dt-1.12.0/datatables.min.css" />
-    <style>
-        /* Style tambahan jika diperlukan */
-        #modal_table_barang_permintaan th,
-        #modal_table_barang_permintaan td {
-            white-space: nowrap;
-        }
-
-        .search-barang-button {
-            /* Penyesuaian tinggi tombol search */
-            height: calc(1.5em + .5rem + 2px);
-            /* Sesuaikan dengan form-control-sm */
-        }
-
-        /* Pastikan kolom qty di cart rata kanan */
-        #detailPermintaanTable td.text-end,
-        #detailPermintaanTable input.total-harga-detail,
-        #detailPermintaanTable input.harga-satuan,
-        #detailPermintaanTable input.jumlah-pesanan {
-            text-align: right;
-        }
-
-        #detailPermintaanTable input.stok-terakhir {
-            text-align: right;
-        }
-
-        /* Pastikan kolom stock di modal rata kanan */
-        #modal_table_barang_permintaan td:nth-child(5) {
-            /* Kolom stok */
-            text-align: right;
-        }
-    </style>
-@endpush
+        <div class="modal fade" id="modal-item-permintaan">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Pilih Barang untuk Permintaan</h4>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body table-responsive">
+                        <div class="container-fluid">
+                            <table class="table table-bordered table-striped" id="modal_table_barang_permintaan"
+                                style="width:100%;">
+                                <thead>
+                                    <tr>
+                                        <th>Kode Barang</th>
+                                        <th>Nama Barang</th>
+                                        <th>Jenis Material</th>
+                                        <th>Unit Satuan</th>
+                                        <th>Stok Terakhir</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {{-- Isi tabel modal akan dirender oleh JS --}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>

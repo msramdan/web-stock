@@ -53,6 +53,10 @@
                                 </div>
                             </div>
                             <div class="mb-2 row">
+                                <strong class="col-sm-5">Mengetahui:</strong>
+                                <div class="col-sm-7">{{ $permintaanBarang->mengetahui ?: '-' }}</div>
+                            </div>
+                            <div class="mb-2 row">
                                 <strong class="col-sm-5">Nama Supplier:</strong>
                                 <div class="col-sm-7">{{ $permintaanBarang->nama_supplier }}</div>
                             </div>

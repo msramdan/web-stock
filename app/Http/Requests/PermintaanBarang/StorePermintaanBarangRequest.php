@@ -24,10 +24,11 @@ class StorePermintaanBarangRequest extends FormRequest
      */
     public function rules()
     {
-        $companyId = session('company_id') ?? auth()->user()->company_id; // Sesuaikan cara Anda mendapatkan company_id
+        $companyId = session('sessionCompany');
 
         return [
             'tgl_pengajuan' => 'required|date',
+            'mengetahui' => 'nullable|string|max:150',
             'no_permintaan_barang' => [
                 'required',
                 'string',
@@ -47,7 +48,14 @@ class StorePermintaanBarangRequest extends FormRequest
             // 'total_pesanan' => 'required|numeric|min:0', // Akan dihitung di controller
 
             'details' => 'required|array|min:1',
-            'details.*.barang_id' => 'required|exists:barang,id',
+
+            'details.*.barang_id' => [
+                'required',
+                Rule::exists('barang', 'id')->where(function ($query) use ($companyId) {
+                    return $query->where('company_id', $companyId);
+                }),
+            ],
+
             'details.*.jumlah_pesanan' => 'required|numeric|min:0.01',
             'details.*.satuan' => 'required|string|max:50',
             'details.*.harga_per_satuan' => 'required|numeric|min:0',
@@ -64,7 +72,7 @@ class StorePermintaanBarangRequest extends FormRequest
             'details.*.barang_id.exists' => 'Barang yang dipilih tidak valid.',
             'details.*.jumlah_pesanan.required' => 'Jumlah pesanan pada detail permintaan harus diisi.',
             'details.*.jumlah_pesanan.numeric' => 'Jumlah pesanan harus berupa angka.',
-            'details.*.jumlah_pesanan.min' => 'Jumlah pesanan minimal 0.01.',
+            'details.*.jumlah_pesanan.min' => 'Jumlah pesanan minimal 1.',
             'details.*.satuan.required' => 'Satuan pada detail permintaan harus diisi.',
             'details.*.harga_per_satuan.required' => 'Harga satuan pada detail permintaan harus diisi.',
             'details.*.harga_per_satuan.numeric' => 'Harga satuan harus berupa angka.',

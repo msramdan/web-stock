@@ -24,13 +24,13 @@
             </div>
             <div class="row mt-3 mb-2">
                 <div class="col-12 d-flex justify-content-md-end justify-content-start align-items-center flex-wrap gap-2">
-                    @can('permintaan barang export pdf')
+                    {{-- @can('permintaan barang export pdf')
                         <a href="{{ route('permintaan-barang.printBlankForm') }}" id="printBlankFormLink"
                             class="btn btn-danger btn-sm" target="_blank" title="{{ __('Cetak Form Kosong') }}">
                             <i class="fas fa-print"></i>
                             {{ __('Cetak Form Kosong') }}
                         </a>
-                    @endcan
+                    @endcan --}}
                     @can('permintaan barang export excel')
                         <a href="{{ route('permintaan-barang.index') }}?export=excel" id="exportExcelLinkList"
                             class="btn btn-success btn-sm" target="_blank" title="{{ __('Export Daftar ke Excel') }}">

@@ -51,15 +51,15 @@
 
         /* Anda juga bisa menargetkan class spesifik jika perlu */
         /*
-            #detailPermintaanTable .nama-barang-display,
-            #detailPermintaanTable .stok-terakhir,
-            #detailPermintaanTable .satuan-barang-display,
-            #detailPermintaanTable .total-harga-detail {
-                background-color: #e9ecef;
-                opacity: 1;
-                cursor: default;
-            }
-            */
+                    #detailPermintaanTable .nama-barang-display,
+                    #detailPermintaanTable .stok-terakhir,
+                    #detailPermintaanTable .satuan-barang-display,
+                    #detailPermintaanTable .total-harga-detail {
+                        background-color: #e9ecef;
+                        opacity: 1;
+                        cursor: default;
+                    }
+                    */
     </style>
 @endpush
 
@@ -89,6 +89,24 @@
                     <h5 class="card-title">Formulir Permintaan Barang</h5>
                 </div>
                 <div class="card-body">
+                    @if ($errors->any())
+                        <div class="alert alert-danger alert-dismissible show fade">
+                            <ul class="ms-0 mb-0">
+                                @foreach ($errors->all() as $error)
+                                    <li>
+                                        <p class="mb-0">{{ $error }}</p>
+                                    </li>
+                                @endforeach
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+                    @if (session('error'))
+                        <div class="alert alert-danger alert-dismissible show fade">
+                            {{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
                     <form action="{{ route('permintaan-barang.store') }}" method="POST">
                         @csrf
                         @include('permintaan-barang.include.form')
