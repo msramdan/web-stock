@@ -6,83 +6,111 @@ use App\Models\Produksi;
 use App\Models\ProduksiDetail;
 use App\Models\Barang;
 use App\Models\Bom;
-use App\Models\Company;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request; // Gunakan Request standar dulu, nanti bisa buat FormRequest
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator; // Gunakan Validator Facade
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Yajra\DataTables\Facades\DataTables; // Untuk index AJAX
+use Yajra\DataTables\Facades\DataTables;
+use App\Exports\ProduksiExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Carbon\Carbon;
 
 class ProduksiController extends Controller implements HasMiddleware
 {
-    // Konstruktor bisa ditambahkan jika perlu dependency injection lain
     public function __construct(public string $attachmentPath = '')
     {
-        $this->attachmentPath = storage_path('app/public/uploads/attachments/'); // Sesuaikan path jika perlu
+        $this->attachmentPath = storage_path('app/public/uploads/attachments/');
     }
 
-    /**
-     * Get the middleware that should be assigned to the controller.
-     */
     public static function middleware(): array
     {
-        // Definisikan permission yang sesuai (buat permission ini di sistem Anda)
         return [
             'auth',
             new Middleware('permission:produksi view', only: ['index', 'show']),
-            new Middleware('permission:produksi create', only: ['create', 'store']),
-            new Middleware('permission:produksi edit', only: ['edit', 'update']), // Jika ada fitur edit
-            new Middleware('permission:produksi delete', only: ['destroy']), // Jika ada fitur delete
+            new Middleware('permission:produksi create', only: ['create', 'store', 'getBomProduksi']),
+            new Middleware('permission:produksi edit', only: ['edit', 'update']),
+            new Middleware('permission:produksi delete', only: ['destroy']),
         ];
     }
 
-    /**
-     * Display a listing of the resource.
-     * Menampilkan daftar Produksi yang sudah dibuat.
-     */
     public function index(Request $request): View | \Illuminate\Http\JsonResponse
     {
-        $companyId = session('sessionCompany');
-
         if ($request->ajax()) {
-            $produksi = Produksi::with('produkJadi:id,kode_barang,nama_barang', 'user:id,name') // Eager load produk jadi
+            $companyId = session('sessionCompany');
+            $produksi = Produksi::with('produkJadi:id,kode_barang,nama_barang', 'user:id,name')
                 ->where('company_id', $companyId)
-                ->select('produksi.*') // Pilih semua kolom dari produksi
-                ->orderBy('tanggal', 'desc'); // Urutkan terbaru
+                ->select('produksi.*');
 
             return DataTables::of($produksi)
+                ->addIndexColumn()
                 ->addColumn('produk_jadi', function ($row) {
-                    return $row->produkJadi?->kode_barang . ' - ' . $row->produkJadi?->nama_barang;
+                    return $row->produkJadi?->nama_barang ?? 'N/A';
                 })
                 ->addColumn('tanggal_f', function ($row) {
-                    return formatTanggalIndonesia($row->tanggal);
+                    if (function_exists('formatTanggalIndonesia')) {
+                        return formatTanggalIndonesia($row->tanggal);
+                    }
+                    return Carbon::parse($row->tanggal)->format('d-m-Y H:i');
                 })
                 ->addColumn('dibuat_oleh', function ($row) {
                     return $row->user?->name ?? 'N/A';
                 })
-                ->addColumn('action', 'produksi.include.action') // Buat view ini nanti
+                ->addColumn('total_biaya', function ($row) {
+                    return 'Rp ' . number_format($row->total_biaya ?? 0, 0, ',', '.');
+                })
+                ->addColumn('harga_satuan_jadi', function ($row) {
+                    return 'Rp ' . number_format($row->harga_satuan_jadi ?? 0, 0, ',', '.');
+                })
+                ->addColumn('action', 'produksi.include.action')
+                ->rawColumns(['action'])
                 ->toJson();
         }
 
-        return view('produksi.index'); // Buat view ini nanti
+        return view('produksi.index');
     }
-
-    /**
-     * Show the form for creating a new resource.
-     * Bisa jadi ini halaman untuk memilih produk jadi dulu.
-     */
 
     public function create(Request $request)
     {
         $companyId = session('sessionCompany');
 
-        // Get product list for dropdown
+        if ($request->has('barang_id') && $request->has('bom_id')) {
+            $bomId = $request->input('bom_id');
+            $barangId = $request->input('barang_id');
+
+            $bom = Bom::where('id', $bomId)->where('barang_id', $barangId)
+                ->where('company_id', $companyId)
+                ->with('details.material.unitSatuan', 'details.unitSatuan')
+                ->first();
+
+            if (!$bom || $bom->details->isEmpty()) {
+                return redirect()->route('produksi.create')->with('error', 'BoM tidak valid atau tidak memiliki bahan.');
+            }
+
+            $produkJadi = Barang::find($bom->barang_id);
+            $requiredMaterials = [];
+            foreach ($bom->details as $detail) {
+                $requiredMaterials[] = [
+                    'material_id' => $detail->barang_id,
+                    'kode_barang' => $detail->material?->kode_barang ?? 'N/A',
+                    'nama_barang' => $detail->material?->nama_barang ?? 'Material Tidak Ditemukan',
+                    'qty_per_batch' => $detail->jumlah,
+                    'unit_satuan_id' => $detail->unit_satuan_id,
+                    'unit_satuan' => $detail->unitSatuan?->nama_satuan ?? '-',
+                    'stok_saat_ini' => $detail->material?->stock_barang ?? 0,
+                ];
+            }
+
+            return view('produksi.create', compact('produkJadi', 'bom', 'requiredMaterials'));
+        }
+
+        // PERBAIKAN: Mengembalikan query ke logika asli Anda yang sudah benar
         $produkJadiList = DB::table('barang')
             ->where('company_id', $companyId)
             ->whereExists(function ($query) {
@@ -97,215 +125,138 @@ class ProduksiController extends Controller implements HasMiddleware
             return redirect()->route('produksi.index')->with('error', 'Tidak ada Produk Jadi dengan BoM yang terdaftar.');
         }
 
-        // If form submitted with both product and BOM
-        if ($request->has('barang_id') && $request->has('bom_id')) {
-            $bomId = $request->input('bom_id');
-            $produkJadi = $request->input('barang_id');
-
-
-            $bom = Bom::where('id', $bomId)
-                ->where('barang_id', $produkJadi)
-                ->where('company_id', $companyId)
-                ->with('details.material.unitSatuan', 'details.unitSatuan')
-                ->first();
-
-            if (!$bom || $bom->details->isEmpty()) {
-                return redirect()->route('produksi.create')->with('error', 'BoM tidak ditemukan atau kosong untuk produk ini.');
-            }
-
-            $produkJadi = DB::table('barang')
-                ->where('id', $bom->barang_id)
-                ->first();
-
-            $requiredMaterials = [];
-            foreach ($bom->details as $detail) {
-                $requiredMaterials[] = [
-                    'material_id' => $detail->barang_id,
-                    'kode_barang' => $detail->material?->kode_barang ?? 'N/A',
-                    'nama_barang' => $detail->material?->nama_barang ?? 'Material Tidak Ditemukan',
-                    'qty_per_batch' => $detail->jumlah,
-                    'unit_satuan_id' => $detail->unit_satuan_id,
-                    'unit_satuan' => $detail->unitSatuan?->nama_unit_satuan ?? '-',
-                    'stok_saat_ini' => $detail->material?->stock_barang ?? 0,
-                ];
-            }
-
-            return view('produksi.create', [
-                'produkJadi' => $produkJadi,
-                'bom' => $bom,
-                'requiredMaterials' => $requiredMaterials
-            ]);
-        }
-
-        // Default view with product selection
         return view('produksi.select_product', compact('produkJadiList'));
     }
 
     public function getBomProduksi(Request $request)
     {
         $barangId = $request->barang_id;
-        $boms = DB::table('bom')
-            ->where('barang_id', $barangId)
+        $boms = Bom::where('barang_id', $barangId)
+            ->where('company_id', session('sessionCompany'))
             ->get(['id', 'deskripsi']);
-
         return response()->json($boms);
     }
 
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request): RedirectResponse
     {
         $companyId = session('sessionCompany');
         $userId = Auth::id();
 
-        // Validasi Input (Contoh, sebaiknya buat FormRequest: StoreProduksiRequest)
-        $validator = Validator::make($request->all(), [
+        $validated = $request->validate([
             'no_produksi' => 'required|string|max:255|unique:produksi,no_produksi,NULL,id,company_id,' . $companyId,
             'batch' => 'required|integer|min:1',
-            'tanggal' => 'required|date_format:Y-m-d\TH:i', // Sesuaikan format datetime-local
-            'barang_id' => 'required|integer|exists:barang,id,company_id,' . $companyId, // Produk Jadi
-            'bom_id' => 'required|integer|exists:bom,id,company_id,' . $companyId, // BoM
+            'tanggal' => 'required|date_format:Y-m-d\TH:i',
+            'barang_id' => 'required|integer|exists:barang,id',
+            'bom_id' => 'required|integer|exists:bom,id',
             'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10048',
             'keterangan' => 'nullable|string',
-        ], [
-            'no_produksi.unique' => 'No. Produksi sudah digunakan di perusahaan ini.',
-            'barang_id.exists' => 'Produk Jadi tidak valid untuk perusahaan ini.',
-            'bom_id.exists' => 'BoM tidak valid untuk perusahaan ini.',
-            'batch.min' => 'Jumlah batch minimal 1.',
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        // Ambil data tervalidasi
-        $validated = $validator->validated();
-
-        // Cek ulang BoM dan detailnya
-        $bom = Bom::with('details.material') // Eager load material
-            ->where('id', $validated['bom_id'])
-            ->where('barang_id', $validated['barang_id']) // Pastikan BoM sesuai Produk Jadi
-            ->where('company_id', $companyId)
-            ->first();
-
+        $bom = Bom::with('details.material')->where('id', $validated['bom_id'])->first();
         if (!$bom || $bom->details->isEmpty()) {
-            return redirect()->back()->with('error', 'BoM tidak valid atau tidak memiliki detail bahan.')->withInput();
+            return redirect()->back()->with('error', 'BoM tidak valid.')->withInput();
         }
 
-        // --- Validasi Stok Bahan Baku berdasarkan BATCH ---
-        $batchCount  = (int) $validated['batch'];
+        $batchCount = (int) $validated['batch'];
         $stockErrors = [];
         $sumOfMaterialQtysPerBatch = 0;
-
         foreach ($bom->details as $detail) {
-            if (empty($detail->barang_id) || $detail->material === null) {
-                continue;
-            }
-            $qtyPerBatch = (float) $detail->jumlah; // Qty bahan per batch
-            $requiredQtyTotal = $qtyPerBatch * $batchCount; // Total kebutuhan bahan
+            $requiredQtyTotal = (float) $detail->jumlah * $batchCount;
             $materialStock = (float) ($detail->material->stock_barang ?? 0);
-
             if ($materialStock < $requiredQtyTotal) {
-                $stockErrors[] = "Stok '{$detail->material->kode_barang} - {$detail->material->nama_barang}' tidak cukup (dibutuhkan: {$requiredQtyTotal} untuk {$batchCount} batch, tersedia: {$materialStock})";
+                $stockErrors[] = "Stok '{$detail->material->nama_barang}' tidak cukup (butuh: {$requiredQtyTotal}, tersedia: {$materialStock})";
             }
-            $sumOfMaterialQtysPerBatch += $qtyPerBatch; // <-- Akumulasi SUM per batch
+            $sumOfMaterialQtysPerBatch += (float) $detail->jumlah;
         }
 
         if (!empty($stockErrors)) {
-            return redirect()->back()->withErrors(['stok' => $stockErrors])->withInput()->with('error', 'Stok bahan baku tidak mencukupi.');
+            return redirect()->back()->withErrors(['stok' => $stockErrors])->withInput();
         }
-        // --- Akhir Validasi Stok ---
 
         DB::beginTransaction();
         try {
-            // Handle Attachment
             $attachmentName = null;
             if ($request->hasFile('attachment')) {
                 $file = $request->file('attachment');
                 $originalName = $file->getClientOriginalName();
                 $attachmentName = $companyId . '_prod_' . time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
-                $file->storeAs('public/uploads/attachments/' . $companyId, $attachmentName); // Sesuaikan path jika perlu
+                $file->storeAs('public/uploads/attachments/' . $companyId, $attachmentName);
             }
 
-            // 1. Buat Header Produksi
-            $produksi = Produksi::create([
+            // --- PERUBAHAN UTAMA: LAKUKAN KALKULASI SEBELUM MEMBUAT RECORD ---
+
+            // 1. Hitung total biaya produksi dari semua bahan baku
+            $totalBiayaProduksi = 0;
+            $sumOfMaterialQtysPerBatch = 0;
+            foreach ($bom->details as $detail) {
+                $qtyDibutuhkan = (float) $detail->jumlah * $batchCount;
+                // Panggil fungsi FIFO yang sudah kita buat
+                $biayaMaterial = $this->ambilStokDanBiayaFIFO($detail->barang_id, $qtyDibutuhkan, $companyId);
+                $totalBiayaProduksi += $biayaMaterial;
+                $sumOfMaterialQtysPerBatch += (float) $detail->jumlah;
+            }
+
+            // 2. Hitung total produk jadi dan HPP per unit
+            $totalProdukJadiDihasilkan = $sumOfMaterialQtysPerBatch * $batchCount;
+            $hargaSatuanBarangJadi = ($totalProdukJadiDihasilkan > 0) ? $totalBiayaProduksi / $totalProdukJadiDihasilkan : 0;
+
+            // 3. Gabungkan semua data (termasuk hasil kalkulasi) untuk disimpan
+            $produksiData = array_merge($validated, [
                 'company_id' => $companyId,
-                'no_produksi' => $validated['no_produksi'],
                 'user_id' => $userId,
-                'batch' => $batchCount,
-                'tanggal' => $validated['tanggal'],
-                'barang_id' => $validated['barang_id'],
-                'bom_id' => $validated['bom_id'],
                 'attachment' => $attachmentName,
-                'keterangan' => $validated['keterangan'],
+                'total_biaya' => $totalBiayaProduksi,
+                'harga_satuan_jadi' => $hargaSatuanBarangJadi
             ]);
 
-            // 2. Buat Detail Produksi (Termasuk Produk Jadi 'In' dan Material 'Out')
-            $produksiDetails = [];
-            $totalProdukJadiDihasilkan = $sumOfMaterialQtysPerBatch * $batchCount; // Asumsi 1 unit/batch
+            // 4. Buat record Produksi dengan data yang sudah lengkap
+            $produksi = Produksi::create($produksiData);
 
-            // Detail Produk Jadi ('In')
-            $produkJadiModel = Barang::find($validated['barang_id']);
-            $produksiDetails[] = [
-                'produksi_id' => $produksi->id,
-                'barang_id' => $validated['barang_id'],
-                'unit_satuan_id' => $produkJadiModel->unit_satuan_id,
-                'type' => 'In',
-                'qty_rate' => $sumOfMaterialQtysPerBatch, // Rate = sum bahan per batch
-                'qty_total_diperlukan' => $totalProdukJadiDihasilkan, // Total = sum bahan * total batch
-                'created_at' => now(),
-                'updated_at' => now()
-            ];
-
-            // Tambahkan detail untuk Material (Type 'Out')
+            // Proses stok dan detail
             foreach ($bom->details as $detail) {
-                $qtyPerBatch = (float) $detail->jumlah; // Qty per batch dari BoM
-                $qtyDiperlukan = $qtyPerBatch * $batchCount; // Total dibutuhkan
-                $produksiDetails[] = [
-                    'produksi_id' => $produksi->id,
-                    'barang_id' => $detail->barang_id, // ID Material
-                    'unit_satuan_id' => $detail->unit_satuan_id, // Unit dari BoM Detail
-                    'type' => 'Out',
-                    'qty_rate' => $qtyPerBatch, // Qty dari BoM
-                    'qty_total_diperlukan' => $qtyDiperlukan, // Total = qty_rate * batch
-                    'created_at' => now(),
-                    'updated_at' => now() // Jika pakai timestamps
-                ];
+                DB::table('barang')->where('id', $detail->barang_id)->decrement('stock_barang', (float) $detail->jumlah * $batchCount);
             }
-
-            // Bulk Insert Detail
-            if (!empty($produksiDetails)) {
-                ProduksiDetail::insert($produksiDetails);
-            }
-
-            // 3. Kurangi Stok Bahan Baku (Type 'Out')
-            foreach ($bom->details as $detail) {
-                $qtyDikurangi = (float) $detail->jumlah * $batchCount;
-                DB::table('barang')
-                    ->where('id', $detail->barang_id)
-                    ->where('company_id', $companyId)
-                    ->decrement('stock_barang', $qtyDikurangi, ['updated_at' => now()]);
-            }
-
-            // 4. Tambah Stok Barang Jadi
-            DB::table('barang')
-                ->where('id', $validated['barang_id'])
-                ->where('company_id', $companyId)
-                // Tambah stok sejumlah TOTAL BAHAN BAKU * BATCH
-                ->increment('stock_barang', $totalProdukJadiDihasilkan, ['updated_at' => now()]);
-
+            DB::table('barang')->where('id', $validated['barang_id'])->increment('stock_barang', $totalProdukJadiDihasilkan);
 
             DB::commit();
-            return redirect()->route('produksi.index')->with('success', 'Data produksi berhasil disimpan dan stok diperbarui.');
+            return redirect()->route('produksi.index')->with('success', 'Data produksi berhasil disimpan dengan biaya terhitung.');
         } catch (\Exception $e) {
             DB::rollBack();
-            if ($attachmentName && $companyId) {
+            if (isset($attachmentName)) {
                 Storage::delete('public/uploads/attachments/' . $companyId . '/' . $attachmentName);
             }
+            Log::error('Error storing production: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return redirect()->back()->with('error', 'Gagal menyimpan data produksi: ' . $e->getMessage())->withInput();
         }
+    }
+
+    private function ambilStokDanBiayaFIFO(int $barangId, float $qtyDibutuhkan, int $companyId): float
+    {
+        $batchTersedia = DB::table('transaksi_detail')
+            ->join('transaksi', 'transaksi_detail.transaksi_id', '=', 'transaksi.id')
+            ->where('transaksi_detail.barang_id', $barangId)
+            ->where('transaksi.company_id', $companyId)->where('transaksi.type', 'In')
+            ->where('transaksi_detail.sisa_qty', '>', 0)
+            ->orderBy('transaksi.tanggal', 'asc')->orderBy('transaksi_detail.created_at', 'asc')
+            ->select('transaksi_detail.id', 'transaksi_detail.harga_satuan', 'transaksi_detail.sisa_qty')
+            ->get();
+
+        $totalBiaya = 0;
+        $sisaQtyDibutuhkan = $qtyDibutuhkan;
+
+        foreach ($batchTersedia as $batch) {
+            if ($sisaQtyDibutuhkan <= 0) break;
+            $qtyDiambilDariBatch = min($sisaQtyDibutuhkan, (float)$batch->sisa_qty);
+            DB::table('transaksi_detail')->where('id', $batch->id)->decrement('sisa_qty', $qtyDiambilDariBatch);
+            $totalBiaya += $qtyDiambilDariBatch * (float)$batch->harga_satuan;
+            $sisaQtyDibutuhkan -= $qtyDiambilDariBatch;
+        }
+
+        if ($sisaQtyDibutuhkan > 0.0001) {
+            $barang = Barang::find($barangId);
+            throw new \Exception("Stok FIFO tidak konsisten untuk '{$barang->nama_barang}'.");
+        }
+        return $totalBiaya;
     }
 
     /**
@@ -317,9 +268,11 @@ class ProduksiController extends Controller implements HasMiddleware
             abort(403, 'Akses ditolak.');
         }
 
+        // PERBAIKAN: Menggunakan nama relasi yang benar 'produkJadi'
         $produksi->load([
-            'produkJadi.unitSatuan',
+            'produkJadi.unitSatuan', // <-- Relasi yang benar
             'bom',
+            'user',
             'details' => function ($query) {
                 $query->with(['barang.unitSatuan', 'unitSatuan'])->orderBy('type', 'desc');
             }
@@ -330,7 +283,6 @@ class ProduksiController extends Controller implements HasMiddleware
             $attachmentUrl = Storage::url('uploads/attachments/' . $produksi->company_id . '/' . $produksi->attachment);
         }
 
-        // Kirim ke view show.blade.php
         return view('produksi.show', compact('produksi', 'attachmentUrl'));
     }
 
@@ -617,5 +569,11 @@ class ProduksiController extends Controller implements HasMiddleware
             DB::rollBack();
             return redirect()->route('produksi.index')->with('error', 'Gagal menghapus data produksi: ' . $e->getMessage());
         }
+    }
+
+    public function exportExcel()
+    {
+        $timestamp = now()->format('Y-m-d_H-i-s');
+        return Excel::download(new ProduksiExport, "produksi_{$timestamp}.xlsx");
     }
 }

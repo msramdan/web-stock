@@ -113,75 +113,70 @@ class TransaksiStockInController extends Controller implements HasMiddleware
             'no_surat' => 'required|string|max:255|unique:transaksi,no_surat,NULL,id,company_id,' . $companyId,
             'tanggal' => 'required|date',
             'keterangan' => 'nullable|string',
-            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10048', // Max 10MB
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10048',
             'cart_items' => 'required|json',
             'cart_items.*.id' => 'required|integer|exists:barang,id,company_id,' . $companyId,
             'cart_items.*.qty' => 'required|numeric|gt:0',
+            'cart_items.*.harga_satuan' => 'required|numeric|gte:0',
         ], [
-            'no_surat.unique' => 'No. Surat sudah pernah digunakan di perusahaan ini.',
-            'cart_items.*.id.exists' => 'Salah satu barang yang dipilih tidak valid atau bukan milik perusahaan ini.',
-            'cart_items.*.qty.numeric' => 'Jumlah barang harus berupa angka.',
-            'cart_items.*.qty.gt' => 'Jumlah barang harus lebih besar dari 0.',
+            'no_surat.unique' => 'No. Surat sudah pernah digunakan.',
+            'cart_items.*.id.exists' => 'Salah satu barang tidak valid.',
+            'cart_items.*.qty.gt' => 'Jumlah barang harus lebih dari 0.',
+            'cart_items.*.harga_satuan.required' => 'Harga satuan harus diisi.',
+            'cart_items.*.harga_satuan.gte' => 'Harga satuan tidak boleh negatif.',
         ]);
 
         if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
+            return redirect()->back()->withErrors($validator)->withInput();
         }
 
         $cartItems = json_decode($request->cart_items, true);
         if (empty($cartItems)) {
-            return redirect()->back()
-                ->withErrors(['cart_items' => 'Keranjang tidak boleh kosong.'])
-                ->withInput();
+            return redirect()->back()->withErrors(['cart_items' => 'Keranjang tidak boleh kosong.'])->withInput();
         }
 
         DB::beginTransaction();
-
         try {
             $attachmentName = null;
             if ($request->hasFile('attachment')) {
                 $file = $request->file('attachment');
                 $originalName = $file->getClientOriginalName();
                 $attachmentName = $companyId . '_' . time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
-                $file->storeAs('public/uploads/attachments/' . $attachmentName);
+                $file->storeAs('public/uploads/attachments/' . $companyId, $attachmentName);
             }
 
-            // Create transaction using Query Builder
             $transaksiId = DB::table('transaksi')->insertGetId([
-                'company_id' => $companyId, // Simpan company_id
+                'company_id' => $companyId,
                 'no_surat' => $request->no_surat,
                 'tanggal' => $request->tanggal,
                 'type' => 'In',
                 'keterangan' => $request->keterangan,
-                'attachment' => $attachmentName, // Simpan nama file
+                'attachment' => $attachmentName,
                 'user_id' => $userId,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            // Process cart items
-            $transaksiDetails = [];
-            $stockUpdates = []; // Array untuk menampung [barang_id => qty]
-
+            $stockUpdates = [];
             foreach ($cartItems as $item) {
-                // Perubahan: Konversi qty ke float, ganti koma jika dari JS kirim string
-                // Jika JS sudah mengirim float (dari JSON.stringify), ini aman
                 $itemQty = (float) str_replace(',', '.', $item['qty'] ?? 0);
+                $hargaSatuan = (float) str_replace(',', '.', $item['harga_satuan'] ?? 0);
 
-                if ($itemQty <= 0) { // Double check validasi
+                if ($itemQty <= 0) {
                     throw new \Exception("Jumlah barang dengan ID {$item['id']} harus lebih besar dari 0.");
                 }
 
-                $transaksiDetails[] = [
-                    'barang_id' => $item['id'],
-                    'qty' => $itemQty, // Simpan nilai float/numeric
+                // PERBAIKAN NAMA TABEL: transaksi_detail
+                DB::table('transaksi_detail')->insert([
                     'transaksi_id' => $transaksiId,
+                    'barang_id' => $item['id'],
+                    'qty' => $itemQty,
+                    'harga_satuan' => $hargaSatuan,
+                    'sisa_qty' => $itemQty,
                     'created_at' => now(),
                     'updated_at' => now(),
-                ];
-                // Kumpulkan data untuk update stok
+                ]);
+
                 if (isset($stockUpdates[$item['id']])) {
                     $stockUpdates[$item['id']] += $itemQty;
                 } else {
@@ -189,40 +184,25 @@ class TransaksiStockInController extends Controller implements HasMiddleware
                 }
             }
 
-            // Bulk insert transaction details
-            if (!empty($transaksiDetails)) {
-                DB::table('transaksi_detail')->insert($transaksiDetails);
-            } else {
-                // Seharusnya tidak terjadi karena validasi di awal
-                throw new \Exception('Tidak ada item detail transaksi yang valid.');
-            }
-
-
-            // Bulk update stock (increment stock_barang)
             if (!empty($stockUpdates)) {
                 foreach ($stockUpdates as $barangId => $totalQty) {
-                    // Perubahan: Increment dengan float (increment/decrement support float)
+                    // PERBAIKAN NAMA KOLOM: stock_barang
                     DB::table('barang')
                         ->where('id', $barangId)
-                        ->where('company_id', $companyId) // Pastikan update stok di company yang benar
+                        ->where('company_id', $companyId)
                         ->increment('stock_barang', $totalQty, ['updated_at' => now()]);
                 }
             }
 
             DB::commit();
-
-            return redirect()->route('transaksi-stock-in.index')
-                ->with('success', 'Transaksi stock in berhasil dibuat.');
+            return redirect()->route('transaksi-stock-in.index')->with('success', 'Transaksi stock in berhasil dibuat.');
         } catch (\Exception $e) {
             DB::rollBack();
-            // Hapus file yang mungkin sudah terupload jika transaksi gagal
             if ($attachmentName && $companyId) {
                 Storage::delete('public/uploads/attachments/' . $companyId . '/' . $attachmentName);
             }
             Log::error('Error storing stock in transaction: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-            return redirect()->back()
-                ->with('error', 'Gagal membuat transaksi stock in: ' . $e->getMessage())
-                ->withInput();
+            return redirect()->back()->with('error', 'Gagal membuat transaksi stock in: ' . $e->getMessage())->withInput();
         }
     }
 
@@ -482,7 +462,6 @@ class TransaksiStockInController extends Controller implements HasMiddleware
             } catch (\Throwable $renderOrOutputError) {
                 return redirect()->route('transaksi-stock-in.index')->with('error', 'Gagal saat generate output PDF Detail Transaksi Masuk.');
             }
-
         } catch (\Throwable $th) {
             return redirect()->route('transaksi-stock-in.index')->with('error', 'Gagal memproses PDF Detail Transaksi Masuk.');
         }

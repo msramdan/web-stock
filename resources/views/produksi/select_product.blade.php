@@ -124,13 +124,12 @@
 
             function loadBoms(barangId) {
                 $.ajax({
+                    // PERBAIKAN: Menggunakan nama route yang benar dari file web.php Anda
                     url: '{{ route('produksi.getBoms') }}',
+
                     type: 'GET',
                     data: {
                         barang_id: barangId
-                    },
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
                     success: function(data) {
                         $('#bom_id').empty().append(
@@ -138,25 +137,17 @@
                         if (data.length > 0) {
                             $('#bom_id').prop('disabled', false);
                             $.each(data, function(key, value) {
+                                // Menggunakan deskripsi sesuai kode asli
                                 $('#bom_id').append($('<option>', {
                                     value: value.id,
-                                    text: value.deskripsi,
-                                    selected: value.id == {{ old('bom_id', 0) }}
+                                    text: value.deskripsi
                                 }));
                             });
-                            // Enable submit if bom_id was previously selected
-                            if ($('#bom_id').val()) {
-                                $('#submitBtn').prop('disabled', false);
-                            }
                         } else {
                             $('#bom_id').prop('disabled', true);
-                            $('#submitBtn').prop('disabled', true);
                             alert('Produk ini tidak memiliki BoM yang tersedia.');
                         }
-                    },
-                    error: function(xhr) {
-                        console.error('Error:', xhr.responseText);
-                        alert('Terjadi kesalahan saat memuat data BoM.');
+                        $('#submitBtn').prop('disabled', true);
                     }
                 });
             }

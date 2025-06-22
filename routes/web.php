@@ -62,6 +62,8 @@ Route::middleware(['auth', 'web'])->group(function () {
         Route::get('permintaan-barang/print-blank-form', [PermintaanBarangController::class, 'printBlankForm'])->name('permintaan-barang.printBlankForm');
         Route::get('permintaan-barang/{permintaan_barang}/print', [PermintaanBarangController::class, 'printSpecificForm'])->name('permintaan-barang.printSpecific');
         Route::get('permintaan-barang/{permintaan_barang}/export-excel', [PermintaanBarangController::class, 'exportItemExcel'])->name('permintaan-barang.exportItemExcel');
+        Route::get('produksi-export-excel', [ProduksiController::class, 'exportExcel'])->name('produksi.export.excel');
+
 
 
         // Master Data Spesifik Company

@@ -25,13 +25,17 @@ class Produksi extends Model
         'attachment',
         'keterangan',
         // 'status', // Jika Anda tambahkan kembali kolom status
-        'user_id' // Jika Anda tambahkan kembali kolom user
+        'user_id', // Jika Anda tambahkan kembali kolom user
+        'total_biaya',
+        'harga_satuan_jadi',
     ];
 
     // Tipe casting untuk kolom tertentu
     protected $casts = [
         'tanggal' => 'datetime',
         'batch' => 'integer',
+        'total_biaya' => 'decimal:2',
+        'harga_satuan_jadi' => 'decimal:2',
     ];
 
     // --- DEFINISI RELASI ---
