@@ -151,6 +151,11 @@ class BarangController extends Controller implements HasMiddleware
 
         $validated['photo_barang'] = $this->imageService->upload(name: 'photo_barang', path: $this->photoBarangPath);
 
+        // Set harga to null if not Bahan Baku
+        if ($validated['tipe_barang'] !== 'Bahan Baku') {
+            $validated['harga'] = null;
+        }
+
         // Tambahkan company_id dari session
         $validated['company_id'] = $companyId;
 
@@ -248,15 +253,15 @@ class BarangController extends Controller implements HasMiddleware
         }
         // --- End Validasi Tambahan ---
 
-
         $validated['photo_barang'] = $this->imageService->upload(name: 'photo_barang', path: $this->photoBarangPath, defaultImage: $barang?->photo_barang);
 
-        // Pastikan company_id tidak ikut terupdate jika tidak diinginkan
-        // unset($validated['company_id']);
+        // Set harga to null if not Bahan Baku
+        if ($validated['tipe_barang'] !== 'Bahan Baku') {
+            $validated['harga'] = null;
+        }
 
         // Inisialisasi stock_barang jika belum ada (meskipun biasanya sudah ada saat update)
         $validated['stock_barang'] = $validated['stock_barang'] ?? $barang->stock_barang;
-
 
         $barang->update($validated);
 
@@ -347,6 +352,7 @@ class BarangController extends Controller implements HasMiddleware
                 'barang.kode_barang',
                 'barang.nama_barang',
                 'barang.tipe_barang',
+                'barang.harga',
                 'barang.deskripsi_barang',
                 'barang.stock_barang',
                 'jenis_material.nama_jenis_material',

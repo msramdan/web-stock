@@ -33,7 +33,8 @@ class Barang extends Model
         'unit_satuan_id',
         'tipe_barang',
         'stock_barang',
-        'photo_barang'
+        'photo_barang',
+        'harga'
     ];
 
     /**

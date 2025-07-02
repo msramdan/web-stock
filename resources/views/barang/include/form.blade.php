@@ -105,6 +105,21 @@
             @enderror
         </div>
     </div>
+
+    <div class="col-md-6" id="harga-barang-container" style="display: none;">
+        <div class="form-group">
+            <label for="harga">{{ __('Harga Barang') }}</label>
+            <input type="number" name="harga" id="harga"
+                class="form-control @error('harga') is-invalid @enderror"
+                value="{{ isset($barang) ? $barang->harga : old('harga') }}"
+                placeholder="{{ __('Harga Barang') }}" step="0.01" min="0">
+            @error('harga')
+                <span class="text-danger">{{ $message }}</span>
+            @enderror
+            <div class="form-text">Harga per satuan</div>
+        </div>
+    </div>
+
     {{-- === AKHIR INPUT TIPE BARANG === --}}
 
 
@@ -160,8 +175,8 @@
         <div class="col-md-6">
             <div class="form-group">
                 <label for="photo_barang">{{ __('Photo Barang') }}</label>
-                <input type="file" name="photo_barang" class="form-control @error('photo_barang') is-invalid @enderror"
-                    id="photo_barang">
+                <input type="file" name="photo_barang"
+                    class="form-control @error('photo_barang') is-invalid @enderror" id="photo_barang">
                 @error('photo_barang')
                     <span class="text-danger">{{ $message }}</span>
                 @enderror
@@ -169,3 +184,26 @@
         </div>
     @endisset
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tipeBarangSelect = document.getElementById('tipe_barang');
+        const hargaBarangContainer = document.getElementById('harga-barang-container');
+        const hargaBarangInput = document.getElementById('harga');
+
+        function toggleHargaField() {
+            if (tipeBarangSelect.value === 'Bahan Baku') {
+                hargaBarangContainer.style.display = 'block';
+                hargaBarangInput.setAttribute('required', 'required');
+            } else {
+                hargaBarangContainer.style.display = 'none';
+                hargaBarangInput.removeAttribute('required');
+            }
+        }
+
+        // Initial toggle based on current value
+        toggleHargaField();
+
+        // Add event listener for changes
+        tipeBarangSelect.addEventListener('change', toggleHargaField);
+    });
+</script>

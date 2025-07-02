@@ -284,6 +284,7 @@
                 <th>Deskripsi</th>
                 <th>Jenis Material</th>
                 <th>Unit</th>
+                <th>Harga</th> {{-- Kolom harga --}}
                 <th>Stok</th>
             </tr>
         </thead>
@@ -292,21 +293,25 @@
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ $barang->kode_barang ?? '-' }}</td>
-                    <td>{{ $barang->nama_barang ?? '-' }}</td> {{-- Tambah Kolom --}}
-                    <td>{{ $barang->tipe_barang ?? '-' }}</td> {{-- <-- TAMBAHKAN DATA BARU --}}
+                    <td>{{ $barang->nama_barang ?? '-' }}</td>
+                    <td>{{ $barang->tipe_barang ?? '-' }}</td>
                     <td>{{ $barang->deskripsi_barang ?? '-' }}</td>
                     <td>{{ $barang->nama_jenis_material ?? '-' }}</td>
                     <td>{{ $barang->nama_unit_satuan ?? '-' }}</td>
+                    <td>
+                        {{ $barang->harga !== null ? formatRupiah($barang->harga) : '-' }}
+                    </td>
                     <td style="text-align: right;">
                         {{ formatAngkaRibuan($barang->stock_barang) }}
                     </td>
                 </tr>
             @empty
                 <tr class="no-border">
-                    <td colspan="8" class="text-center">Tidak ada data barang yang dapat ditampilkan.</td>
+                    <td colspan="9" class="text-center">Tidak ada data barang yang dapat ditampilkan.</td>
                 </tr>
             @endforelse
         </tbody>
+
     </table>
 
     <!-- Bagian Tanda Tangan -->
