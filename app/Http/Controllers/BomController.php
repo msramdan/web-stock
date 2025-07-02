@@ -252,7 +252,9 @@ class BomController extends Controller implements HasMiddleware
         $bom->load([
             'barang',
             'details.material.unitSatuan',
-            'details.unitSatuan'
+            'details.unitSatuan',
+            'kemasan.barang.unitSatuan',
+            'kemasan.unitSatuan'
         ]);
 
 
@@ -265,11 +267,18 @@ class BomController extends Controller implements HasMiddleware
             ->where('company_id', $companyId)
             ->orderBy('nama_barang')->get();
 
+        $barangKemasan = Barang::with('unitSatuan')
+            ->where('company_id', $companyId)
+            ->whereHas('jenisMaterial', function ($query) {
+                $query->where('nama_jenis_material', 'MATERIAL KEMASAN');
+            })
+            ->orderBy('nama_barang')->get();
+
         $unitSatuans = UnitSatuan::where('company_id', $companyId)
             ->orderBy('nama_unit_satuan')
             ->pluck('nama_unit_satuan', 'id');
 
-        return view('bom.edit', compact('bom', 'produkJadi', 'barangMaterials', 'unitSatuans'));
+        return view('bom.edit', compact('bom', 'produkJadi', 'barangMaterials', 'barangKemasan', 'unitSatuans'));
     }
 
     /**
