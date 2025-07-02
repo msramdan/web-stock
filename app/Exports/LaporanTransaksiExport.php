@@ -43,6 +43,7 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
                 't.no_surat as no_dokumen',
                 't.tanggal',
                 't.type as tipe_pergerakan',
+                't.keterangan as keterangan',
                 'u.name as user_name',
                 'b.kode_barang',
                 'b.nama_barang',
@@ -78,8 +79,9 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
                 DB::raw("'Produksi' as sumber_data"),
                 'p.no_produksi as no_dokumen',
                 'p.tanggal',
+                'p.keterangan as keterangan',
                 'pd.type as tipe_pergerakan',
-                DB::raw("'-' as user_name"),
+                DB::raw("COALESCE(u.name, '-') as user_name"),
                 'b.kode_barang',
                 'b.nama_barang',
                 'b.tipe_barang',
@@ -90,6 +92,7 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
             )
             ->join('produksi as p', 'pd.produksi_id', '=', 'p.id')
             ->join('barang as b', 'pd.barang_id', '=', 'b.id')
+            ->leftJoin('users as u', 'p.user_id', '=', 'u.id') // Join ke users
             ->leftJoin('jenis_material as jm', 'b.jenis_material_id', '=', 'jm.id')
             ->leftJoin('unit_satuan as us', 'pd.unit_satuan_id', '=', 'us.id')
             ->where('p.company_id', $companyId)
@@ -125,6 +128,7 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
             'Tanggal',
             'Sumber Data',
             'No Dokumen',
+            'Keterangan',
             'Tipe Pergerakan',
             'User',
             'Kode Barang',
@@ -143,6 +147,7 @@ class LaporanTransaksiExport implements FromCollection, WithHeadings, WithMappin
             $row->tanggal ? Carbon::parse($row->tanggal)->format('d/m/Y H:i') : '-',
             $row->sumber_data ?? 'N/A',
             $row->no_dokumen ?? 'N/A',
+            $row->keterangan ?? '-',
             $row->tipe_pergerakan ?? '-',
             $row->user_name ?? '-',
             $row->kode_barang ?? '-',
