@@ -84,6 +84,7 @@
                                         <th>{{ __('Deskripsi') }}</th>
                                         <th>{{ __('Jenis Material') }}</th>
                                         <th>{{ __('Satuan') }}</th> {{-- Disingkat --}}
+                                        <th>{{ __('Harga Satuan') }}</th>
                                         <th>{{ __('Stok') }}</th>
                                         <th>{{ __('Photo') }}</th>
                                         <th>{{ __('Action') }}</th>
@@ -171,6 +172,10 @@
                         name: 'unit_satuan.nama_unit_satuan'
                     }, // Gunakan nama kolom join
                     {
+                        data: 'harga',
+                        name: 'barang.harga'
+                    },
+                    {
                         data: 'stock_barang',
                         name: 'barang.stock_barang'
                     },
@@ -207,7 +212,7 @@
                 if (selectedType) {
                     exportPdfUrl += "?tipe_barang=" + encodeURIComponent(selectedType);
                     exportExcelUrl += "?tipe_barang=" + encodeURIComponent(
-                    selectedType); // Tambahkan filter ke Excel
+                        selectedType); // Tambahkan filter ke Excel
                 }
                 $('#exportPdfLink').attr('href', exportPdfUrl);
                 $('#exportExcelLink').attr('href', exportExcelUrl); // Update link Excel

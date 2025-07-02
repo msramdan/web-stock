@@ -187,3 +187,10 @@ function get_company_logo_base64(?Company $activeCompany): ?string
         return null;
     }
 }
+
+if (!function_exists('formatRupiah')) {
+    function formatRupiah($angka)
+    {
+        return 'Rp ' . number_format($angka, 0, ',', '.');
+    }
+}

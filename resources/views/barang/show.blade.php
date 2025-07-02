@@ -52,11 +52,15 @@
                                     </tr>
                                     <tr>
                                         <td class="fw-bold">{{ __('Jenis Material') }}</td>
-                                        <td>{{ $barang->jenis_material ? $barang->jenis_material->id : '' }}</td>
+                                        <td>{{ $barang->nama_jenis_material ?? '-' }}</td>
                                     </tr>
                                     <tr>
                                         <td class="fw-bold">{{ __('Unit Satuan') }}</td>
-                                        <td>{{ $barang->unit_satuan ? $barang->unit_satuan->id : '' }}</td>
+                                        <td>{{ $barang->nama_unit_satuan ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">{{ __('Harga Barang') }}</td>
+                                        <td>{{ $barang->harga !== null ? formatRupiah($barang->harga) : '-' }}</td>
                                     </tr>
                                     <tr>
                                         <td class="fw-bold">{{ __('Stock Barang') }}</td>
@@ -74,14 +78,6 @@
                                                     alt="Photo Barang" class="rounded img-fluid">
                                             @endif
                                         </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold">{{ __('Created at') }}</td>
-                                        <td>{{ $barang->created_at->format('Y-m-d H:i:s') }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold">{{ __('Updated at') }}</td>
-                                        <td>{{ $barang->updated_at->format('Y-m-d H:i:s') }}</td>
                                     </tr>
                                 </table>
                             </div>

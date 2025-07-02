@@ -96,6 +96,8 @@ class BarangController extends Controller implements HasMiddleware
                 })
                 ->addColumn('photo_barang', function ($row) {
                     return $row->photo_barang ?: null;
+                })->addColumn('harga', function ($row) {
+                    return $row->harga !== null ? formatRupiah($row->harga) : '-';
                 })
                 ->addColumn('action', 'barang.include.action')
                 ->rawColumns(['tipe_barang', 'photo_barang', 'action'])
@@ -160,17 +162,31 @@ class BarangController extends Controller implements HasMiddleware
         return to_route('barang.index')->with('success', __('The barang was created successfully.'));
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Barang $barang): View
+    public function show($id): View
     {
-        // Optional: Validasi company
-        if ($barang->company_id != session('sessionCompany')) {
-            abort(403, 'Unauthorized action.');
-        }
+        $companyId = session('sessionCompany');
 
-        $barang->load(['jenisMaterial', 'unitSatuan', 'company']); // Load relasi termasuk company
+        $barang = DB::table('barang')
+            ->leftJoin('jenis_material', function ($join) use ($companyId) {
+                $join->on('barang.jenis_material_id', '=', 'jenis_material.id')
+                    ->where('jenis_material.company_id', '=', $companyId);
+            })
+            ->leftJoin('unit_satuan', function ($join) use ($companyId) {
+                $join->on('barang.unit_satuan_id', '=', 'unit_satuan.id')
+                    ->where('unit_satuan.company_id', '=', $companyId);
+            })
+            ->where('barang.id', $id)
+            ->where('barang.company_id', $companyId)
+            ->select(
+                'barang.*',
+                'jenis_material.nama_jenis_material',
+                'unit_satuan.nama_unit_satuan'
+            )
+            ->first();
+
+        if (!$barang) {
+            abort(403, 'Unauthorized action or data not found.');
+        }
 
         return view('barang.show', compact('barang'));
     }

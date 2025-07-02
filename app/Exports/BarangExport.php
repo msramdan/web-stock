@@ -45,6 +45,7 @@ class BarangExport implements FromCollection, WithHeadings, WithMapping, ShouldA
                 'barang.nama_barang',
                 'barang.tipe_barang',
                 'barang.deskripsi_barang',
+                'barang.harga', // ← tambahkan ini
                 'barang.stock_barang',
                 'jenis_material.nama_jenis_material',
                 'unit_satuan.nama_unit_satuan'
@@ -75,6 +76,7 @@ class BarangExport implements FromCollection, WithHeadings, WithMapping, ShouldA
             'Tipe Barang',
             'Deskripsi',
             'Jenis Material',
+            'Harga',
             'Unit Satuan',
             'Stok',
         ];
@@ -91,9 +93,10 @@ class BarangExport implements FromCollection, WithHeadings, WithMapping, ShouldA
         return [
             $row->kode_barang ?? '-',
             $row->nama_barang ?? '-',
-            $tipeBarangText, // Tampilkan teks tipe barang
+            $tipeBarangText,
             $row->deskripsi_barang ?? '-',
             $row->nama_jenis_material ?? '-',
+            $row->harga !== null ? $row->harga : '-', // ← Tambah baris ini
             $row->nama_unit_satuan ?? '-',
             (float) $row->stock_barang,
         ];
@@ -102,7 +105,8 @@ class BarangExport implements FromCollection, WithHeadings, WithMapping, ShouldA
     public function columnFormats(): array
     {
         return [
-            'G' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
+            'F' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1, // Harga
+            'H' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1, // Stok
         ];
     }
 }
