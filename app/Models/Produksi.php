@@ -24,6 +24,8 @@ class Produksi extends Model
         'bom_id',    // ID BoM yang digunakan
         'attachment',
         'keterangan',
+        'harga_perunit',
+        'total_biaya',
         // 'status', // Jika Anda tambahkan kembali kolom status
         'user_id' // Jika Anda tambahkan kembali kolom user
     ];
@@ -32,6 +34,8 @@ class Produksi extends Model
     protected $casts = [
         'tanggal' => 'datetime',
         'batch' => 'integer',
+        'harga_perunit' => 'decimal:2',
+        'total_biaya' => 'decimal:2',
     ];
 
     // --- DEFINISI RELASI ---

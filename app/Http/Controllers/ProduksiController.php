@@ -169,6 +169,7 @@ class ProduksiController extends Controller implements HasMiddleware
             'bom_id' => 'required|integer|exists:bom,id,company_id,' . $companyId, // BoM
             'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:10048',
             'keterangan' => 'nullable|string',
+            'harga_perunit' => 'nullable|numeric|min:0',
         ], [
             'no_produksi.unique' => 'No. Produksi sudah digunakan di perusahaan ini.',
             'barang_id.exists' => 'Produk Jadi tidak valid untuk perusahaan ini.',
@@ -184,7 +185,7 @@ class ProduksiController extends Controller implements HasMiddleware
         $validated = $validator->validated();
 
         // Cek ulang BoM dan detailnya
-        $bom = Bom::with('details.material') // Eager load material
+        $bom = Bom::with('details.material', 'kemasan.barang') // Eager load material
             ->where('id', $validated['bom_id'])
             ->where('barang_id', $validated['barang_id']) // Pastikan BoM sesuai Produk Jadi
             ->where('company_id', $companyId)
@@ -213,8 +214,16 @@ class ProduksiController extends Controller implements HasMiddleware
             $sumOfMaterialQtysPerBatch += $qtyPerBatch; // <-- Akumulasi SUM per batch
         }
 
+        foreach ($bom->kemasan as $itemKemasan) {
+            $requiredQty = (float) $itemKemasan->jumlah * $batchCount;
+            $stockSaatIni = (float) ($itemKemasan->barang->stock_barang ?? 0);
+            if ($stockSaatIni < $requiredQty) {
+                $stockErrors[] = "Stok kemasan '{$itemKemasan->barang->nama_barang}' tidak cukup (dibutuhkan: {$requiredQty}, tersedia: {$stockSaatIni})";
+            }
+        }
+
         if (!empty($stockErrors)) {
-            return redirect()->back()->withErrors(['stok' => $stockErrors])->withInput()->with('error', 'Stok bahan baku tidak mencukupi.');
+            return redirect()->back()->withErrors(['stok' => $stockErrors])->withInput()->with('error', 'Stok bahan baku atau kemasan tidak mencukupi.');
         }
         // --- Akhir Validasi Stok ---
 
@@ -229,6 +238,10 @@ class ProduksiController extends Controller implements HasMiddleware
                 $file->storeAs('public/uploads/attachments/' . $companyId, $attachmentName); // Sesuaikan path jika perlu
             }
 
+            // Hitung total biaya
+            $harga_perunit = (float) ($validated['harga_perunit'] ?? 0);
+            $total_biaya = $batchCount * $harga_perunit;
+
             // 1. Buat Header Produksi
             $produksi = Produksi::create([
                 'company_id' => $companyId,
@@ -240,6 +253,8 @@ class ProduksiController extends Controller implements HasMiddleware
                 'bom_id' => $validated['bom_id'],
                 'attachment' => $attachmentName,
                 'keterangan' => $validated['keterangan'],
+                'harga_perunit' => $harga_perunit, // Simpan harga
+                'total_biaya' => $total_biaya,
             ]);
 
             // 2. Buat Detail Produksi (Termasuk Produk Jadi 'In' dan Material 'Out')
@@ -287,6 +302,13 @@ class ProduksiController extends Controller implements HasMiddleware
                     ->where('id', $detail->barang_id)
                     ->where('company_id', $companyId)
                     ->decrement('stock_barang', $qtyDikurangi, ['updated_at' => now()]);
+            }
+
+            foreach ($bom->kemasan as $itemKemasan) {
+                $qtyDikurangi = (float) $itemKemasan->jumlah * $batchCount;
+                DB::table('barang')
+                    ->where('id', $itemKemasan->barang_id)
+                    ->decrement('stock_barang', $qtyDikurangi);
             }
 
             // 4. Tambah Stok Barang Jadi

@@ -90,12 +90,19 @@ class BomController extends Controller implements HasMiddleware
             ->where('company_id', $companyId)
             ->orderBy('nama_barang')->get();
 
+        $barangKemasan = Barang::with('unitSatuan')
+            ->where('company_id', $companyId)
+            ->whereHas('jenisMaterial', function ($query) {
+                $query->where('nama_jenis_material', 'MATERIAL KEMASAN');
+            })
+            ->orderBy('nama_barang')->get();
+
 
         $unitSatuans = UnitSatuan::where('company_id', $companyId)
             ->orderBy('nama_unit_satuan')
             ->pluck('nama_unit_satuan', 'id');
 
-        return view('bom.create', compact('produkJadi', 'barangMaterials', 'unitSatuans'));
+        return view('bom.create', compact('produkJadi', 'barangMaterials', 'barangKemasan', 'unitSatuans'));
     }
 
 
@@ -183,6 +190,18 @@ class BomController extends Controller implements HasMiddleware
                 throw ValidationException::withMessages(['materials' => 'Tidak ada data material valid yang bisa disimpan.']);
             }
 
+            if (!empty($validated['kemasan'])) {
+                foreach ($validated['kemasan'] as $item) {
+                    if (!empty($item['barang_id']) && !empty($item['jumlah'])) {
+                        $bom->kemasan()->create([
+                            'barang_id' => $item['barang_id'],
+                            'jumlah' => $item['jumlah'],
+                            'unit_satuan_id' => $item['unit_satuan_id'],
+                        ]);
+                    }
+                }
+            }
+
             BomDetail::insert($materialsToInsert);
 
 
@@ -233,7 +252,9 @@ class BomController extends Controller implements HasMiddleware
         $bom->load([
             'barang',
             'details.material.unitSatuan',
-            'details.unitSatuan'
+            'details.unitSatuan',
+            'kemasan.barang.unitSatuan',
+            'kemasan.unitSatuan'
         ]);
 
 
@@ -246,11 +267,18 @@ class BomController extends Controller implements HasMiddleware
             ->where('company_id', $companyId)
             ->orderBy('nama_barang')->get();
 
+        $barangKemasan = Barang::with('unitSatuan')
+            ->where('company_id', $companyId)
+            ->whereHas('jenisMaterial', function ($query) {
+                $query->where('nama_jenis_material', 'MATERIAL KEMASAN');
+            })
+            ->orderBy('nama_barang')->get();
+
         $unitSatuans = UnitSatuan::where('company_id', $companyId)
             ->orderBy('nama_unit_satuan')
             ->pluck('nama_unit_satuan', 'id');
 
-        return view('bom.edit', compact('bom', 'produkJadi', 'barangMaterials', 'unitSatuans'));
+        return view('bom.edit', compact('bom', 'produkJadi', 'barangMaterials', 'barangKemasan', 'unitSatuans'));
     }
 
     /**
@@ -396,6 +424,19 @@ class BomController extends Controller implements HasMiddleware
             if ($bom->details->isEmpty()) {
                 DB::rollBack();
                 throw ValidationException::withMessages(['materials' => 'BoM harus memiliki setidaknya 1 material/komponen setelah diperbarui.']);
+            }
+
+            $bom->kemasan()->delete(); // Cara sederhana: hapus semua dan buat baru
+            if (!empty($validated['kemasan'])) {
+                foreach ($validated['kemasan'] as $item) {
+                    if (!empty($item['barang_id']) && !empty($item['jumlah'])) {
+                        $bom->kemasan()->create([
+                            'barang_id' => $item['barang_id'],
+                            'jumlah' => $item['jumlah'],
+                            'unit_satuan_id' => $item['unit_satuan_id'],
+                        ]);
+                    }
+                }
             }
 
             DB::commit();
