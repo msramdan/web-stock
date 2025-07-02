@@ -125,15 +125,16 @@
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center">
-                                        <label for="harga_perunit" class="col-lg-4 col-md-12 col-form-label">Harga Satuan
-                                            / Unit</label>
+                                        <label for="harga_perunit" class="col-lg-4 col-md-12 col-form-label">
+                                            Harga Satuan / Unit <span class="text-danger">*</span>
+                                        </label>
                                         <div class="col-lg-8 col-md-12">
                                             <div class="input-group">
                                                 <span class="input-group-text">Rp</span>
                                                 <input type="number" id="harga_perunit"
                                                     class="form-control @error('harga_perunit') is-invalid @enderror"
-                                                    name="harga_perunit" value="{{ old('harga_perunit', 0) }}"
-                                                    min="0" step="any">
+                                                    name="harga_perunit" value="{{ old('harga_perunit') }}"
+                                                    min="1" step="any" required>
                                             </div>
                                             @error('harga_perunit')
                                                 <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -175,7 +176,8 @@
                                                 @forelse($requiredMaterials as $material)
                                                     <tr data-material-id="{{ $material['material_id'] }}">
                                                         <td>{{ $material['kode_barang'] }}
-                                                            <br><small>{{ $material['nama_barang'] }}</small></td>
+                                                            <br><small>{{ $material['nama_barang'] }}</small>
+                                                        </td>
                                                         <td class="text-center qty-per-batch">
                                                             {{ rtrim(rtrim(number_format($material['qty_per_batch'], 4, ',', '.'), '0'), ',') }}
                                                         </td>
