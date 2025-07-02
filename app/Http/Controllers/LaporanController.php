@@ -44,7 +44,6 @@ class LaporanController extends Controller
             'barang_id' => ['nullable', Rule::exists('barang', 'id')->where(fn($q) => $q->where('company_id', $companyId))], // Validasi untuk barang_id
         ], [
             'tanggal_mulai.required' => 'Tanggal mulai wajib diisi.',
-            // ... pesan validasi lainnya ...
         ]);
 
         $validator->after(function ($validator) use ($request, $maxRangeDays) {
