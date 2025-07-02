@@ -63,4 +63,12 @@ class Bom extends Model
     {
         return $this->hasMany(BomDetail::class, 'bom_id');
     }
+
+    /**
+     * Relasi ke Kemasan BoM (Opsional).
+     */
+    public function kemasan(): HasMany
+    {
+        return $this->hasMany(BomKemasan::class, 'bom_id');
+    }
 }

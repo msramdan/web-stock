@@ -1,4 +1,3 @@
-{{-- resources/views/bom/include/form.blade.php (Layout Mirip Transaksi) --}}
 <section class="content">
     <div class="container-fluid">
         {{-- Baris Pertama: Info Utama & Input Material --}}
@@ -7,7 +6,7 @@
             <div class="col-md-4">
                 <div class="card h-100 border">
                     <div class="card-body">
-                        <div class="form-group mb-3"> {{-- Tambah margin bawah --}}
+                        <div class="form-group mb-3">
                             <label for="barang_id_produk" class="form-label fw-bold">{{ __('Barang (Produk Jadi)') }}
                                 <span class="text-danger">*</span></label>
                             <select class="form-select @error('barang_id') is-invalid @enderror" name="barang_id"
@@ -37,10 +36,11 @@
                 </div>
             </div>
 
-            {{-- Kolom 2: Mungkin kosong atau info tambahan jika ada --}}
+            {{-- Kolom 2: Info --}}
             <div class="col-md-4">
                 <div class="alert alert-light-info color-info">
-                    <i class="bi bi-info-circle-fill"></i> Pastikan Produk Jadi dan Material yang dipilih sesuai dengan
+                    <i class="bi bi-info-circle-fill"></i> Pastikan Produk Jadi, Material, dan Kemasan yang dipilih
+                    sesuai dengan
                     perusahaan yang aktif.
                 </div>
             </div>
@@ -52,12 +52,10 @@
                         <h6 class="card-title mb-0 fw-bold">Tambah Material</h6>
                     </div>
                     <div class="card-body">
-                        {{-- Input Pilih Material --}}
                         <div class="form-group mb-2">
                             <label for="material_id_selector" class="form-label">{{ __('Pilih Material') }}</label>
                             <select class="form-select" id="material_id_selector">
                                 <option value="">-- Pilih Material --</option>
-                                {{-- Pastikan $barangMaterials ada dari ViewComposer/Controller --}}
                                 @foreach ($barangMaterials ?? [] as $material)
                                     <option value="{{ $material->id }}" data-unit-id="{{ $material->unit_satuan_id }}"
                                         data-unit-nama="{{ $material->unitSatuan->nama_unit_satuan ?? '' }}">
@@ -68,15 +66,11 @@
                             <input type="hidden" id="selected_material_unit_id">
                             <input type="hidden" id="selected_material_unit_nama">
                         </div>
-
-                        {{-- Input Qty --}}
                         <div class="form-group mb-3">
                             <label for="material_qty" class="form-label">{{ __('Jumlah') }}</label>
                             <input type="number" id="material_qty" value="1" min="0.00000001" step="any"
                                 class="form-control">
                         </div>
-
-                        {{-- Tombol Tambah ke Tabel --}}
                         <div class="d-grid">
                             <button type="button" id="add_material_row_from_selector" class="btn btn-primary">
                                 <i class="fas fa-plus me-1"></i> {{ __('Tambahkan ke Daftar') }}
@@ -87,129 +81,23 @@
             </div>
         </div>
 
-        {{-- Baris Kedua: Tabel Daftar Material --}}
+        {{-- Tabel Daftar Material --}}
         <div class="row mt-4">
             <div class="col-lg-12">
                 <h6 class="mb-3 fw-bold">Daftar Material Ditambahkan</h6>
                 @error('materials')
-                    <div class="alert alert-danger alert-dismissible fade show py-2 mb-3" role="alert">
-                        {{ $message }}
-                        @if ($errors->has('materials.*'))
-                            <ul class="mb-0 ps-3">
-                                @foreach ($errors->get('materials.*') as $materialErrors)
-                                    @foreach ($materialErrors as $error)
-                                        <li><small>{{ $error }}</small></li>
-                                    @endforeach
-                                @endforeach
-                            </ul>
-                        @endif
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
+                    {{-- Error handling --}}
                 @enderror
                 <div class="card border">
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-bordered table-striped mb-0" id="materials_table">
                                 <thead class="table-light">
-                                    <tr>
-                                        <th style="width: 45%;">{{ __('Material') }} <span class="text-danger">*</span>
-                                        </th>
-                                        <th style="width: 20%;">{{ __('Jumlah') }} <span class="text-danger">*</span>
-                                        </th>
-                                        <th style="width: 25%;">{{ __('Unit Satuan') }} <span
-                                                class="text-danger">*</span></th>
-                                        <th style="width: 10%;" class="text-center">{{ __('Aksi') }}</th>
-                                    </tr>
+                                    {{-- header tabel material --}}
                                 </thead>
                                 <tbody id="materials_tbody">
-                                    {{-- Handling old input atau data edit --}}
-                                    @php
-                                        $materialsData = [];
-                                        if (old('materials')) {
-                                            $materialsData = old('materials');
-                                        } elseif (isset($bom) && $bom->details && !$errors->has('materials.*')) {
-                                            $materialsData = $bom->details
-                                                ->map(
-                                                    fn($d) => [
-                                                        'id' => $d->id,
-                                                        'barang_id' => $d->barang_id,
-                                                        'jumlah' => $d->jumlah,
-                                                        'unit_satuan_id' => $d->unit_satuan_id,
-                                                        'unit_nama_selected' => $d->unitSatuan->nama_unit_satuan ?? '',
-                                                    ],
-                                                )
-                                                ->toArray();
-                                        }
-                                    @endphp
-                                    @forelse ($materialsData as $index => $materialItem)
-                                        <tr id="material_row_{{ $index }}">
-                                            <td>
-                                                <select name="materials[{{ $index }}][barang_id]"
-                                                    class="form-select material-select @error("materials.$index.barang_id") is-invalid @enderror"
-                                                    required>
-                                                    <option value="">-- Pilih Material --</option>
-                                                    @foreach ($barangMaterials ?? [] as $material)
-                                                        <option value="{{ $material->id }}"
-                                                            data-unit-id="{{ $material->unit_satuan_id }}"
-                                                            data-unit-nama="{{ $material->unitSatuan->nama_unit_satuan ?? '' }}"
-                                                            {{ ($materialItem['barang_id'] ?? null) == $material->id ? 'selected' : '' }}>
-                                                            {{ $material->kode_barang }} -
-                                                            {{ $material->nama_barang }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                                @isset($materialItem['id'])
-                                                    <input type="hidden" name="materials[{{ $index }}][detail_id]"
-                                                        value="{{ $materialItem['id'] }}">
-                                                @endisset
-                                                @error("materials.$index.barang_id")
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
-                                            </td>
-                                            <td>
-                                                <input type="number" step="any"
-                                                    name="materials[{{ $index }}][jumlah]"
-                                                    class="form-control quantity-input @error("materials.$index.jumlah") is-invalid @enderror"
-                                                    value="{{ $materialItem['jumlah'] ?? 1 }}" min="0.00000001"
-                                                    required>
-                                                @error("materials.$index.jumlah")
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
-                                            </td>
-                                            <td>
-                                                @php
-                                                    $selectedUnitId = $materialItem['unit_satuan_id'] ?? null;
-                                                    $selectedUnitNama = $materialItem['unit_nama_selected'] ?? '';
-                                                    if (old('materials') && !$selectedUnitNama && $selectedUnitId) {
-                                                        $unit = \App\Models\UnitSatuan::find($selectedUnitId);
-                                                        $selectedUnitNama = $unit->nama_unit_satuan ?? '';
-                                                    }
-                                                @endphp
-                                                <input type="hidden"
-                                                    name="materials[{{ $index }}][unit_satuan_id]"
-                                                    class="unit-id-input" value="{{ $selectedUnitId }}">
-                                                <input type="text"
-                                                    class="form-control unit-display @error("materials.$index.unit_satuan_id") is-invalid @enderror"
-                                                    value="{{ $selectedUnitNama }}" readonly>
-                                                @error("materials.$index.unit_satuan_id")
-                                                    <div class="invalid-feedback">{{ $message }}</div>
-                                                @enderror
-                                            </td>
-                                            <td class="text-center">
-                                                <button type="button" class="btn btn-danger btn-sm remove-material"
-                                                    title="Hapus Material"><i class="fas fa-trash"></i></button>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                    @endforelse
+                                    {{-- body tabel material --}}
                                 </tbody>
-                                <tfoot>
-                                    <tr id="no-material-row"
-                                        style="{{ empty($materialsData) ? '' : 'display: none;' }}">
-                                        <td colspan="4" class="text-center text-muted p-3">Belum ada material yang
-                                            ditambahkan.</td>
-                                    </tr>
-                                </tfoot>
                             </table>
                         </div>
                     </div>
@@ -217,7 +105,119 @@
             </div>
         </div>
 
-    </div>{{-- Akhir Container Fluid --}}
+        {{-- Tabel Daftar Kemasan --}}
+        <div class="row mt-4">
+            <div class="col-lg-12">
+                <h6 class="mb-3 fw-bold">Daftar Kemasan (Opsional)</h6>
+                <div class="card border">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped mb-0" id="kemasan_table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 45%;">Barang Kemasan</th>
+                                        <th style="width: 20%;">Jumlah</th>
+                                        <th style="width: 25%;">Unit Satuan</th>
+                                        <th style="width: 10%;" class="text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="kemasan_tbody">
+                                    @php
+                                        $kemasanData = old(
+                                            'kemasan',
+                                            isset($bom)
+                                                ? $bom->kemasan
+                                                    ->map(
+                                                        fn($k) => [
+                                                            'id' => $k->id,
+                                                            'barang_id' => $k->barang_id,
+                                                            'jumlah' => $k->jumlah,
+                                                            'unit_satuan_id' => $k->unit_satuan_id,
+                                                        ],
+                                                    )
+                                                    ->toArray()
+                                                : [],
+                                        );
+                                    @endphp
+                                    @forelse ($kemasanData as $index => $item)
+                                        <tr id="kemasan_row_{{ $index }}">
+                                            <td>
+                                                <select name="kemasan[{{ $index }}][barang_id]"
+                                                    class="form-select kemasan-select">
+                                                    <option value="">-- Pilih Kemasan --</option>
+                                                    {{-- Gunakan variabel $barangKemasan --}}
+                                                    @foreach ($barangKemasan ?? [] as $kemasan)
+                                                        <option value="{{ $kemasan->id }}"
+                                                            data-unit-id="{{ $kemasan->unit_satuan_id }}"
+                                                            data-unit-nama="{{ $kemasan->unitSatuan->nama_unit_satuan ?? '' }}"
+                                                            {{ ($item['barang_id'] ?? null) == $kemasan->id ? 'selected' : '' }}>
+                                                            {{ $kemasan->kode_barang }} - {{ $kemasan->nama_barang }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="number" step="any"
+                                                    name="kemasan[{{ $index }}][jumlah]" class="form-control"
+                                                    value="{{ $item['jumlah'] ?? 1 }}" min="0.0001">
+                                            </td>
+                                            <td>
+                                                <input type="hidden"
+                                                    name="kemasan[{{ $index }}][unit_satuan_id]"
+                                                    class="unit-id-input-kemasan">
+                                                <input type="text" class="form-control unit-display-kemasan"
+                                                    readonly>
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-danger btn-sm remove-kemasan"><i
+                                                        class="fas fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button type="button" id="add_kemasan_row" class="btn btn-info btn-sm"><i
+                                class="fas fa-plus"></i> Tambah Kemasan</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Template Row Kemasan --}}
+        <table style="display:none;">
+            <tr id="kemasan_row_template">
+                <td>
+                    <select name="kemasan[__INDEX__][barang_id]" class="form-select kemasan-select" disabled>
+                        <option value="">-- Pilih Kemasan --</option>
+                        {{-- Gunakan variabel $barangKemasan --}}
+                        @foreach ($barangKemasan ?? [] as $kemasan)
+                            <option value="{{ $kemasan->id }}" data-unit-id="{{ $kemasan->unit_satuan_id }}"
+                                data-unit-nama="{{ $kemasan->unitSatuan->nama_unit_satuan ?? '' }}">
+                                {{ $kemasan->kode_barang }} - {{ $kemasan->nama_barang }}
+                            </option>
+                        @endforeach
+                    </select>
+                </td>
+                <td>
+                    <input type="number" step="any" name="kemasan[__INDEX__][jumlah]" class="form-control"
+                        value="1" min="0.0001" disabled>
+                </td>
+                <td>
+                    <input type="hidden" name="kemasan[__INDEX__][unit_satuan_id]" class="unit-id-input-kemasan"
+                        disabled>
+                    <input type="text" class="form-control unit-display-kemasan" readonly disabled>
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-danger btn-sm remove-kemasan"><i
+                            class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        </table>
+    </div>
 </section>
 
 {{-- Template Hidden Row (Tidak ditampilkan tapi dibutuhkan JS) --}}
@@ -274,9 +274,45 @@
 @endpush
 @push('js')
     <script>
+        let kemasanIndex = $('#kemasan_tbody tr').length;
+
+        function updateUnitKemasan(selectElement) {
+            let selectedOption = $(selectElement).find('option:selected');
+            let unitNama = selectedOption.data('unit-nama');
+            let unitId = selectedOption.data('unit-id');
+            let row = $(selectElement).closest('tr');
+            row.find('.unit-display-kemasan').val(unitNama || '');
+            row.find('.unit-id-input-kemasan').val(unitId || '');
+        }
+
+        $('#kemasan_tbody .kemasan-select').each(function() {
+            updateUnitKemasan(this);
+        });
+
+        $('#add_kemasan_row').on('click', function() {
+            let templateContent = $('#kemasan_row_template').html();
+            let newRowHtml = '<tr id="kemasan_row_' + kemasanIndex + '">' + templateContent.replace(/__INDEX__/g,
+                kemasanIndex) + '</tr>';
+            $('#kemasan_tbody').append(newRowHtml);
+            let newRow = $('#kemasan_row_' + kemasanIndex);
+            newRow.find('input, select').prop('disabled', false);
+            newRow.find('.kemasan-select').on('change', function() {
+                updateUnitKemasan(this);
+            });
+            kemasanIndex++;
+        });
+
+        $('#kemasan_table').on('click', '.remove-kemasan', function() {
+            $(this).closest('tr').remove();
+        });
+
+        $('#kemasan_tbody').on('change', '.kemasan-select', function() {
+            updateUnitKemasan(this);
+        });
         // Pastikan jQuery sudah dimuat
         if (typeof jQuery == 'undefined') {
-            /* ... load jQuery ... */ } else {
+            /* ... load jQuery ... */
+        } else {
             initializeBomFormScript();
         }
 
@@ -368,9 +404,9 @@
                             updateUnitInTable(this);
                         });
                         newRowElement.find('.quantity-input, .material-select').on('input change',
-                        function() {
-                            $(this).removeClass('is-invalid');
-                        });
+                            function() {
+                                $(this).removeClass('is-invalid');
+                            });
                         materialIndex++;
                     }
                     $('#material_id_selector').val('').trigger('change');
@@ -392,6 +428,15 @@
                     $(this).removeClass('is-invalid');
                 });
             });
+        }
+
+        function updateUnitKemasan(selectElement) {
+            let selectedOption = $(selectElement).find('option:selected');
+            let unitNama = selectedOption.data('unit-nama');
+            let unitId = selectedOption.data('unit-id'); // ⚠️ Pastikan ini diambil
+            let row = $(selectElement).closest('tr');
+            row.find('.unit-display-kemasan').val(unitNama || '');
+            row.find('.unit-id-input-kemasan').val(unitId || ''); // ⚠️ Pastikan ini diisi
         }
     </script>
 @endpush

@@ -30,6 +30,10 @@ class StoreBomRequest extends FormRequest
             'materials.*.barang_id' => ['required', 'integer', Rule::exists('barang', 'id')], // Material harus ada
             'materials.*.jumlah' => ['required', 'numeric', 'min:0.01'], // Jumlah harus angka > 0
             'materials.*.unit_satuan_id' => ['required', 'integer', Rule::exists('unit_satuan', 'id')], // Unit harus ada
+            'kemasan' => ['nullable', 'array'],
+            'kemasan.*.barang_id' => ['required_with:kemasan', 'integer', Rule::exists('barang', 'id')],
+            'kemasan.*.jumlah' => ['required_with:kemasan', 'numeric', 'min:0.0001'],
+            'kemasan.*.unit_satuan_id' => ['required_with:kemasan', 'integer', Rule::exists('unit_satuan', 'id')],
         ];
     }
 
@@ -47,6 +51,9 @@ class StoreBomRequest extends FormRequest
             'materials.*.barang_id' => 'Material',
             'materials.*.jumlah' => 'Jumlah Material',
             'materials.*.unit_satuan_id' => 'Unit Satuan Material',
+            'kemasan.*.barang_id' => 'Barang Kemasan',
+            'kemasan.*.jumlah' => 'Jumlah Kemasan',
+            'kemasan.*.unit_satuan_id' => 'Unit Satuan Kemasan',
         ];
     }
 
