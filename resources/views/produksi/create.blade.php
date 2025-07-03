@@ -37,7 +37,7 @@
                 @csrf
                 <input type="hidden" name="barang_id" value="{{ $produkJadi->id }}">
                 <input type="hidden" name="bom_id" value="{{ $bom->id }}">
-
+                <input type="text" name="total_kebutuhan_bahan" id="total-kebutuhan-bahan-input" value="0">
                 <div class="row">
                     {{-- Kolom Kiri: Info Produksi --}}
                     <div class="col-md-6 col-12">
@@ -104,7 +104,8 @@
                                         </div>
                                     </div>
                                     <div class="form-group row align-items-center">
-                                        <label for="attachment" class="col-lg-4 col-md-12 col-form-label">Attachment</label>
+                                        <label for="attachment"
+                                            class="col-lg-4 col-md-12 col-form-label">Attachment</label>
                                         <div class="col-lg-8 col-md-12">
                                             <input type="file" id="attachment"
                                                 class="form-control @error('attachment') is-invalid @enderror"
@@ -115,7 +116,8 @@
                                         </div>
                                     </div>
                                     <div class="form-group row">
-                                        <label for="keterangan" class="col-lg-4 col-md-12 col-form-label">Keterangan</label>
+                                        <label for="keterangan"
+                                            class="col-lg-4 col-md-12 col-form-label">Keterangan</label>
                                         <div class="col-lg-8 col-md-12">
                                             <textarea id="keterangan" class="form-control @error('keterangan') is-invalid @enderror" name="keterangan"
                                                 rows="3">{{ old('keterangan') }}</textarea>
@@ -290,6 +292,7 @@
                 const batchCount = parseInt(batchInput.value) || 0;
                 const hargaPerUnit = parseFloat(hargaPerUnitInput.value) || 0;
                 let totalMaterialSum = 0;
+                let totalKemasanSum = 0;
 
                 // Kalkulasi Kebutuhan Material
                 materialTableBody.querySelectorAll('tr[data-material-id]').forEach((row) => {
@@ -316,12 +319,6 @@
                     totalMaterialSum += requiredQty;
                 });
 
-                if (totalRequiredSumCell) {
-                    totalRequiredSumCell.textContent = totalMaterialSum.toLocaleString('id-ID', {
-                        maximumFractionDigits: 4
-                    });
-                }
-
                 // Kalkulasi Kebutuhan Kemasan
                 kemasanTableBody.querySelectorAll('tr[data-kemasan-id]').forEach((row) => {
                     const jumlahPerBatch = parseFloat(row.dataset.jumlahPerBatch) || 0;
@@ -330,11 +327,22 @@
                         .toLocaleString('id-ID', {
                             maximumFractionDigits: 4
                         });
+                    totalKemasanSum += requiredKemasanQty;
                 });
+
+                // Update total kebutuhan bahan di tabel
+                if (totalRequiredSumCell) {
+                    totalRequiredSumCell.textContent = totalMaterialSum.toLocaleString('id-ID', {
+                        maximumFractionDigits: 4
+                    });
+                }
+
+                // Update input hidden untuk dikirim ke controller
+                document.getElementById('total-kebutuhan-bahan-input').value = totalMaterialSum;
 
                 // Kalkulasi Total Biaya Produksi
                 if (totalBiayaProduksiCell) {
-                    const totalBiaya = batchCount * hargaPerUnit;
+                    const totalBiaya = totalMaterialSum * hargaPerUnit;
                     totalBiayaProduksiCell.textContent = 'Rp ' + totalBiaya.toLocaleString('id-ID', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2

@@ -38,6 +38,7 @@
                 @method('PUT')
                 <input type="hidden" name="barang_id" value="{{ $produksi->barang_id }}">
                 <input type="hidden" name="bom_id" value="{{ $produksi->bom_id }}">
+                <input type="hidden" name="total_kebutuhan_bahan" id="total-kebutuhan-bahan-input" value="0">
 
                 <div class="row">
                     {{-- Kolom Kiri: Informasi Produksi --}}
@@ -188,7 +189,8 @@
                                                 @forelse($requiredMaterials as $material)
                                                     <tr data-material-id="{{ $material['material_id'] }}">
                                                         <td>{{ $material['kode_barang'] }}
-                                                            <br><small>{{ $material['nama_barang'] }}</small></td>
+                                                            <br><small>{{ $material['nama_barang'] }}</small>
+                                                        </td>
                                                         <td class="text-center qty-per-batch">
                                                             {{ rtrim(rtrim(number_format($material['qty_per_batch'], 4, ',', '.'), '0'), ',') }}
                                                         </td>
@@ -319,10 +321,14 @@
                     }
                     totalMaterialSum += requiredQty;
                 });
-                if (totalRequiredSumCell) totalRequiredSumCell.textContent = totalMaterialSum.toLocaleString(
-                    'id-ID', {
+                if (totalRequiredSumCell) {
+                    totalRequiredSumCell.textContent = totalMaterialSum.toLocaleString('id-ID', {
                         maximumFractionDigits: 4
                     });
+                }
+
+
+                document.getElementById('total-kebutuhan-bahan-input').value = totalMaterialSum;
 
                 // Kalkulasi Kemasan
                 kemasanTableBody.querySelectorAll('tr[data-kemasan-id]').forEach((row) => {
@@ -336,7 +342,7 @@
 
                 // Kalkulasi Biaya
                 if (totalBiayaProduksiCell) {
-                    const totalBiaya = batchCount * hargaPerUnit;
+                    const totalBiaya = totalMaterialSum * hargaPerUnit;
                     totalBiayaProduksiCell.textContent = 'Rp ' + totalBiaya.toLocaleString('id-ID', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
