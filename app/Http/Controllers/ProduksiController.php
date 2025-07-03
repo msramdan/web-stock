@@ -297,7 +297,23 @@ class ProduksiController extends Controller implements HasMiddleware
                     'qty_rate' => $qtyPerBatch, // Qty dari BoM
                     'qty_total_diperlukan' => $qtyDiperlukan, // Total = qty_rate * batch
                     'created_at' => now(),
-                    'updated_at' => now() // Jika pakai timestamps
+                    'updated_at' => now()
+                ];
+            }
+
+            // Tambahkan detail untuk Kemasan (Type 'Out')
+            foreach ($bom->kemasan as $itemKemasan) {
+                $qtyPerBatch = (float) $itemKemasan->jumlah; // Qty per batch dari BoM
+                $qtyDiperlukan = $qtyPerBatch * $batchCount; // Total dibutuhkan
+                $produksiDetails[] = [
+                    'produksi_id' => $produksi->id,
+                    'barang_id' => $itemKemasan->barang_id, // ID Kemasan
+                    'unit_satuan_id' => $itemKemasan->unit_satuan_id, // Unit dari BoM Kemasan
+                    'type' => 'Out',
+                    'qty_rate' => $qtyPerBatch, // Qty dari BoM
+                    'qty_total_diperlukan' => $qtyDiperlukan, // Total = qty_rate * batch
+                    'created_at' => now(),
+                    'updated_at' => now()
                 ];
             }
 
