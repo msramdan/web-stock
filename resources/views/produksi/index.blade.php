@@ -43,6 +43,8 @@
                                             <th>{{ __('Batch') }}</th>
                                             <th>{{ __('Tanggal') }}</th>
                                             <th>{{ __('Produk Jadi') }}</th>
+                                            <th>{{ __('Harga Per Unit') }}</th>
+                                            <th>{{ __('Total Biaya') }}</th>
                                             <th>{{ __('Dibuat Oleh') }}</th>
                                             <th>{{ __('Action') }}</th>
                                         </tr>
@@ -89,6 +91,14 @@
                 {
                     data: 'produk_jadi',
                     name: 'produkJadi.nama_barang'
+                },
+                {
+                    data: 'harga_perunit',
+                    name: 'harga_perunit',
+                },
+                {
+                    data: 'total_biaya',
+                    name: 'total_biaya',
                 },
                 {
                     data: 'dibuat_oleh',

@@ -70,6 +70,10 @@ class UpdateBomRequest extends FormRequest
                 // Opsional: Anda bisa menambahkan validasi untuk memastikan unit_satuan_id cocok dengan barang_id yang dipilih,
                 // tapi ini mungkin lebih kompleks dan bisa dilakukan di controller atau service layer.
             ],
+            'kemasan' => ['nullable', 'array'],
+            'kemasan.*.barang_id' => ['required_with:kemasan', 'integer', Rule::exists('barang', 'id')],
+            'kemasan.*.jumlah' => ['required_with:kemasan', 'numeric', 'min:0.0001'],
+            'kemasan.*.unit_satuan_id' => ['required_with:kemasan', 'integer', Rule::exists('unit_satuan', 'id')],
         ];
     }
 
@@ -88,6 +92,9 @@ class UpdateBomRequest extends FormRequest
             'materials.*.barang_id' => 'Material',
             'materials.*.jumlah' => 'Jumlah Material',
             'materials.*.unit_satuan_id' => 'Unit Satuan Material',
+            'kemasan.*.barang_id' => 'Barang Kemasan',
+            'kemasan.*.jumlah' => 'Jumlah Kemasan',
+            'kemasan.*.unit_satuan_id' => 'Unit Satuan Kemasan',
         ];
     }
 
@@ -110,6 +117,14 @@ class UpdateBomRequest extends FormRequest
             'materials.*.jumlah.min' => 'Jumlah material pada baris :position minimal :min.',
             'materials.*.unit_satuan_id.required' => 'Unit satuan material pada baris :position wajib diisi.',
             'materials.*.unit_satuan_id.exists' => 'Unit satuan yang dipilih pada baris :position tidak valid.',
+
+            'kemasan.*.barang_id.required_with' => 'Barang kemasan pada baris :position wajib dipilih.',
+            'kemasan.*.barang_id.exists' => 'Barang kemasan yang dipilih pada baris :position tidak valid.',
+            'kemasan.*.jumlah.required_with' => 'Jumlah kemasan pada baris :position wajib diisi.',
+            'kemasan.*.jumlah.numeric' => 'Jumlah kemasan pada baris :position harus berupa angka.',
+            'kemasan.*.jumlah.min' => 'Jumlah kemasan pada baris :position minimal :min.',
+            'kemasan.*.unit_satuan_id.required_with' => 'Unit satuan kemasan pada baris :position wajib diisi.',
+            'kemasan.*.unit_satuan_id.exists' => 'Unit satuan kemasan yang dipilih pada baris :position tidak valid.',
         ];
     }
 }
