@@ -37,7 +37,7 @@
                 @csrf
                 <input type="hidden" name="barang_id" value="{{ $produkJadi->id }}">
                 <input type="hidden" name="bom_id" value="{{ $bom->id }}">
-                <input type="text" name="total_kebutuhan_bahan" id="total-kebutuhan-bahan-input" value="0">
+                <input type="hidden" name="total_kebutuhan_bahan" id="total-kebutuhan-bahan-input" value="0">
                 <div class="row">
                     {{-- Kolom Kiri: Info Produksi --}}
                     <div class="col-md-6 col-12">
