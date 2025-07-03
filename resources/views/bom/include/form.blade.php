@@ -96,8 +96,94 @@
                                     {{-- header tabel material --}}
                                 </thead>
                                 <tbody id="materials_tbody">
-                                    {{-- body tabel material --}}
+                                    {{-- Handling old input atau data edit --}}
+                                    @php
+                                        $materialsData = [];
+                                        if (old('materials')) {
+                                            $materialsData = old('materials');
+                                        } elseif (isset($bom) && $bom->details && !$errors->has('materials.*')) {
+                                            $materialsData = $bom->details
+                                                ->map(
+                                                    fn($d) => [
+                                                        'id' => $d->id,
+                                                        'barang_id' => $d->barang_id,
+                                                        'jumlah' => $d->jumlah,
+                                                        'unit_satuan_id' => $d->unit_satuan_id,
+                                                        'unit_nama_selected' => $d->unitSatuan->nama_unit_satuan ?? '',
+                                                    ],
+                                                )
+                                                ->toArray();
+                                        }
+                                    @endphp
+                                    @forelse ($materialsData as $index => $materialItem)
+                                        <tr id="material_row_{{ $index }}">
+                                            <td>
+                                                <select name="materials[{{ $index }}][barang_id]"
+                                                    class="form-select material-select @error("materials.$index.barang_id") is-invalid @enderror"
+                                                    required>
+                                                    <option value="">-- Pilih Material --</option>
+                                                    @foreach ($barangMaterials ?? [] as $material)
+                                                        <option value="{{ $material->id }}"
+                                                            data-unit-id="{{ $material->unit_satuan_id }}"
+                                                            data-unit-nama="{{ $material->unitSatuan->nama_unit_satuan ?? '' }}"
+                                                            {{ ($materialItem['barang_id'] ?? null) == $material->id ? 'selected' : '' }}>
+                                                            {{ $material->kode_barang }} -
+                                                            {{ $material->nama_barang }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                @isset($materialItem['id'])
+                                                    <input type="hidden" name="materials[{{ $index }}][detail_id]"
+                                                        value="{{ $materialItem['id'] }}">
+                                                @endisset
+                                                @error("materials.$index.barang_id")
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                            </td>
+                                            <td>
+                                                <input type="number" step="any"
+                                                    name="materials[{{ $index }}][jumlah]"
+                                                    class="form-control quantity-input @error("materials.$index.jumlah") is-invalid @enderror"
+                                                    value="{{ $materialItem['jumlah'] ?? 1 }}" min="0.00000001"
+                                                    required>
+                                                @error("materials.$index.jumlah")
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                            </td>
+                                            <td>
+                                                @php
+                                                    $selectedUnitId = $materialItem['unit_satuan_id'] ?? null;
+                                                    $selectedUnitNama = $materialItem['unit_nama_selected'] ?? '';
+                                                    if (old('materials') && !$selectedUnitNama && $selectedUnitId) {
+                                                        $unit = \App\Models\UnitSatuan::find($selectedUnitId);
+                                                        $selectedUnitNama = $unit->nama_unit_satuan ?? '';
+                                                    }
+                                                @endphp
+                                                <input type="hidden"
+                                                    name="materials[{{ $index }}][unit_satuan_id]"
+                                                    class="unit-id-input" value="{{ $selectedUnitId }}">
+                                                <input type="text"
+                                                    class="form-control unit-display @error("materials.$index.unit_satuan_id") is-invalid @enderror"
+                                                    value="{{ $selectedUnitNama }}" readonly>
+                                                @error("materials.$index.unit_satuan_id")
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-danger btn-sm remove-material"
+                                                    title="Hapus Material"><i class="fas fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                    @endforelse
                                 </tbody>
+                                <tfoot>
+                                    <tr id="no-material-row"
+                                        style="{{ empty($materialsData) ? '' : 'display: none;' }}">
+                                        <td colspan="4" class="text-center text-muted p-3">Belum ada material yang
+                                            ditambahkan.</td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>

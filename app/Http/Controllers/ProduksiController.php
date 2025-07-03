@@ -251,9 +251,9 @@ class ProduksiController extends Controller implements HasMiddleware
             }
 
             // Kalkulasi Total Biaya
-            $batchCount = (int) $validated['total_kebutuhan_bahan'];
+            $totalKebutuhanBahan = (int) $validated['total_kebutuhan_bahan'];
             $harga_perunit = (float) $validated['harga_perunit'];
-            $total_biaya = $batchCount * $harga_perunit;
+            $total_biaya = $totalKebutuhanBahan * $harga_perunit;
 
             // 1. Buat Header Produksi
             $produksi = Produksi::create([
