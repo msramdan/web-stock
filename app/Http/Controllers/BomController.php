@@ -79,8 +79,6 @@ class BomController extends Controller implements HasMiddleware
     public function create(): View
     {
         $companyId = session('sessionCompany');
-
-
         $produkJadi = Barang::where('company_id', $companyId)
             ->where('tipe_barang', 'Barang Jadi')
             ->orderBy('nama_barang')
