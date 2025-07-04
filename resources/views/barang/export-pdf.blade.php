@@ -274,45 +274,51 @@
     <div class="doc-title">LAPORAN DATA BARANG</div>
 
     <!-- Tabel Data Barang -->
-    <table class="table-data">
-        <thead>
+<table class="table-data">
+    <thead>
+        <tr>
+            <th>No</th>
+            <th>Kode Barang</th>
+            <th>Nama Barang</th>
+            <th>Tipe Barang</th>
+            <th>Deskripsi</th>
+            <th>Jenis Material</th>
+            <th>Unit</th>
+            <th>Harga</th>
+            <th>Stok</th>
+            <th>Total Harga</th> {{-- Tambahan --}}
+        </tr>
+    </thead>
+    <tbody>
+        @forelse($barangs as $index => $barang)
             <tr>
-                <th>No</th>
-                <th>Kode Barang</th>
-                <th>Nama Barang</th>
-                <th>Tipe Barang</th>
-                <th>Deskripsi</th>
-                <th>Jenis Material</th>
-                <th>Unit</th>
-                <th>Harga</th> {{-- Kolom harga --}}
-                <th>Stok</th>
+                <td class="text-center">{{ $index + 1 }}</td>
+                <td>{{ $barang->kode_barang ?? '-' }}</td>
+                <td>{{ $barang->nama_barang ?? '-' }}</td>
+                <td>{{ $barang->tipe_barang ?? '-' }}</td>
+                <td>{{ $barang->deskripsi_barang ?? '-' }}</td>
+                <td>{{ $barang->nama_jenis_material ?? '-' }}</td>
+                <td>{{ $barang->nama_unit_satuan ?? '-' }}</td>
+                <td>
+                    {{ $barang->harga !== null ? formatRupiah($barang->harga) : '-' }}
+                </td>
+                <td style="text-align: right;">
+                    {{ formatAngkaRibuan($barang->stock_barang) }}
+                </td>
+                <td style="text-align: right;">
+                    @php
+                        $total = ($barang->harga ?? 0) * ($barang->stock_barang ?? 0);
+                    @endphp
+                    {{ formatRupiah($total) }}
+                </td>
             </tr>
-        </thead>
-        <tbody>
-            @forelse($barangs as $index => $barang)
-                <tr>
-                    <td class="text-center">{{ $index + 1 }}</td>
-                    <td>{{ $barang->kode_barang ?? '-' }}</td>
-                    <td>{{ $barang->nama_barang ?? '-' }}</td>
-                    <td>{{ $barang->tipe_barang ?? '-' }}</td>
-                    <td>{{ $barang->deskripsi_barang ?? '-' }}</td>
-                    <td>{{ $barang->nama_jenis_material ?? '-' }}</td>
-                    <td>{{ $barang->nama_unit_satuan ?? '-' }}</td>
-                    <td>
-                        {{ $barang->harga !== null ? formatRupiah($barang->harga) : '-' }}
-                    </td>
-                    <td style="text-align: right;">
-                        {{ formatAngkaRibuan($barang->stock_barang) }}
-                    </td>
-                </tr>
-            @empty
-                <tr class="no-border">
-                    <td colspan="9" class="text-center">Tidak ada data barang yang dapat ditampilkan.</td>
-                </tr>
-            @endforelse
-        </tbody>
-
-    </table>
+        @empty
+            <tr class="no-border">
+                <td colspan="10" class="text-center">Tidak ada data barang yang dapat ditampilkan.</td>
+            </tr>
+        @endforelse
+    </tbody>
+</table>
 
     <!-- Bagian Tanda Tangan -->
     <div class="signature-section">

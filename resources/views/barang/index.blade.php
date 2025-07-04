@@ -86,6 +86,7 @@
                                         <th>{{ __('Satuan') }}</th> {{-- Disingkat --}}
                                         <th>{{ __('Harga Satuan') }}</th>
                                         <th>{{ __('Stok') }}</th>
+                                        <th>{{ __('Total Harga') }}</th>
                                         <th>{{ __('Photo') }}</th>
                                         <th>{{ __('Action') }}</th>
                                     </tr>
@@ -178,6 +179,10 @@
                     {
                         data: 'stock_barang',
                         name: 'barang.stock_barang'
+                    },
+                                        {
+                        data: 'total_harga',
+                        name: 'total_harga'
                     },
                     {
                         data: 'photo_barang',

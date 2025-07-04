@@ -76,7 +76,7 @@ class BarangController extends Controller implements HasMiddleware
             }
             // --- AKHIR FILTER ---
 
-            return DataTables::of($query) // Gunakan $query
+            return DataTables::of($query)
                 ->addColumn('tipe_barang', function ($row) {
                     if ($row->tipe_barang == 'Barang Jadi') return '<span class="badge bg-light-primary">Barang Jadi</span>';
                     if ($row->tipe_barang == 'Bahan Baku') return '<span class="badge bg-light-secondary">Bahan Baku</span>';
@@ -94,10 +94,15 @@ class BarangController extends Controller implements HasMiddleware
                 ->addColumn('stock_barang', function ($row) {
                     return formatAngkaRibuan($row->stock_barang);
                 })
+                ->addColumn('harga', function ($row) {
+                    return $row->harga !== null ? formatRupiah($row->harga) : '-';
+                })
+                ->addColumn('total_harga', function ($row) {
+                    $total = ($row->harga ?? 0) * ($row->stock_barang ?? 0);
+                    return formatRupiah($total);
+                })
                 ->addColumn('photo_barang', function ($row) {
                     return $row->photo_barang ?: null;
-                })->addColumn('harga', function ($row) {
-                    return $row->harga !== null ? formatRupiah($row->harga) : '-';
                 })
                 ->addColumn('action', 'barang.include.action')
                 ->rawColumns(['tipe_barang', 'photo_barang', 'action'])
