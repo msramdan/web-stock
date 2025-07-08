@@ -197,9 +197,9 @@ class ProduksiController extends Controller implements HasMiddleware
         $validated = $validator->validated();
 
         // Cek ulang BoM dan detailnya
-        $bom = Bom::with('details.material', 'kemasan.barang') // Eager load material
+        $bom = Bom::with(['details.material', 'kemasan.barang']) // Eager load relasi material & kemasan
             ->where('id', $validated['bom_id'])
-            ->where('barang_id', $validated['barang_id']) // Pastikan BoM sesuai Produk Jadi
+            ->where('barang_id', $validated['barang_id'])
             ->where('company_id', $companyId)
             ->first();
 
@@ -226,11 +226,19 @@ class ProduksiController extends Controller implements HasMiddleware
             $sumOfMaterialQtysPerBatch += $qtyPerBatch; // <-- Akumulasi SUM per batch
         }
 
-        foreach ($bom->kemasan as $itemKemasan) {
-            $requiredQty = (float) $itemKemasan->jumlah * $batchCount;
-            $stockSaatIni = (float) ($itemKemasan->barang->stock_barang ?? 0);
-            if ($stockSaatIni < $requiredQty) {
-                $stockErrors[] = "Stok kemasan '{$itemKemasan->barang->nama_barang}' tidak cukup (dibutuhkan: {$requiredQty}, tersedia: {$stockSaatIni})";
+        $kebutuhanKemasan = 0;
+        if ($bom->kemasan->isNotEmpty()) {
+            $itemKemasan = $bom->kemasan->first();
+            $totalProduksi = (float) $validated['total_kebutuhan_bahan']; // Ini adalah total Qty produk jadi
+            $kapasitasKemasan = (int) $itemKemasan->barang->kapasitas;
+
+            if ($kapasitasKemasan > 0) {
+                // Bulatkan ke atas
+                $kebutuhanKemasan = ceil($totalProduksi / $kapasitasKemasan);
+            }
+
+            if (($itemKemasan->barang->stock_barang ?? 0) < $kebutuhanKemasan) {
+                $stockErrors[] = "Stok kemasan '{$itemKemasan->barang->nama_barang}' tidak cukup (dibutuhkan: {$kebutuhanKemasan}, tersedia: {$itemKemasan->barang->stock_barang})";
             }
         }
 
@@ -304,16 +312,15 @@ class ProduksiController extends Controller implements HasMiddleware
             }
 
             // Tambahkan detail untuk Kemasan (Type 'Out')
-            foreach ($bom->kemasan as $itemKemasan) {
-                $qtyPerBatch = (float) $itemKemasan->jumlah; // Qty per batch dari BoM
-                $qtyDiperlukan = $qtyPerBatch * $batchCount; // Total dibutuhkan
+            if ($bom->kemasan->isNotEmpty() && $kebutuhanKemasan > 0) {
+                $itemKemasan = $bom->kemasan->first();
                 $produksiDetails[] = [
                     'produksi_id' => $produksi->id,
                     'barang_id' => $itemKemasan->barang_id, // ID Kemasan
-                    'unit_satuan_id' => $itemKemasan->unit_satuan_id, // Unit dari BoM Kemasan
+                    'unit_satuan_id' => $itemKemasan->unit_satuan_id,
                     'type' => 'Out',
-                    'qty_rate' => $qtyPerBatch, // Qty dari BoM
-                    'qty_total_diperlukan' => $qtyDiperlukan, // Total = qty_rate * batch
+                    'qty_rate' => $itemKemasan->barang->kapasitas, // Simpan kapasitas sebagai "rate"
+                    'qty_total_diperlukan' => $kebutuhanKemasan, // Total yg dibutuhkan (sudah dibulatkan)
                     'created_at' => now(),
                     'updated_at' => now()
                 ];
@@ -333,11 +340,10 @@ class ProduksiController extends Controller implements HasMiddleware
                     ->decrement('stock_barang', $qtyDikurangi, ['updated_at' => now()]);
             }
 
-            foreach ($bom->kemasan as $itemKemasan) {
-                $qtyDikurangi = (float) $itemKemasan->jumlah * $batchCount;
+            if ($bom->kemasan->isNotEmpty() && $kebutuhanKemasan > 0) {
                 DB::table('barang')
-                    ->where('id', $itemKemasan->barang_id)
-                    ->decrement('stock_barang', $qtyDikurangi);
+                    ->where('id', $bom->kemasan->first()->barang_id)
+                    ->decrement('stock_barang', $kebutuhanKemasan);
             }
 
             // 4. Tambah Stok Barang Jadi
@@ -471,30 +477,36 @@ class ProduksiController extends Controller implements HasMiddleware
         $batchDiff = $newBatchCount - $oldBatchCount;
         $stockErrors = [];
 
-        if ($batchDiff > 0) {
-            // Validasi stok material jika batch bertambah
+        $oldTotalProduk = $sumOfMaterialQtysPerBatch * $oldBatchCount;
+        $newTotalProduk = $sumOfMaterialQtysPerBatch * $newBatchCount;
+
+        if ($batchDiff > 0) { // Jika batch bertambah
+            // Validasi stok material
             foreach ($bom->details as $detail) {
-                if (empty($detail->barang_id) || $detail->material === null) continue;
                 $additionalQtyNeeded = (float)$detail->jumlah * $batchDiff;
                 $materialStock = (float)($detail->material->stock_barang ?? 0);
                 if ($materialStock < $additionalQtyNeeded) {
-                    $stockErrors[] = "Stok '{$detail->material->nama_barang}' tidak cukup (butuh: {$additionalQtyNeeded}, tersedia: {$materialStock})";
+                    $stockErrors[] = "Stok '{$detail->material->nama_barang}' tidak cukup (butuh tambahan: {$additionalQtyNeeded}, tersedia: {$materialStock})";
                 }
             }
-            // Validasi stok kemasan jika batch bertambah
-            foreach ($bom->kemasan as $itemKemasan) {
-                $additionalQtyNeeded = (float)$itemKemasan->jumlah * $batchDiff;
-                $kemasanStock = (float)($itemKemasan->barang->stock_barang ?? 0);
-                if ($kemasanStock < $additionalQtyNeeded) {
-                    $stockErrors[] = "Stok kemasan '{$itemKemasan->barang->nama_barang}' tidak cukup (butuh: {$additionalQtyNeeded}, tersedia: {$kemasanStock})";
+            // Validasi stok kemasan
+            if ($bom->kemasan->isNotEmpty()) {
+                $itemKemasan = $bom->kemasan->first();
+                $kapasitas = (int) $itemKemasan->barang->kapasitas;
+                if ($kapasitas > 0) {
+                    $oldKebutuhanKemasan = ceil($oldTotalProduk / $kapasitas);
+                    $newKebutuhanKemasan = ceil($newTotalProduk / $kapasitas);
+                    $additionalKemasanNeeded = $newKebutuhanKemasan - $oldKebutuhanKemasan;
+                    if ($additionalKemasanNeeded > 0 && ($itemKemasan->barang->stock_barang ?? 0) < $additionalKemasanNeeded) {
+                        $stockErrors[] = "Stok kemasan '{$itemKemasan->barang->nama_barang}' tidak cukup (butuh tambahan: {$additionalKemasanNeeded}, tersedia: {$itemKemasan->barang->stock_barang})";
+                    }
                 }
             }
-        } elseif ($batchDiff < 0) {
-            // Validasi stok produk jadi jika batch berkurang
-            $productStock = (float) Barang::where('id', $produksi->barang_id)->value('stock_barang');
+        } elseif ($batchDiff < 0) { // Jika batch berkurang
+            $productStock = (float) $produksi->produkJadi->stock_barang;
             $qtyToDeductFromProduct = abs($sumOfMaterialQtysPerBatch * $batchDiff);
             if ($productStock < $qtyToDeductFromProduct) {
-                $stockErrors[] = "Stok produk jadi '{$produksi->produkJadi->kode_barang}' tidak cukup untuk dikurangi (stok: {$productStock}, perlu dikurangi: {$qtyToDeductFromProduct})";
+                $stockErrors[] = "Stok produk jadi '{$produksi->produkJadi->nama_barang}' tidak cukup untuk dikurangi (stok: {$productStock}, perlu dikurangi: {$qtyToDeductFromProduct})";
             }
         }
 
@@ -541,59 +553,49 @@ class ProduksiController extends Controller implements HasMiddleware
             ]);
 
             // 2. Update Detail Produksi
-            $newTotalProdukJadi = $sumOfMaterialQtysPerBatch * $newBatchCount;
             ProduksiDetail::where('produksi_id', $produksi->id)->where('type', 'In')
-                ->update([
-                    'qty_rate' => $sumOfMaterialQtysPerBatch,
-                    'qty_total_diperlukan' => $newTotalProdukJadi,
-                    'updated_at' => now()
-                ]);
+                ->update(['qty_total_diperlukan' => $newTotalProduk, 'updated_at' => now()]);
 
             foreach ($bom->details as $detail) {
-                ProduksiDetail::where('produksi_id', $produksi->id)
-                    ->where('type', 'Out')
-                    ->where('barang_id', $detail->barang_id)
-                    ->update([
-                        'qty_rate' => (float)$detail->jumlah,
-                        'qty_total_diperlukan' => (float)$detail->jumlah * $newBatchCount,
-                        'updated_at' => now()
-                    ]);
+                ProduksiDetail::where('produksi_id', $produksi->id)->where('type', 'Out')->where('barang_id', $detail->barang_id)
+                    ->update(['qty_total_diperlukan' => (float)$detail->jumlah * $newBatchCount, 'updated_at' => now()]);
             }
 
-            foreach ($bom->kemasan as $itemKemasan) {
-                ProduksiDetail::where('produksi_id', $produksi->id)
-                    ->where('type', 'Out')
-                    ->where('barang_id', $itemKemasan->barang_id)
-                    ->update([
-                        'qty_rate' => (float)$itemKemasan->jumlah,
-                        'qty_total_diperlukan' => (float)$itemKemasan->jumlah * $newBatchCount,
-                        'updated_at' => now()
-                    ]);
+            if ($bom->kemasan->isNotEmpty()) {
+                $itemKemasan = $bom->kemasan->first();
+                $kebutuhanKemasan = ceil($newTotalProduk / ($itemKemasan->barang->kapasitas ?: 1));
+                ProduksiDetail::where('produksi_id', $produksi->id)->where('type', 'Out')->where('barang_id', $itemKemasan->barang_id)
+                    ->update(['qty_total_diperlukan' => $kebutuhanKemasan, 'updated_at' => now()]);
             }
 
             // 3. Sesuaikan Stok jika ada perubahan batch
             if ($batchDiff != 0) {
                 // Sesuaikan stok material
                 foreach ($bom->details as $detail) {
-                    if (empty($detail->barang_id) || $detail->material === null) continue;
                     $stockChangeMaterial = (float)$detail->jumlah * $batchDiff;
-                    DB::table('barang')
-                        ->where('id', $detail->barang_id)
+                    DB::table('barang')->where('id', $detail->barang_id)
                         ->{$stockChangeMaterial > 0 ? 'decrement' : 'increment'}('stock_barang', abs($stockChangeMaterial));
                 }
 
                 // Sesuaikan stok kemasan
-                foreach ($bom->kemasan as $itemKemasan) {
-                    $stockChangeKemasan = (float)$itemKemasan->jumlah * $batchDiff;
-                    DB::table('barang')
-                        ->where('id', $itemKemasan->barang_id)
-                        ->{$stockChangeKemasan > 0 ? 'decrement' : 'increment'}('stock_barang', abs($stockChangeKemasan));
+                if ($bom->kemasan->isNotEmpty()) {
+                    $itemKemasan = $bom->kemasan->first();
+                    $kapasitas = (int)$itemKemasan->barang->kapasitas;
+                    if ($kapasitas > 0) {
+                        $oldKebutuhanKemasan = ceil($oldTotalProduk / $kapasitas);
+                        $newKebutuhanKemasan = ceil($newTotalProduk / $kapasitas);
+                        $stockChangeKemasan = $newKebutuhanKemasan - $oldKebutuhanKemasan;
+
+                        if ($stockChangeKemasan != 0) {
+                            DB::table('barang')->where('id', $itemKemasan->barang_id)
+                                ->{$stockChangeKemasan > 0 ? 'decrement' : 'increment'}('stock_barang', abs($stockChangeKemasan));
+                        }
+                    }
                 }
 
                 // Sesuaikan stok produk jadi
                 $stockChangeProduct = $sumOfMaterialQtysPerBatch * $batchDiff;
-                DB::table('barang')
-                    ->where('id', $produksi->barang_id)
+                DB::table('barang')->where('id', $produksi->barang_id)
                     ->{$stockChangeProduct > 0 ? 'increment' : 'decrement'}('stock_barang', abs($stockChangeProduct));
             }
 
@@ -637,14 +639,17 @@ class ProduksiController extends Controller implements HasMiddleware
                 // Ambil qty_total_diperlukan yang tersimpan (sudah hasil kalkulasi batch)
                 $qtyTotal = (float) $detail->qty_total_diperlukan;
 
+                $barangTerkait = Barang::find($detail->barang_id);
+
                 if ($detail->type === 'Out') {
-                    // Tambah kembali stok material
+                    // Jika 'Out', stok dikembalikan (increment)
+                    // Berlaku untuk material DAN kemasan
                     DB::table('barang')
                         ->where('id', $detail->barang_id)
                         ->where('company_id', $companyId)
                         ->increment('stock_barang', $qtyTotal, ['updated_at' => now()]);
                 } elseif ($detail->type === 'In') {
-                    // Kurangi stok produk jadi
+                    // Jika 'In', stok produk jadi dikurangi (decrement)
                     DB::table('barang')
                         ->where('id', $detail->barang_id)
                         ->where('company_id', $companyId)

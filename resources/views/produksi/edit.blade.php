@@ -220,32 +220,43 @@
                                         </table>
                                     </div>
 
-                                    <h5 class="mt-4">Daftar Kemasan</h5>
+                                    <h5 class="mt-4">Kebutuhan Kemasan</h5>
                                     <div class="table-responsive">
                                         <table class="table table-sm table-hover table-bordered" id="kemasan-table">
                                             <thead>
                                                 <tr>
                                                     <th>Kemasan</th>
-                                                    <th class="text-center">Kebutuhan/Batch</th>
+                                                    <th class="text-center">Kapasitas</th>
+                                                    <th class="text-center">Stok Saat Ini</th>
                                                     <th class="text-center">Total Dibutuhkan</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @forelse($produksi->bom->kemasan as $kemasan)
-                                                    <tr data-kemasan-id="{{ $kemasan->barang_id }}"
-                                                        data-jumlah-per-batch="{{ $kemasan->jumlah }}">
-                                                        <td>{{ $kemasan->barang->nama_barang }}</td>
-                                                        <td class="text-center">
-                                                            {{ rtrim(rtrim(number_format($kemasan->jumlah, 4, ',', '.'), '0'), ',') }}
+                                                @if ($produksi->bom && $produksi->bom->kemasan->isNotEmpty())
+                                                    @php
+                                                        $itemKemasan = $produksi->bom->kemasan->first();
+                                                    @endphp
+                                                    <tr data-kemasan-id="{{ $itemKemasan->barang_id }}"
+                                                        data-kapasitas="{{ $itemKemasan->barang->kapasitas ?? 0 }}">
+                                                        <td>
+                                                            {{ $itemKemasan->barang->nama_barang }}
+                                                            <small
+                                                                class="d-block text-muted">{{ $itemKemasan->barang->kode_barang }}</small>
+                                                        </td>
+                                                        <td class="text-center kapasitas-kemasan">
+                                                            {{ number_format($itemKemasan->barang->kapasitas ?? 0, 0, ',', '.') }}
+                                                        </td>
+                                                        <td class="text-center stok-kemasan">
+                                                            {{ number_format($itemKemasan->barang->stock_barang ?? 0, 0, ',', '.') }}
                                                         </td>
                                                         <td class="text-center required-kemasan-qty fw-bold">0</td>
                                                     </tr>
-                                                @empty
+                                                @else
                                                     <tr>
-                                                        <td colspan="3" class="text-center text-muted">Tidak ada
+                                                        <td colspan="4" class="text-center text-muted">Tidak ada
                                                             kemasan untuk BoM ini.</td>
                                                     </tr>
-                                                @endforelse
+                                                @endif
                                             </tbody>
                                         </table>
                                     </div>
@@ -291,6 +302,7 @@
             const totalRequiredSumCell = document.getElementById('total-required-sum');
             const totalBiayaProduksiCell = document.getElementById('total-biaya-produksi');
             const kemasanTableBody = document.getElementById('kemasan-table')?.querySelector('tbody');
+            const totalKebutuhanBahanInput = document.getElementById('total-kebutuhan-bahan-input');
 
             function calculateRequiredItems() {
                 if (!batchInput || !materialTableBody || !kemasanTableBody) return;
@@ -299,7 +311,7 @@
                 const hargaPerUnit = parseFloat(hargaPerUnitInput.value) || 0;
                 let totalMaterialSum = 0;
 
-                // Kalkulasi Material
+                // 1. Kalkulasi Kebutuhan Material
                 materialTableBody.querySelectorAll('tr[data-material-id]').forEach((row) => {
                     const qtyPerBatchText = row.querySelector('.qty-per-batch').textContent?.trim() || '0';
                     const qtyPerBatch = parseFloat(qtyPerBatchText.replace(/\./g, '').replace(',', '.')) ||
@@ -308,41 +320,48 @@
                     const currentStock = parseFloat(currentStockText.replace(/\./g, '').replace(',',
                         '.')) || 0;
                     const requiredQtyCell = row.querySelector('.required-qty');
+
                     const requiredQty = qtyPerBatch * batchCount;
 
                     requiredQtyCell.textContent = requiredQty.toLocaleString('id-ID', {
                         maximumFractionDigits: 4
                     });
+                    requiredQtyCell.classList.toggle('text-danger', requiredQty > currentStock);
 
-                    if (requiredQty > currentStock) {
-                        requiredQtyCell.classList.add('text-danger');
-                    } else {
-                        requiredQtyCell.classList.remove('text-danger');
-                    }
                     totalMaterialSum += requiredQty;
                 });
+
+                // Update total kebutuhan bahan di tabel dan input hidden
                 if (totalRequiredSumCell) {
                     totalRequiredSumCell.textContent = totalMaterialSum.toLocaleString('id-ID', {
                         maximumFractionDigits: 4
                     });
                 }
+                if (totalKebutuhanBahanInput) {
+                    totalKebutuhanBahanInput.value = totalMaterialSum;
+                }
 
+                // 2. Kalkulasi Kebutuhan Kemasan (Gunakan variabel totalMaterialSum yang sudah dihitung)
+                const totalProduksi = totalMaterialSum; // <<-- INI PERBAIKANNYA
 
-                document.getElementById('total-kebutuhan-bahan-input').value = totalMaterialSum;
-
-                // Kalkulasi Kemasan
                 kemasanTableBody.querySelectorAll('tr[data-kemasan-id]').forEach((row) => {
-                    const jumlahPerBatch = parseFloat(row.dataset.jumlahPerBatch) || 0;
-                    const requiredKemasanQty = jumlahPerBatch * batchCount;
-                    row.querySelector('.required-kemasan-qty').textContent = requiredKemasanQty
-                        .toLocaleString('id-ID', {
-                            maximumFractionDigits: 4
-                        });
+                    const kapasitas = parseInt(row.dataset.kapasitas) || 0;
+                    const stokSaatIni = parseInt(row.querySelector('.stok-kemasan').textContent.replace(
+                        /\./g, '')) || 0;
+                    const requiredQtyCell = row.querySelector('.required-kemasan-qty');
+                    let kebutuhanKemasan = 0;
+
+                    if (kapasitas > 0 && totalProduksi > 0) {
+                        kebutuhanKemasan = Math.ceil(totalProduksi / kapasitas);
+                    }
+
+                    requiredQtyCell.textContent = kebutuhanKemasan.toLocaleString('id-ID');
+                    requiredQtyCell.classList.toggle('text-danger', kebutuhanKemasan > stokSaatIni);
                 });
 
-                // Kalkulasi Biaya
+                // 3. Kalkulasi Total Biaya Produksi
                 if (totalBiayaProduksiCell) {
-                    const totalBiaya = totalMaterialSum * hargaPerUnit;
+                    const totalBiaya = totalProduksi * hargaPerUnit;
                     totalBiayaProduksiCell.textContent = 'Rp ' + totalBiaya.toLocaleString('id-ID', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
@@ -350,10 +369,10 @@
                 }
             }
 
-            // Panggil saat halaman dimuat & saat ada interaksi
-            calculateRequiredItems();
-            if (batchInput) batchInput.addEventListener('input', calculateRequiredItems);
-            if (hargaPerUnitInput) hargaPerUnitInput.addEventListener('input', calculateRequiredItems);
+            // --- Inisialisasi dan Pemasangan Event Listener ---
+            calculateRequiredItems(); // Panggil saat halaman dimuat
+            batchInput?.addEventListener('input', calculateRequiredItems);
+            hargaPerUnitInput?.addEventListener('input', calculateRequiredItems);
         });
     </script>
 @endpush

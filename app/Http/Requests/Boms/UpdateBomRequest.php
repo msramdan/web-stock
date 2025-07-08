@@ -24,56 +24,42 @@ class UpdateBomRequest extends FormRequest
      */
     public function rules(): array
     {
-        // Dapatkan ID BoM dari route parameter
-        $bomId = $this->route('bom') ? $this->route('bom')->id : null;
+        $bomId = $this->route('bom')->id;
+        $companyId = session('sessionCompany');
 
         return [
-            // Validasi untuk data BoM utama
             'barang_id' => [
                 'required',
                 'integer',
-                Rule::exists('barang', 'id')
+                Rule::exists('barang', 'id')->where('company_id', $companyId),
             ],
             'deskripsi' => ['required', 'string', 'max:65535'],
 
             // Validasi untuk array materials
-            'materials' => ['present', 'array'], // Harus ada, minimal array kosong (akan divalidasi di controller jika butuh minimal 1 item)
-
-            // Validasi untuk setiap item dalam array materials
-            'materials.*.detail_id' => [ // ID detail yang sudah ada (opsional)
-                'sometimes', // Hanya ada jika ini adalah update detail yang sudah ada
-                'nullable', // Bisa null jika baris baru
+            'materials' => ['present', 'array'],
+            'materials.*.detail_id' => [
+                'nullable',
                 'integer',
-                // Pastikan detail_id yang dikirim benar-benar ada dan terkait dengan BoM ini
-                Rule::exists('bom_detail', 'id')->where(function ($query) use ($bomId) {
-                    if ($bomId) {
-                        $query->where('bom_id', $bomId);
-                    }
+                Rule::exists('bom_detail', 'id')->where('bom_id', $bomId),
+            ],
+            'materials.*.barang_id' => [
+                'required',
+                'integer',
+                Rule::exists('barang', 'id')->where('company_id', $companyId),
+            ],
+            'materials.*.jumlah' => ['required', 'numeric', 'min:0.00000001'],
+            'materials.*.unit_satuan_id' => ['required', 'integer', Rule::exists('unit_satuan', 'id')->where('company_id', $companyId)],
+
+
+            'kemasan' => ['nullable', 'array'],
+            'kemasan.barang_id' => [
+                'nullable', // Boleh kosong jika tidak memilih kemasan
+                'integer',
+                Rule::exists('barang', 'id')->where(function ($query) use ($companyId) {
+                    $query->where('tipe_barang', 'Kemasan')
+                        ->where('company_id', $companyId);
                 }),
             ],
-            'materials.*.barang_id' => [ // ID Material/Komponen
-                'required',
-                'integer',
-                Rule::exists('barang', 'id'),
-                // Opsional: Pastikan barang_id yang dipilih tidak sama dengan barang_id produk jadi
-                // Rule::notIn([$this->input('barang_id')]),
-            ],
-            'materials.*.jumlah' => [ // Jumlah material
-                'required',
-                'numeric',
-                'min:0.01' // Atau sesuai kebutuhan minimal Anda
-            ],
-            'materials.*.unit_satuan_id' => [ // Unit satuan material
-                'required',
-                'integer',
-                Rule::exists('unit_satuan', 'id')
-                // Opsional: Anda bisa menambahkan validasi untuk memastikan unit_satuan_id cocok dengan barang_id yang dipilih,
-                // tapi ini mungkin lebih kompleks dan bisa dilakukan di controller atau service layer.
-            ],
-            'kemasan' => ['nullable', 'array'],
-            'kemasan.*.barang_id' => ['required_with:kemasan', 'integer', Rule::exists('barang', 'id')],
-            'kemasan.*.jumlah' => ['required_with:kemasan', 'numeric', 'min:0.0001'],
-            'kemasan.*.unit_satuan_id' => ['required_with:kemasan', 'integer', Rule::exists('unit_satuan', 'id')],
         ];
     }
 
@@ -88,13 +74,10 @@ class UpdateBomRequest extends FormRequest
             'barang_id' => 'Barang (Produk Jadi)',
             'deskripsi' => 'Deskripsi',
             'materials' => 'Material / Komponen',
-            'materials.*.detail_id' => 'ID Detail Material',
             'materials.*.barang_id' => 'Material',
             'materials.*.jumlah' => 'Jumlah Material',
             'materials.*.unit_satuan_id' => 'Unit Satuan Material',
-            'kemasan.*.barang_id' => 'Barang Kemasan',
-            'kemasan.*.jumlah' => 'Jumlah Kemasan',
-            'kemasan.*.unit_satuan_id' => 'Unit Satuan Kemasan',
+            'kemasan.barang_id' => 'Barang Kemasan',
         ];
     }
 
@@ -125,6 +108,10 @@ class UpdateBomRequest extends FormRequest
             'kemasan.*.jumlah.min' => 'Jumlah kemasan pada baris :position minimal :min.',
             'kemasan.*.unit_satuan_id.required_with' => 'Unit satuan kemasan pada baris :position wajib diisi.',
             'kemasan.*.unit_satuan_id.exists' => 'Unit satuan kemasan yang dipilih pada baris :position tidak valid.',
+
+            'kemasan.*.kapasitas.required_with' => 'Kapasitas kemasan pada baris :position wajib diisi.',
+            'kemasan.*.kapasitas.numeric' => 'Kapasitas kemasan pada baris :position harus berupa angka.',
+            'kemasan.*.kapasitas.min' => 'Kapasitas kemasan pada baris :position minimal :min.',
         ];
     }
 }

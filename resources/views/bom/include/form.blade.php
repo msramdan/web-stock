@@ -194,80 +194,64 @@
         {{-- Tabel Daftar Kemasan --}}
         <div class="row mt-4">
             <div class="col-lg-12">
-                <h6 class="mb-3 fw-bold">Daftar Kemasan (Opsional)</h6>
+                <h6 class="mb-3 fw-bold">Kemasan (Opsional)</h6>
                 <div class="card border">
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped mb-0" id="kemasan_table">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th style="width: 45%;">Barang Kemasan</th>
-                                        <th style="width: 20%;">Jumlah</th>
-                                        <th style="width: 25%;">Unit Satuan</th>
-                                        <th style="width: 10%;" class="text-center">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="kemasan_tbody">
-                                    @php
-                                        $kemasanData = old(
-                                            'kemasan',
-                                            isset($bom)
-                                                ? $bom->kemasan
-                                                    ->map(
-                                                        fn($k) => [
-                                                            'id' => $k->id,
-                                                            'barang_id' => $k->barang_id,
-                                                            'jumlah' => $k->jumlah,
-                                                            'unit_satuan_id' => $k->unit_satuan_id,
-                                                        ],
-                                                    )
-                                                    ->toArray()
-                                                : [],
-                                        );
-                                    @endphp
-                                    @forelse ($kemasanData as $index => $item)
-                                        <tr id="kemasan_row_{{ $index }}">
-                                            <td>
-                                                <select name="kemasan[{{ $index }}][barang_id]"
-                                                    class="form-select kemasan-select">
-                                                    <option value="">-- Pilih Kemasan --</option>
-                                                    {{-- Gunakan variabel $barangKemasan --}}
-                                                    @foreach ($barangKemasan ?? [] as $kemasan)
-                                                        <option value="{{ $kemasan->id }}"
-                                                            data-unit-id="{{ $kemasan->unit_satuan_id }}"
-                                                            data-unit-nama="{{ $kemasan->unitSatuan->nama_unit_satuan ?? '' }}"
-                                                            {{ ($item['barang_id'] ?? null) == $kemasan->id ? 'selected' : '' }}>
-                                                            {{ $kemasan->kode_barang }} - {{ $kemasan->nama_barang }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            </td>
-                                            <td>
-                                                <input type="number" step="any"
-                                                    name="kemasan[{{ $index }}][jumlah]" class="form-control"
-                                                    value="{{ $item['jumlah'] ?? 1 }}" min="0.0001">
-                                            </td>
-                                            <td>
-                                                <input type="hidden"
-                                                    name="kemasan[{{ $index }}][unit_satuan_id]"
-                                                    class="unit-id-input-kemasan">
-                                                <input type="text" class="form-control unit-display-kemasan"
-                                                    readonly>
-                                            </td>
-                                            <td class="text-center">
-                                                <button type="button" class="btn btn-danger btn-sm remove-kemasan"><i
-                                                        class="fas fa-trash"></i></button>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                    @endforelse
-                                </tbody>
-                            </table>
+                    <div class="card-body">
+                        <div class="row">
+                            @php
+                                // Ambil data kemasan yang sudah ada (jika mode edit)
+                                $existingKemasan = null;
+                                if (old('kemasan')) {
+                                    $barangId = old('kemasan.barang_id');
+                                    if ($barangId) {
+                                        $existingKemasan = $barangKemasan->firstWhere('id', $barangId);
+                                        $existingKemasan->barang_id_selected = $barangId;
+                                    }
+                                } elseif (isset($bom) && $bom->kemasan->isNotEmpty()) {
+                                    $existingKemasan = $bom->kemasan->first()->barang; // Ambil model barang dari relasi
+                                    $existingKemasan->barang_id_selected = $existingKemasan->id;
+                                }
+                            @endphp
+
+                            {{-- Kolom Pilih Kemasan --}}
+                            <div class="col-md-5">
+                                <div class="form-group">
+                                    <label for="kemasan_barang_id" class="form-label">Barang Kemasan</label>
+                                    <select name="kemasan[barang_id]" id="kemasan_barang_id" class="form-select">
+                                        <option value="">-- Tidak Menggunakan Kemasan --</option>
+                                        @foreach ($barangKemasan as $kemasan)
+                                            <option value="{{ $kemasan->id }}"
+                                                data-kapasitas="{{ $kemasan->kapasitas ?? 0 }}"
+                                                data-unit-nama="{{ $kemasan->unitSatuan?->nama_unit_satuan ?? 'N/A' }}"
+                                                {{ ($existingKemasan->barang_id_selected ?? null) == $kemasan->id ? 'selected' : '' }}>
+                                                {{ $kemasan->kode_barang }} - {{ $kemasan->nama_barang }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            {{-- Kolom Kapasitas (Read-only) --}}
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="kemasan_kapasitas" class="form-label">Kapasitas</label>
+                                    <input type="number" id="kemasan_kapasitas"
+                                        value="{{ $existingKemasan->kapasitas ?? '' }}" class="form-control" readonly
+                                        placeholder="Pilih kemasan dahulu">
+                                </div>
+                            </div>
+
+                            {{-- Kolom Unit Satuan (Read-only) --}}
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="kemasan_unit" class="form-label">Unit Satuan</label>
+                                    <input type="text" id="kemasan_unit"
+                                        value="{{ $existingKemasan->unitSatuan?->nama_unit_satuan ?? '' }}"
+                                        class="form-control" readonly placeholder="Pilih kemasan dahulu">
+                                </div>
+                            </div>
+
                         </div>
-                    </div>
-                    <div class="card-footer">
-                        <button type="button" id="add_kemasan_row" class="btn btn-info btn-sm"><i
-                                class="fas fa-plus"></i> Tambah Kemasan</button>
                     </div>
                 </div>
             </div>
@@ -524,5 +508,29 @@
             row.find('.unit-display-kemasan').val(unitNama || '');
             row.find('.unit-id-input-kemasan').val(unitId || ''); // ⚠️ Pastikan ini diisi
         }
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const kemasanSelect = document.getElementById('kemasan_barang_id');
+            const kapasitasInput = document.getElementById('kemasan_kapasitas');
+            const unitInput = document.getElementById('kemasan_unit');
+
+            function updateKemasanFields() {
+                const selectedOption = kemasanSelect.options[kemasanSelect.selectedIndex];
+                if (selectedOption && selectedOption.value) {
+                    kapasitasInput.value = selectedOption.getAttribute('data-kapasitas');
+                    unitInput.value = selectedOption.getAttribute('data-unit-nama');
+                } else {
+                    kapasitasInput.value = '';
+                    unitInput.value = '';
+                }
+            }
+
+            // Panggil saat ada perubahan pada dropdown kemasan
+            kemasanSelect.addEventListener('change', updateKemasanFields);
+
+            // Panggil sekali saat halaman dimuat untuk mengisi data jika mode edit
+            updateKemasanFields();
+        });
     </script>
 @endpush

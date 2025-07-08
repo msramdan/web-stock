@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 // Import model dan request yang diperlukan
 use App\Models\{Bom, BomDetail, Barang, JenisMaterial, UnitSatuan, Company}; // Tambahkan Company
 use App\Http\Requests\Boms\{StoreBomRequest, UpdateBomRequest}; // Pastikan request ini ada
+use App\Models\BomKemasan;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request; // Gunakan Request standar jika perlu validasi manual tambahan
@@ -90,9 +91,7 @@ class BomController extends Controller implements HasMiddleware
 
         $barangKemasan = Barang::with('unitSatuan')
             ->where('company_id', $companyId)
-            ->whereHas('jenisMaterial', function ($query) {
-                $query->where('nama_jenis_material', 'MATERIAL KEMASAN');
-            })
+            ->where('tipe_barang', 'Kemasan')
             ->orderBy('nama_barang')->get();
 
 
@@ -188,15 +187,23 @@ class BomController extends Controller implements HasMiddleware
                 throw ValidationException::withMessages(['materials' => 'Tidak ada data material valid yang bisa disimpan.']);
             }
 
-            if (!empty($validated['kemasan'])) {
-                foreach ($validated['kemasan'] as $item) {
-                    if (!empty($item['barang_id']) && !empty($item['jumlah'])) {
-                        $bom->kemasan()->create([
-                            'barang_id' => $item['barang_id'],
-                            'jumlah' => $item['jumlah'],
-                            'unit_satuan_id' => $item['unit_satuan_id'],
-                        ]);
-                    }
+            if (!empty($validated['kemasan']['barang_id'])) {
+                $kemasanData = $validated['kemasan'];
+                $barangKemasan = Barang::where('id', $kemasanData['barang_id'])
+                    ->where('company_id', $companyId)
+                    ->where('tipe_barang', 'Kemasan')
+                    ->first();
+
+                if ($barangKemasan) {
+                    BomKemasan::create([
+                        'bom_id' => $bom->id,
+                        'barang_id' => $barangKemasan->id,
+                        'unit_satuan_id' => $barangKemasan->unit_satuan_id,
+                        'kapasitas' => $barangKemasan->kapasitas, // Ambil kapasitas dari master barang
+                    ]);
+                } else {
+                    DB::rollBack();
+                    throw ValidationException::withMessages(['kemasan.barang_id' => 'Barang kemasan yang dipilih tidak valid.']);
                 }
             }
 
@@ -266,10 +273,8 @@ class BomController extends Controller implements HasMiddleware
             ->orderBy('nama_barang')->get();
 
         $barangKemasan = Barang::with('unitSatuan')
-            ->where('company_id', $companyId)
-            ->whereHas('jenisMaterial', function ($query) {
-                $query->where('nama_jenis_material', 'MATERIAL KEMASAN');
-            })
+            ->where('company_id', session('sessionCompany'))
+            ->where('tipe_barang', 'Kemasan')
             ->orderBy('nama_barang')->get();
 
         $unitSatuans = UnitSatuan::where('company_id', $companyId)
@@ -285,155 +290,62 @@ class BomController extends Controller implements HasMiddleware
     public function update(UpdateBomRequest $request, Bom $bom): RedirectResponse
     {
         $companyId = session('sessionCompany');
-        // Validasi company
         if ($bom->company_id != $companyId) {
-            abort(403, 'Unauthorized action.');
+            abort(403, 'Akses ditolak.');
         }
 
         $validated = $request->validated();
 
-        // Validasi tambahan: pastikan ada minimal 1 material setelah update
         if (empty($validated['materials'])) {
-            throw ValidationException::withMessages(['materials' => 'Minimal harus ada 1 material/komponen.']);
+            throw ValidationException::withMessages(['materials' => 'BoM harus memiliki setidaknya satu material/komponen.']);
         }
-
-        // Validasi tambahan: Pastikan produk jadi berasal dari company yang sama
-        $produkJadi = Barang::where('id', $validated['barang_id'])
-            ->where('company_id', $companyId)
-            ->first();
-        if (!$produkJadi) {
-            throw ValidationException::withMessages(['barang_id' => 'Produk jadi yang dipilih tidak valid atau tidak sesuai dengan perusahaan Anda.']);
-        }
-
 
         DB::beginTransaction();
         try {
             // 1. Update data BoM utama
-            // Pastikan company_id tidak ikut terupdate jika tidak seharusnya
-            $bomData = [
+            $bom->update([
                 'barang_id' => $validated['barang_id'],
                 'deskripsi' => $validated['deskripsi'],
-                // 'company_id' => $companyId, // Tidak perlu diupdate biasanya
-            ];
-            $bom->update($bomData);
-
+            ]);
 
             // 2. Proses detail material
-            $existingDetailIds = $bom->details->pluck('id')->toArray();
             $submittedDetailIds = [];
-            $materialsToInsert = [];
-            $materialsToUpdate = []; // [id => data]
-
-            // --- Kumpulkan ID Material & Unit Satuan dari request ---
-            $materialIds = [];
-            $unitSatuanIds = [];
             foreach ($validated['materials'] as $materialData) {
-                if (isset($materialData['barang_id'])) $materialIds[] = $materialData['barang_id'];
-                if (isset($materialData['unit_satuan_id'])) $unitSatuanIds[] = $materialData['unit_satuan_id'];
-            }
-            $materialIds = array_unique($materialIds);
-            $unitSatuanIds = array_unique($unitSatuanIds);
-
-            // --- Cek validitas Material & Unit Satuan di company ini ---
-            $validMaterials = Barang::whereIn('id', $materialIds)
-                ->where('company_id', $companyId)
-                ->pluck('id')->toArray();
-            $validUnitSatuans = UnitSatuan::whereIn('id', $unitSatuanIds)
-                ->where('company_id', $companyId)
-                ->pluck('id')->toArray();
-            // --- End Cek Validitas ---
-
-
-            foreach ($validated['materials'] as $materialData) {
-                // Pastikan data lengkap
-                if (!isset($materialData['barang_id'], $materialData['jumlah'], $materialData['unit_satuan_id'])) {
-                    Log::warning('Data material tidak lengkap saat update BOM: ', $materialData);
-                    continue; // Lewati item ini
-                }
-
-                $materialId = $materialData['barang_id'];
-                $unitSatuanId = $materialData['unit_satuan_id'];
-                $detailId = $materialData['detail_id'] ?? null; // Ambil ID detail jika ada (untuk update)
-
-                // --- Validasi Material & Unit Satuan per item ---
-                if (!in_array($materialId, $validMaterials)) {
-                    DB::rollBack();
-                    $invalidMaterial = Barang::find($materialId);
-                    throw ValidationException::withMessages(['materials' => "Material '" . ($invalidMaterial->kode_barang ?? $materialId) . "' tidak valid/sesuai."]);
-                }
-                if (!in_array($unitSatuanId, $validUnitSatuans)) {
-                    DB::rollBack();
-                    $invalidUnit = UnitSatuan::find($unitSatuanId);
-                    throw ValidationException::withMessages(['materials' => "Unit Satuan '" . ($invalidUnit->nama_unit_satuan ?? $unitSatuanId) . "' tidak valid/sesuai."]);
-                }
-                // --- End Validasi per Item ---
-
-
+                $detailId = $materialData['detail_id'] ?? null;
                 $dataPayload = [
-                    // 'bom_id' => $bom->id, // Tidak perlu untuk update, sudah di where clause
-                    'barang_id' => $materialId,
+                    'barang_id' => $materialData['barang_id'],
                     'jumlah' => $materialData['jumlah'],
-                    'unit_satuan_id' => $unitSatuanId,
-                    'updated_at' => now(),
+                    'unit_satuan_id' => $materialData['unit_satuan_id'],
                 ];
 
-                if ($detailId && in_array($detailId, $existingDetailIds)) {
-                    // --- Antrikan Update ---
-                    $materialsToUpdate[$detailId] = $dataPayload;
-                    $submittedDetailIds[] = (int)$detailId; // Simpan ID yang di-submit untuk proses delete nanti
-                } else {
-                    // --- Antrikan Insert (detail baru) ---
-                    $dataPayload['bom_id'] = $bom->id; // Perlu bom_id untuk insert
-                    $dataPayload['created_at'] = now();
-                    $materialsToInsert[] = $dataPayload;
-                }
+                // Update detail yang sudah ada atau buat yang baru
+                $detail = BomDetail::updateOrCreate(
+                    [
+                        'id' => $detailId,
+                        'bom_id' => $bom->id, // Pastikan hanya memanipulasi detail milik BoM ini
+                    ],
+                    $dataPayload
+                );
+                $submittedDetailIds[] = $detail->id;
             }
 
-            // --- Lakukan Update ---
-            if (!empty($materialsToUpdate)) {
-                foreach ($materialsToUpdate as $id => $data) {
-                    // Update hanya jika detail ID tersebut memang milik BoM ini
-                    BomDetail::where('id', $id)
-                        ->where('bom_id', $bom->id) // Keamanan tambahan
-                        ->update($data);
-                }
-            }
+            // Hapus detail yang tidak ada di form (yang dihapus oleh user)
+            $bom->details()->whereNotIn('id', $submittedDetailIds)->delete();
 
-            // --- Lakukan Insert ---
-            if (!empty($materialsToInsert)) {
-                BomDetail::insert($materialsToInsert);
-            }
+            // 3. Proses Kemasan
+            $bom->kemasan()->delete(); // Selalu hapus yang lama untuk menyederhanakan logika
 
-            // --- Delete Details Not Submitted ---
-            // Bandingkan ID detail yang ada sebelumnya dengan ID detail yang di-submit (untuk update)
-            $existingDetailIdsInt = array_map('intval', $existingDetailIds);
-            $submittedDetailIdsInt = array_map('intval', $submittedDetailIds);
-            $detailsToDelete = array_diff($existingDetailIdsInt, $submittedDetailIdsInt);
+            if (!empty($validated['kemasan']['barang_id'])) {
+                $kemasanData = $validated['kemasan'];
+                $barangKemasan = Barang::find($kemasanData['barang_id']); // Validasi sudah di FormRequest
 
-            if (!empty($detailsToDelete)) {
-                BomDetail::where('bom_id', $bom->id) // Pastikan hanya hapus dari BoM ini
-                    ->whereIn('id', $detailsToDelete)
-                    ->delete();
-            }
-
-            // Validasi ulang: Pastikan masih ada detail setelah proses
-            // Refresh relasi details setelah modifikasi
-            $bom->refresh();
-            if ($bom->details->isEmpty()) {
-                DB::rollBack();
-                throw ValidationException::withMessages(['materials' => 'BoM harus memiliki setidaknya 1 material/komponen setelah diperbarui.']);
-            }
-
-            $bom->kemasan()->delete(); // Cara sederhana: hapus semua dan buat baru
-            if (!empty($validated['kemasan'])) {
-                foreach ($validated['kemasan'] as $item) {
-                    if (!empty($item['barang_id']) && !empty($item['jumlah'])) {
-                        $bom->kemasan()->create([
-                            'barang_id' => $item['barang_id'],
-                            'jumlah' => $item['jumlah'],
-                            'unit_satuan_id' => $item['unit_satuan_id'],
-                        ]);
-                    }
+                if ($barangKemasan) {
+                    BomKemasan::create([
+                        'bom_id' => $bom->id,
+                        'barang_id' => $barangKemasan->id,
+                        'unit_satuan_id' => $barangKemasan->unit_satuan_id,
+                        'kapasitas' => $barangKemasan->kapasitas,
+                    ]);
                 }
             }
 
@@ -441,7 +353,7 @@ class BomController extends Controller implements HasMiddleware
             return to_route('bom.index')->with('success', __('BoM berhasil diperbarui.'));
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error updating BOM ID ' . $bom->id . ': ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            Log::error('Error updating BOM ID ' . $bom->id . ': ' . $e->getMessage());
             if ($e instanceof ValidationException) {
                 return back()->withErrors($e->errors())->withInput();
             }

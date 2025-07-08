@@ -153,6 +153,8 @@
                                 return '<span class="badge bg-light-primary">Barang Jadi</span>';
                             if (data === 'Bahan Baku')
                                 return '<span class="badge bg-light-secondary">Bahan Baku</span>';
+                            if (data === 'Kemasan')
+                                return '<span class="badge bg-light-success">Kemasan</span>';
                             return data ?? '-';
                         }
                     },
@@ -180,7 +182,7 @@
                         data: 'stock_barang',
                         name: 'barang.stock_barang'
                     },
-                                        {
+                    {
                         data: 'total_harga',
                         name: 'total_harga'
                     },

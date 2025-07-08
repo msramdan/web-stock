@@ -23,7 +23,7 @@
 
         <section class="section">
             <div class="row">
-                {{-- Kolom Kiri: Informasi Header Produksi --}}
+                {{-- Kolom Kiri: Informasi Header Produksi (Tidak ada perubahan) --}}
                 <div class="col-md-5 col-12">
                     <div class="card">
                         <div class="card-header pb-0">
@@ -73,7 +73,7 @@
                     </div>
                 </div>
 
-                {{-- Kolom Kanan: Detail Bahan, Hasil, & Kemasan --}}
+                {{-- Kolom Kanan: Detail Item Produksi --}}
                 <div class="col-md-7 col-12">
                     <div class="card">
                         <div class="card-header">
@@ -87,16 +87,27 @@
                                             <tr>
                                                 <th class="text-center">Tipe</th>
                                                 <th>Item</th>
-                                                <th class="text-center">Kuantitas/Batch</th>
-                                                <th class="text-center">Total Dibutuhkan</th>
+                                                <th class="text-center">Rate/Kapasitas</th>
+                                                <th class="text-center">Total Digunakan</th>
                                                 <th class="text-center">Satuan</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @php
+                                                // Ambil semua detail dari relasi
                                                 $detailIn = $produksi->details->where('type', 'In')->first();
                                                 $detailsOut = $produksi->details->where('type', 'Out');
+
+                                                // Pisahkan antara material dan kemasan
+                                                $materialDetails = $detailsOut->filter(function ($detail) {
+                                                    return optional($detail->barang)->tipe_barang !== 'Kemasan';
+                                                });
+                                                $kemasanDetail = $detailsOut->firstWhere(
+                                                    'barang.tipe_barang',
+                                                    'Kemasan',
+                                                );
                                             @endphp
+
                                             {{-- Baris Produk Jadi (In) --}}
                                             @if ($detailIn)
                                                 <tr class="table-light">
@@ -105,17 +116,18 @@
                                                     <td><strong>{{ $detailIn->barang?->kode_barang }}</strong><br><small>{{ $detailIn->barang?->nama_barang }}</small>
                                                     </td>
                                                     <td class="text-center">
-                                                        {{ rtrim(rtrim(number_format($detailIn->qty_rate ?? 1, 4, ',', '.'), '0'), ',') }}
+                                                        {{ rtrim(rtrim(number_format($detailIn->qty_rate ?? 0, 4, ',', '.'), '0'), ',') }}
                                                     </td>
                                                     <td class="text-center fw-bold">
-                                                        {{ rtrim(rtrim(number_format($detailIn->qty_total_diperlukan ?? $produksi->batch, 4, ',', '.'), '0'), ',') }}
+                                                        {{ rtrim(rtrim(number_format($detailIn->qty_total_diperlukan ?? 0, 4, ',', '.'), '0'), ',') }}
                                                     </td>
                                                     <td class="text-center">
                                                         {{ $detailIn->unitSatuan?->nama_unit_satuan ?? '-' }}</td>
                                                 </tr>
                                             @endif
+
                                             {{-- Baris Material (Out) --}}
-                                            @forelse($detailsOut as $detail)
+                                            @forelse($materialDetails as $detail)
                                                 <tr>
                                                     <td class="text-center"><span
                                                             class="badge bg-light-danger">KELUAR</span></td>
@@ -136,49 +148,24 @@
                                                         material untuk produksi ini.</td>
                                                 </tr>
                                             @endforelse
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="card">
-                        <div class="card-header">
-                            <h4 class="card-title">Detail Kemasan Digunakan</h4>
-                        </div>
-                        <div class="card-content">
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-striped table-bordered">
-                                        <thead>
-                                            <tr>
-                                                <th>Kemasan</th>
-                                                <th class="text-center">Kebutuhan/Batch</th>
-                                                <th class="text-center">Total Digunakan</th>
-                                                <th class="text-center">Satuan</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @forelse($produksi->bom->kemasan as $kemasan)
+                                            {{-- Baris Kemasan (Out) --}}
+                                            @if ($kemasanDetail)
                                                 <tr>
-                                                    <td>{{ $kemasan->barang->nama_barang }}</td>
-                                                    {{-- ⚠️ FIX: Mengganti formatAngka() dengan number_format() ⚠️ --}}
+                                                    <td class="text-center"><span
+                                                            class="badge bg-light-warning">KEMASAN</span></td>
+                                                    <td>{{ $kemasanDetail->barang?->kode_barang }}<br><small>{{ $kemasanDetail->barang?->nama_barang }}</small>
+                                                    </td>
                                                     <td class="text-center">
-                                                        {{ rtrim(rtrim(number_format($kemasan->jumlah, 4, ',', '.'), '0'), ',') }}
+                                                        {{ rtrim(rtrim(number_format($kemasanDetail->qty_rate ?? 0, 0, ',', '.'), '0'), ',') }}
                                                     </td>
-                                                    <td class="text-center fw-bold">
-                                                        {{ rtrim(rtrim(number_format($kemasan->jumlah * $produksi->batch, 4, ',', '.'), '0'), ',') }}
+                                                    <td class="text-center">
+                                                        {{ rtrim(rtrim(number_format($kemasanDetail->qty_total_diperlukan ?? 0, 0, ',', '.'), '0'), ',') }}
                                                     </td>
-                                                    <td class="text-center">{{ $kemasan->unitSatuan->nama_unit_satuan }}
-                                                    </td>
+                                                    <td class="text-center">
+                                                        {{ $kemasanDetail->unitSatuan?->nama_unit_satuan ?? '-' }}</td>
                                                 </tr>
-                                            @empty
-                                                <tr>
-                                                    <td colspan="4" class="text-center text-muted">Tidak ada kemasan yang
-                                                        digunakan.</td>
-                                                </tr>
-                                            @endforelse
+                                            @endif
                                         </tbody>
                                     </table>
                                 </div>
