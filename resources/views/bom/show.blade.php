@@ -101,7 +101,7 @@
                                             <th style="width: 5%;" class="text-center">#</th>
                                             <th style="width: 25%;">Kode Kemasan</th>
                                             <th style="width: 35%;">Nama Kemasan</th>
-                                            <th style="width: 15%;" class="text-center">Jumlah</th>
+                                            <th style="width: 15%;" class="text-center">Kapasitas</th>
                                             <th style="width: 20%;" class="text-center">Unit Satuan</th>
                                         </tr>
                                     </thead>
@@ -112,7 +112,7 @@
                                                 <td>{{ $item->barang?->kode_barang ?? 'N/A' }}</td>
                                                 <td>{{ $item->barang?->nama_barang ?? 'N/A' }}</td>
                                                 <td class="text-center">
-                                                    {{ rtrim(rtrim(number_format($item->jumlah ?? 0, 4, ',', '.'), '0'), ',') }}
+                                                    {{ rtrim(rtrim(number_format($item->kapasitas ?? 0, 4, ',', '.'), '0'), ',') }}
                                                 </td>
                                                 <td class="text-center">{{ $item->unitSatuan?->nama_unit_satuan ?? '-' }}
                                                 </td>

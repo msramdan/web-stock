@@ -1,4 +1,3 @@
-{{-- resources/views/barang/include/form.blade.php --}}
 <div class="row mb-2">
     {{-- Kode Barang --}}
     <div class="col-md-6">
@@ -81,7 +80,7 @@
         </div>
     </div>
 
-    {{-- === TAMBAHKAN INPUT TIPE BARANG DI SINI === --}}
+    {{-- === PERUBAHAN INPUT TIPE BARANG === --}}
     <div class="col-md-6">
         <div class="form-group">
             <label for="tipe_barang">{{ __('Tipe Barang') }}</label>
@@ -92,10 +91,14 @@
                     {{ (isset($barang) && $barang->tipe_barang == 'Bahan Baku') || old('tipe_barang') == 'Bahan Baku' ? 'selected' : '' }}>
                     Bahan Baku
                 </option>
-                {{-- Pastikan value di sini sesuai dengan aturan validasi 'in:' --}}
                 <option value="Barang Jadi"
                     {{ (isset($barang) && $barang->tipe_barang == 'Barang Jadi') || old('tipe_barang') == 'Barang Jadi' ? 'selected' : '' }}>
-                    Barang Jadi {{-- Teks yang tampil untuk user tidak harus sama dengan value --}}
+                    Barang Jadi
+                </option>
+                {{-- Opsi baru untuk Kemasan --}}
+                <option value="Kemasan"
+                    {{ (isset($barang) && $barang->tipe_barang == 'Kemasan') || old('tipe_barang') == 'Kemasan' ? 'selected' : '' }}>
+                    Kemasan
                 </option>
             </select>
             @error('tipe_barang')
@@ -106,13 +109,14 @@
         </div>
     </div>
 
+    {{-- Container untuk Harga (Logika lama dipertahankan) --}}
     <div class="col-md-6" id="harga-barang-container" style="display: none;">
         <div class="form-group">
             <label for="harga">{{ __('Harga Barang') }}</label>
             <input type="number" name="harga" id="harga"
                 class="form-control @error('harga') is-invalid @enderror"
-                value="{{ isset($barang) ? $barang->harga : old('harga') }}"
-                placeholder="{{ __('Harga Barang') }}" step="0.01" min="0">
+                value="{{ isset($barang) ? $barang->harga : old('harga') }}" placeholder="{{ __('Harga Barang') }}"
+                step="0.01" min="0">
             @error('harga')
                 <span class="text-danger">{{ $message }}</span>
             @enderror
@@ -120,12 +124,23 @@
         </div>
     </div>
 
-    {{-- === AKHIR INPUT TIPE BARANG === --}}
+    {{-- Container baru untuk Kapasitas --}}
+    <div class="col-md-6" id="kapasitas-barang-container" style="display: none;">
+        <div class="form-group">
+            <label for="kapasitas">{{ __('Kapasitas') }}</label>
+            <input type="number" name="kapasitas" id="kapasitas"
+                class="form-control @error('kapasitas') is-invalid @enderror"
+                value="{{ isset($barang) ? $barang->kapasitas : old('kapasitas') }}"
+                placeholder="{{ __('Kapasitas per Kemasan') }}" step="1" min="1">
+            @error('kapasitas')
+                <span class="text-danger">{{ $message }}</span>
+            @enderror
+            <div class="form-text">Kapasitas muat per kemasan.</div>
+        </div>
+    </div>
+    {{-- === AKHIR PERUBAHAN === --}}
 
 
-    {{-- Stock Barang (Hidden input for create, might be visible for edit if needed) --}}
-    {{-- <input type="hidden" name="stock_barang" value="0"> --}}
-    {{-- Jika ingin menampilkan stock di form edit: --}}
     @isset($barang)
         <div class="col-md-6">
             <div class="form-group">
@@ -144,20 +159,19 @@
     @endisset
 
 
-    {{-- Photo Barang --}}
     @isset($barang)
         <div class="col-md-6">
             <div class="row">
-                <div class="col-md-4 text-center"> {{-- Ukuran kolom disesuaikan --}}
+                <div class="col-md-4 text-center">
                     @if ($barang->photo_barang)
-                        <img src="{{ asset('storage/uploads/photo-barangs/' . $barang->photo_barang) }}" alt="Photo Barang"
-                            class="rounded mb-2 mt-2 img-fluid" style="max-height: 100px;">
+                        <img src="{{ asset('storage/uploads/photo-barangs/' . $barang->photo_barang) }}"
+                            alt="Photo Barang" class="rounded mb-2 mt-2 img-fluid" style="max-height: 100px;">
                     @else
                         <img src="https://via.placeholder.com/100?text=No+Image" alt="Photo Barang"
                             class="rounded mb-2 mt-2 img-fluid">
                     @endif
                 </div>
-                <div class="col-md-8"> {{-- Ukuran kolom disesuaikan --}}
+                <div class="col-md-8">
                     <div class="form-group">
                         <label for="photo_barang">{{ __('Ganti Photo Barang') }}</label>
                         <input type="file" name="photo_barang"
@@ -184,26 +198,42 @@
         </div>
     @endisset
 </div>
+
+{{-- Script JavaScript untuk menampilkan/menyembunyikan field --}}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const tipeBarangSelect = document.getElementById('tipe_barang');
-        const hargaBarangContainer = document.getElementById('harga-barang-container');
-        const hargaBarangInput = document.getElementById('harga');
+        const hargaContainer = document.getElementById('harga-barang-container');
+        const hargaInput = document.getElementById('harga');
+        const kapasitasContainer = document.getElementById('kapasitas-barang-container');
+        const kapasitasInput = document.getElementById('kapasitas');
 
-        function toggleHargaField() {
-            if (tipeBarangSelect.value === 'Bahan Baku') {
-                hargaBarangContainer.style.display = 'block';
-                hargaBarangInput.setAttribute('required', 'required');
+        function toggleFields() {
+            const selectedValue = tipeBarangSelect.value;
+
+            // Logika untuk Harga
+            if (selectedValue === 'Bahan Baku') {
+                hargaContainer.style.display = 'block';
+                hargaInput.setAttribute('required', 'required');
             } else {
-                hargaBarangContainer.style.display = 'none';
-                hargaBarangInput.removeAttribute('required');
+                hargaContainer.style.display = 'none';
+                hargaInput.removeAttribute('required');
+            }
+
+            // Logika untuk Kapasitas
+            if (selectedValue === 'Kemasan') {
+                kapasitasContainer.style.display = 'block';
+                kapasitasInput.setAttribute('required', 'required');
+            } else {
+                kapasitasContainer.style.display = 'none';
+                kapasitasInput.removeAttribute('required');
             }
         }
 
-        // Initial toggle based on current value
-        toggleHargaField();
+        // Panggil fungsi saat halaman dimuat untuk set state awal
+        toggleFields();
 
-        // Add event listener for changes
-        tipeBarangSelect.addEventListener('change', toggleHargaField);
+        // Tambahkan event listener untuk perubahan pada dropdown
+        tipeBarangSelect.addEventListener('change', toggleFields);
     });
 </script>

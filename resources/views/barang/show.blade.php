@@ -58,10 +58,21 @@
                                         <td class="fw-bold">{{ __('Unit Satuan') }}</td>
                                         <td>{{ $barang->nama_unit_satuan ?? '-' }}</td>
                                     </tr>
-                                    <tr>
-                                        <td class="fw-bold">{{ __('Harga Barang') }}</td>
-                                        <td>{{ $barang->harga !== null ? formatRupiah($barang->harga) : '-' }}</td>
-                                    </tr>
+
+                                    {{-- PERUBAHAN DI SINI --}}
+                                    @if ($barang->tipe_barang == 'Kemasan')
+                                        <tr>
+                                            <td class="fw-bold">{{ __('Kapasitas') }}</td>
+                                            <td>{{ number_format($barang->kapasitas ?? 0) }}</td>
+                                        </tr>
+                                    @elseif ($barang->tipe_barang == 'Bahan Baku')
+                                        <tr>
+                                            <td class="fw-bold">{{ __('Harga Barang') }}</td>
+                                            <td>{{ $barang->harga !== null ? formatRupiah($barang->harga) : '-' }}</td>
+                                        </tr>
+                                    @endif
+                                    {{-- AKHIR PERUBAHAN --}}
+
                                     <tr>
                                         <td class="fw-bold">{{ __('Stock Barang') }}</td>
                                         <td>{{ rtrim(rtrim(number_format((float) $barang->stock_barang, 4, '.', ''), '0'), '.') }}

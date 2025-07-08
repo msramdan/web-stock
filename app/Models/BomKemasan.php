@@ -15,9 +15,21 @@ class BomKemasan extends Model
     protected $fillable = [
         'bom_id',
         'barang_id',
-        'jumlah',
+        'kapasitas',
         'unit_satuan_id',
     ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'kapasitas' => 'integer', // Casting ke integer
+        ];
+    }
 
     public function barang(): BelongsTo
     {

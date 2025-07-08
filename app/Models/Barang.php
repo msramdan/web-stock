@@ -34,7 +34,8 @@ class Barang extends Model
         'tipe_barang',
         'stock_barang',
         'photo_barang',
-        'harga'
+        'harga',
+        'kapasitas',
     ];
 
     /**
@@ -53,6 +54,8 @@ class Barang extends Model
             'photo_barang' => 'string',
             'created_at' => 'datetime:Y-m-d H:i:s',
             'updated_at' => 'datetime:Y-m-d H:i:s',
+            'harga' => 'decimal:2',
+            'kapasitas' => 'integer',
         ];
     }
 
