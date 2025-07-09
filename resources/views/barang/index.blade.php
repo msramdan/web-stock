@@ -34,6 +34,7 @@
                         <option value="">Semua Tipe</option>
                         <option value="Bahan Baku">Bahan Baku</option>
                         <option value="Barang Jadi">Barang Jadi</option>
+                        <option value="Kemasan">Kemasan</option>
                     </select>
                 </div>
             </div>
@@ -78,13 +79,14 @@
                             <table class="table table-striped" id="data-table" width="100%">
                                 <thead>
                                     <tr>
-                                        <th>{{ __('Kode') }}</th> {{-- Disingkat --}}
+                                        <th>{{ __('Kode') }}</th>
                                         <th>{{ __('Nama Barang') }}</th>
-                                        <th>{{ __('Tipe') }}</th> {{-- Disingkat --}}
+                                        <th>{{ __('Tipe') }}</th>
                                         <th>{{ __('Deskripsi') }}</th>
                                         <th>{{ __('Jenis Material') }}</th>
-                                        <th>{{ __('Satuan') }}</th> {{-- Disingkat --}}
+                                        <th>{{ __('Satuan') }}</th>
                                         <th>{{ __('Harga Satuan') }}</th>
+                                        <th>{{ __('Kapasitas') }}</th>
                                         <th>{{ __('Stok') }}</th>
                                         <th>{{ __('Total Harga') }}</th>
                                         <th>{{ __('Photo') }}</th>
@@ -177,6 +179,10 @@
                     {
                         data: 'harga',
                         name: 'barang.harga'
+                    },
+                    {
+                        data: 'kapasitas',
+                        name: 'barang.kapasitas'
                     },
                     {
                         data: 'stock_barang',

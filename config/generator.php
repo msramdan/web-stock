@@ -245,16 +245,34 @@ return [
         [
             'header' => 'Laporan',
             'permissions' => [
-                'laporan view'
+                'laporan transaksi view',
+                'laporan stok view',
             ],
             'menus' => [
                 [
                     'title' => 'Laporan Barang',
                     'icon' => '<i class="bi bi-file-earmark-text"></i>',
-                    'route' => '/laporan',
-                    'permission' => 'laporan view',
-                    'permissions' => [],
-                    'submenus' => []
+                    'route' => [
+                        'laporan.transaksi*',
+                        'laporan.stock-barang*',
+                    ],
+                    'permission' => null,
+                    'permissions' => [
+                        'laporan transaksi view',
+                        'laporan stok view',
+                    ],
+                    'submenus' => [
+                        [
+                            'title' => 'Transaksi Barang',
+                            'route' => 'laporan.transaksi',
+                            'permission' => 'laporan transaksi view'
+                        ],
+                        [
+                            'title' => 'Stock Barang',
+                            'route' => 'laporan.stock-barang',
+                            'permission' => 'laporan stok view'
+                        ],
+                    ]
                 ]
             ]
         ],
