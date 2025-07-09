@@ -112,10 +112,10 @@ Route::middleware(['auth', 'web'])->group(function () {
             // Rute untuk Laporan Stok Barang
             Route::get('/stock-barang', [\App\Http\Controllers\LaporanController::class, 'indexStockBarang'])
                 ->name('stock-barang.index')
-                ->middleware('permission:laporan stok view');
+                ->middleware('permission:laporan stock view');
             Route::post('/stock-barang/export', [\App\Http\Controllers\LaporanController::class, 'exportExcelStockBarang'])
                 ->name('stock-barang.exportExcel')
-                ->middleware('permission:laporan stok export excel');
+                ->middleware('permission:laporan stock export excel');
         });
     });
 });
