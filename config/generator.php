@@ -246,7 +246,7 @@ return [
             'header' => 'Laporan',
             'permissions' => [
                 'laporan transaksi view',
-                'laporan stok view',
+                'laporan stock view',
             ],
             'menus' => [
                 [
@@ -259,7 +259,7 @@ return [
                     'permission' => null,
                     'permissions' => [
                         'laporan transaksi view',
-                        'laporan stok view',
+                        'laporan stock view',
                     ],
                     'submenus' => [
                         [
@@ -270,7 +270,7 @@ return [
                         [
                             'title' => 'Stock Barang',
                             'route' => 'laporan.stock-barang',
-                            'permission' => 'laporan stok view'
+                            'permission' => 'laporan stock view'
                         ],
                     ]
                 ]
