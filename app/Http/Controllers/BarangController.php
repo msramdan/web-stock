@@ -97,6 +97,9 @@ class BarangController extends Controller implements HasMiddleware
                 ->addColumn('harga', function ($row) {
                     return $row->harga !== null ? formatRupiah($row->harga) : '-';
                 })
+                ->addColumn('kapasitas', function ($row) {
+                    return $row->kapasitas > 0 ? number_format($row->kapasitas) : '-';
+                })
                 ->addColumn('total_harga', function ($row) {
                     $total = ($row->harga ?? 0) * ($row->stock_barang ?? 0);
                     return formatRupiah($total);

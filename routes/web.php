@@ -100,9 +100,22 @@ Route::middleware(['auth', 'web'])->group(function () {
         }); // Middleware permission sudah ada di dalam controller
 
         // Laporan Spesifik Company
-        Route::prefix('laporan')->name('laporan.')->group(function () {
-            Route::get('/', [LaporanController::class, 'index'])->name('index')->middleware('permission:laporan view');
-            Route::post('/export', [LaporanController::class, 'exportExcel'])->name('exportExcel')->middleware('permission:laporan export excel');
+        Route::prefix('laporan')->name('laporan.')->middleware(['auth', 'company.access'])->group(function () {
+            // Rute untuk Laporan Transaksi
+            Route::get('/transaksi', [\App\Http\Controllers\LaporanController::class, 'indexTransaksi'])
+                ->name('transaksi.index')
+                ->middleware('permission:laporan transaksi view');
+            Route::post('/transaksi/export', [\App\Http\Controllers\LaporanController::class, 'exportExcelTransaksi'])
+                ->name('transaksi.exportExcel')
+                ->middleware('permission:laporan transaksi export excel');
+
+            // Rute untuk Laporan Stok Barang
+            Route::get('/stock-barang', [\App\Http\Controllers\LaporanController::class, 'indexStockBarang'])
+                ->name('stock-barang.index')
+                ->middleware('permission:laporan stok view');
+            Route::post('/stock-barang/export', [\App\Http\Controllers\LaporanController::class, 'exportExcelStockBarang'])
+                ->name('stock-barang.exportExcel')
+                ->middleware('permission:laporan stok export excel');
         });
     });
 });

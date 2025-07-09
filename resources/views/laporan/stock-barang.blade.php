@@ -1,18 +1,18 @@
 @extends('layouts.app')
-@section('title', __('Laporan Transaksi'))
+@section('title', __('Laporan Stok Barang'))
 @section('content')
     <div class="page-heading">
         <div class="page-title">
             <div class="row">
                 <div class="col-12 col-md-8 order-md-1 order-last">
-                    <h3>{{ __('Laporan Transaksi') }}</h3>
+                    <h3>{{ __('Laporan Stok Barang') }}</h3>
                     <p class="text-subtitle text-muted">
-                        {{ __('Filter dan generate laporan transaksi gabungan (Transaksi & Produksi) dalam format Excel.') }}
+                        {{ __('Filter dan generate laporan stok barang terkini dalam format Excel.') }}
                     </p>
                 </div>
                 <x-breadcrumb>
                     <li class="breadcrumb-item"><a href="/">{{ __('Dashboard') }}</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ __('Laporan Transaksi') }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ __('Laporan Stok Barang') }}</li>
                 </x-breadcrumb>
             </div>
         </div>
@@ -24,19 +24,9 @@
                             <h4 class="card-title">Filter Laporan</h4>
                         </div>
                         <div class="card-body">
-                            @if ($errors->any())
-                                <div class="alert alert-danger alert-dismissible show fade">
-                                    <ul class="ms-0 mb-0">
-                                        @foreach ($errors->all() as $error)
-                                            <li>
-                                                <p class="mb-0">{{ $error }}</p>
-                                            </li>
-                                        @endforeach
-                                    </ul> <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                        aria-label="Close"></button>
-                                </div>
-                            @endif
-                            <form action="{{ route('laporan.exportExcel') }}" method="POST"> @csrf
+                            {{-- Ubah form action ke route yang benar --}}
+                            <form action="{{ route('laporan.stock-barang.exportExcel') }}" method="POST">
+                                @csrf
                                 <div class="row mb-3">
                                     <div class="col-md-3">
                                         <div class="form-group"> <label for="tanggal_mulai">{{ __('Tanggal Mulai') }} <span
@@ -102,6 +92,9 @@
                                                     {{ old('tipe_barang', request('tipe_barang')) == 'Barang Jadi' ? 'selected' : '' }}>
                                                     Barang Jadi
                                                 </option>
+                                                <option value="Kemasan"
+                                                    {{ old('tipe_barang', request('tipe_barang')) == 'Kemasan' ? 'selected' : '' }}>
+                                                    Kemasan
                                             </select>
                                             @error('tipe_barang')
                                                 <span class="text-danger">{{ $message }}</span>
@@ -138,7 +131,7 @@
                                         <button type="submit" class="btn btn-success me-2">
                                             <i class="fas fa-file-excel"></i> {{ __('Generate Excel') }}
                                         </button>
-                                        <a href="{{ route('laporan.index') }}" class="btn btn-secondary">
+                                        <a href="{{ route('laporan.transaksi.index') }}" class="btn btn-secondary">
                                             <i class="bi bi-arrow-repeat"></i> Reset Filter
                                         </a>
                                     </div>
@@ -151,16 +144,3 @@
         </section>
     </div>
 @endsection
-
-@push('css')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
-@endpush
-
-@push('js')
-    <script src="{{ asset('mazer/extensions/jquery/jquery.min.js') }}"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-
-        });
-    </script>
-@endpush
