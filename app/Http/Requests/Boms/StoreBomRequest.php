@@ -28,11 +28,11 @@ class StoreBomRequest extends FormRequest
             'deskripsi' => ['required', 'string', 'max:65535'],
             'materials' => ['present', 'array'], // Harus ada, meskipun kosong (akan divalidasi di controller)
             'materials.*.barang_id' => ['required', 'integer', Rule::exists('barang', 'id')], // Material harus ada
-            'materials.*.jumlah' => ['required', 'numeric', 'min:1'], // Jumlah harus angka > 0
+            'materials.*.jumlah' => ['required', 'numeric', 'min:0.1'], // Jumlah harus angka > 0
             'materials.*.unit_satuan_id' => ['required', 'integer', Rule::exists('unit_satuan', 'id')], // Unit harus ada
             'kemasan' => ['nullable', 'array'],
             'kemasan.barang_id' => [
-                'required_with:kemasan', // Wajib ada jika array 'kemasan' dikirim
+                // 'required_with:kemasan', // Wajib ada jika array 'kemasan' dikirim
                 'nullable',              // Boleh null jika user memilih "-- Tidak menggunakan kemasan --"
                 'integer',
                 Rule::exists('barang', 'id')->where(function ($query) {

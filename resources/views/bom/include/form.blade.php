@@ -144,8 +144,7 @@
                                                 <input type="number" step="any"
                                                     name="materials[{{ $index }}][jumlah]"
                                                     class="form-control quantity-input @error("materials.$index.jumlah") is-invalid @enderror"
-                                                    value="{{ $materialItem['jumlah'] ?? 1 }}" min="0.00000001"
-                                                    required>
+                                                    value="{{ $materialItem['jumlah'] ?? 1 }}" min="0.1" required>
                                                 @error("materials.$index.jumlah")
                                                     <div class="invalid-feedback">{{ $message }}</div>
                                                 @enderror
@@ -307,7 +306,7 @@
         </td>
         <td>
             <input type="number" step="any" name="materials[__INDEX__][jumlah]"
-                class="form-control quantity-input" value="1" min="0.00000001" required disabled>
+                class="form-control quantity-input" value="1" min="0.1" required disabled>
             <div class="invalid-feedback"></div>
         </td>
         <td>

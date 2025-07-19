@@ -47,7 +47,7 @@ class UpdateBomRequest extends FormRequest
                 'integer',
                 Rule::exists('barang', 'id')->where('company_id', $companyId),
             ],
-            'materials.*.jumlah' => ['required', 'numeric', 'min:0.00000001'],
+            'materials.*.jumlah' => ['required', 'numeric', 'min:0.1'],
             'materials.*.unit_satuan_id' => ['required', 'integer', Rule::exists('unit_satuan', 'id')->where('company_id', $companyId)],
 
 
